@@ -310,21 +310,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (currentTracks.length === 0) return;
         const { highEnergy, isBeat } = features;
     
-        // --- ОТКЛЮЧЕНО: ГЕНЕРАЦИЯ ИСКР ИЗ УГЛОВ ---
-        /*
-        if ((highEnergy > 0.2 || (isBeat && highEnergy > 0.1)) && sparkCooldown <= 0) {
-            const corners = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
-            const sparkCount = Math.floor((highEnergy * 6) + (isBeat ? 3 : 0));
-            for (let i = 0; i < sparkCount; i++) {
-                const randomCorner = corners[Math.floor(Math.random() * corners.length)];
-                createSparkParticle(randomCorner, highEnergy);
-            }
-            sparkCooldown = 4;
-        } else if (sparkCooldown > 0) {
-            sparkCooldown--;
-        }
-        */
-    
         // Пульсация границ (оставлено включенным)
         if (isBeat) {
             spawnCornerShockwaves();
