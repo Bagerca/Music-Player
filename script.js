@@ -206,15 +206,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // --- VISUALIZER & LOGIC ---
     
-    // ОБНОВЛЕНО: Функция создания ударных волн с учетом интенсивности
-    function spawnCornerShockwaves(intensity = 1) {
+    // ОБНОВЛЕНО: Функция создания ударных волн с поддержкой типа 'vocal'
+    function spawnCornerShockwaves(intensity = 1, type = 'kick') {
         if (isLiteMode) return;
         
         const allCorners = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
         let activeCorners = [];
 
-        // Если удар сильный - все углы. Если слабый - случайные 2.
-        if (intensity > 0.8) {
+        // Если это БИТ - берем 2 или 4 угла.
+        // Если это ВОКАЛ - всегда берем все 4 угла, но делаем их мягкими.
+        if (type === 'vocal' || intensity > 0.8) {
             activeCorners = allCorners;
         } else {
             activeCorners = allCorners.sort(() => 0.5 - Math.random()).slice(0, 2);
@@ -230,12 +231,31 @@ document.addEventListener('DOMContentLoaded', function() {
                     wave.style.borderColor = currentTracks[currentTrackIndex].colors.accent; 
                 }
                 
-                // Динамический размер и прозрачность
-                wave.style.borderWidth = `${2 + (intensity * 6)}px`; 
-                wave.style.opacity = (intensity * 0.7).toString();
+                // --- НАСТРОЙКА ПОД ТИП ЗВУКА ---
+                if (type === 'vocal') {
+                    // ВОКАЛ: Тонкая линия, медленная, прозрачная
+                    wave.style.borderWidth = '2px';
+                    wave.style.opacity = '0.5'; 
+                    wave.style.transition = 'all 1.5s cubic-bezier(0, 0.5, 0.5, 1)'; // Медленный разлет
+                    wave.style.transform = 'scale(1)'; // Старт
+                    
+                    // Хак для запуска анимации через JS, чтобы перебить CSS
+                    requestAnimationFrame(() => {
+                        wave.style.transform = 'scale(30)'; // Плавное расширение
+                        wave.style.opacity = '0';
+                    });
+                    
+                    // Удаляем подольше, т.к. анимация медленная
+                    setTimeout(() => { if (wave.parentNode) wave.parentNode.removeChild(wave); }, 1500);
+                } else {
+                    // БИТ (KICK): Жирная, быстрая, резкая (использует CSS keyframes)
+                    wave.style.borderWidth = `${4 + (intensity * 8)}px`; 
+                    wave.style.opacity = (intensity * 0.8).toString();
+                    
+                    setTimeout(() => { if (wave.parentNode) wave.parentNode.removeChild(wave); }, 800);
+                }
 
                 emitter.appendChild(wave);
-                setTimeout(() => { if (wave.parentNode) wave.parentNode.removeChild(wave); }, 800);
             }
         });
     }
@@ -360,8 +380,6 @@ document.addEventListener('DOMContentLoaded', function() {
             wave.style.background = `linear-gradient(${ wave.classList.contains('top') || wave.classList.contains('bottom') ? '90deg' : '180deg' }, transparent, ${currentColors.accent}, transparent)`;
             wave.style.boxShadow = `0 0 ${shadowSize}px ${currentColors.accent}`;
         });
-        
-        // setTimeout для выключения не нужен, так как мы управляем флагом в updateEnergySurge
     }
 
     // ОБНОВЛЕНО: Плавное затухание волн
@@ -389,35 +407,38 @@ document.addEventListener('DOMContentLoaded', function() {
     function createEdgeGlow() { const edges = ['top', 'right', 'bottom', 'left']; const edgeGlowContainer = document.getElementById('edgeGlow'); edges.forEach(edge => { const glow = document.createElement('div'); glow.className = `edge-glow ${edge}-glow`; edgeGlowContainer.appendChild(glow); edgeGlowElements[edge] = glow; }); }
     function updateEdgeGlow(features) { if (currentTracks.length === 0) return; const { rms, bassEnergy, isBeat } = features; let baseIntensity = rms * 0.3; if (isBeat) { baseIntensity += currentPulseIntensity * 0.4; } baseIntensity += bassEnergy * 0.2; edgeGlowIntensity = Math.min(1, baseIntensity); const currentColors = currentTracks[currentTrackIndex].colors; Object.values(edgeGlowElements).forEach(glow => { glow.style.opacity = edgeGlowIntensity.toString(); glow.style.boxShadow = `0 0 ${20 + edgeGlowIntensity * 30}px ${currentColors.accent}`; }); }
     
-    // ОБНОВЛЕНО: Основная логика "Живого выступления"
+    // ОБНОВЛЕНО: Анализатор эффектов с поддержкой вокала и баса
     function analyzeEdgeEffects(features) {
         if (currentTracks.length === 0) return;
-        const { rms, bassEnergy, isBeat, highEnergy } = features;
-
-        // 1. Режим "Спокойствие" (Ambient / Jazz)
-        if (rms < 0.15) {
+        const { rms, bassEnergy, midEnergy, highEnergy, isBeat } = features;
+    
+        // --- ЛОГИКА 1: УДАРНЫЕ ВОЛНЫ (КРУГИ) ---
+        
+        // A. Проверка на БАС (Ударные) - сниженный порог
+        let beatPower = (bassEnergy * 0.7) + (rms * 0.3);
+        if (isBeat && beatPower > 0.5) {
+            spawnCornerShockwaves(beatPower, 'kick');
+        }
+        
+        // B. Проверка на ВОКАЛ (Средние частоты)
+        else if (!isBeat && midEnergy > 0.25) {
+            if (midEnergy > rms * 1.1) {
+                // Шанс 30% чтобы не спамить, создаем плавные волны
+                if (Math.random() > 0.7) {
+                    spawnCornerShockwaves(midEnergy, 'vocal');
+                }
+            }
+        }
+    
+        // --- ЛОГИКА 2: СВЕЧЕНИЕ ГРАНИЦ (SURGE) ---
+        if (isBeat) {
             if (!energySurgeActive) {
-                // Легкое дыхание
-                const breatheIntensity = 0.1 + (highEnergy * 0.2); 
-                activateEnergySurge(breatheIntensity, 'slow');
+                const decayType = highEnergy > 0.3 ? 'fast' : 'normal';
+                activateEnergySurge(Math.min(1, rms + 0.2), decayType);
             }
-        } 
-        // 2. Режим "Активный"
-        else {
-            if (isBeat) {
-                let surgePower = (bassEnergy * 0.6) + (rms * 0.6); 
-                if (surgePower > 1) surgePower = 1;
-
-                // Ударные волны (круги) только на сильных ударах
-                if (surgePower > 0.65) { 
-                    spawnCornerShockwaves(surgePower);
-                }
-
-                if (!energySurgeActive) {
-                    const decayType = highEnergy > 0.25 ? 'fast' : 'normal';
-                    activateEnergySurge(surgePower, decayType);
-                }
-            }
+        } else if (midEnergy > 0.3 && !energySurgeActive) {
+             // Если вокал громкий, подсвечиваем края медленно
+             activateEnergySurge(midEnergy * 0.8, 'slow');
         }
     }
 
