@@ -1,3 +1,4 @@
+javascript
 document.addEventListener('DOMContentLoaded', function() {
     // --- ЭЛЕМЕНТЫ DOM ---
     const audio = document.getElementById('audioPlayer');
@@ -25,6 +26,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const trackList = document.getElementById('trackList');
     const trackSearch = document.getElementById('trackSearch');
     const deletePlaylistBtn = document.getElementById('deletePlaylistBtn');
+    const lyricsDisplay = document.getElementById('lyricsDisplay'); // НОВОЕ
 
     // Кастомный селект
     const playlistTrigger = document.getElementById('playlistTrigger');
@@ -206,7 +208,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // --- VISUALIZER & LOGIC ---
     
-    // ОБНОВЛЕНО: Функция создания ударных волн с учетом интенсивности
     function spawnCornerShockwaves(intensity = 1) {
         if (isLiteMode) return;
         
@@ -360,8 +361,6 @@ document.addEventListener('DOMContentLoaded', function() {
             wave.style.background = `linear-gradient(${ wave.classList.contains('top') || wave.classList.contains('bottom') ? '90deg' : '180deg' }, transparent, ${currentColors.accent}, transparent)`;
             wave.style.boxShadow = `0 0 ${shadowSize}px ${currentColors.accent}`;
         });
-        
-        // setTimeout для выключения не нужен, так как мы управляем флагом в updateEnergySurge
     }
 
     // ОБНОВЛЕНО: Плавное затухание волн
@@ -434,19 +433,102 @@ document.addEventListener('DOMContentLoaded', function() {
         const currentColors = currentTracks[currentTrackIndex].colors; 
         const neonColor = currentTracks[currentTrackIndex].neonColor; 
         const neonColorRight = currentTracks[currentTrackIndex].neonColorRight || neonColor; 
-        document.body.style.setProperty('--bg-image', `url('${currentTracks[currentTrackIndex].cover}')`); document.body.style.background = ''; 
+        
+        // Фон и цвета
+        document.body.style.setProperty('--bg-image', `url('${currentTracks[currentTrackIndex].cover}')`); 
+        document.body.style.background = ''; 
         document.body.style.setProperty('--panel-bg-color', adjustColorOpacity(currentColors.primary, 0.85));
         document.body.style.setProperty('--panel-border-color', currentColors.accent);
         progress.style.background = `linear-gradient(90deg, ${currentColors.accent}, ${currentColors.primary})`; 
         playPauseBtn.style.background = `linear-gradient(135deg, ${currentColors.accent}, ${currentColors.primary})`; 
         document.documentElement.style.setProperty('--neon-color', neonColor); 
         document.documentElement.style.setProperty('--accent-color', currentColors.accent); 
-        const style = document.createElement('style'); style.textContent = ` .volume-slider::-webkit-slider-thumb { background: ${currentColors.accent}; } .volume-slider::-moz-range-thumb { background: ${currentColors.accent}; } `; const oldStyle = document.getElementById('dynamic-neon-styles'); if (oldStyle) oldStyle.remove(); style.id = 'dynamic-neon-styles'; document.head.appendChild(style); albumImage.style.backgroundImage = `url('${currentTracks[currentTrackIndex].cover}')`; updateVolumeSlider(); if (particlesData.length === 0) { createParticles(); } else { updateParticles(); } if (leftGlow && rightGlow) { leftGlow.style.height = '15%'; rightGlow.style.height = '15%'; leftGlow.style.opacity = '0.8'; rightGlow.style.opacity = '0.8'; leftGlow.style.background = neonColor; rightGlow.style.background = neonColorRight; leftGlow.style.boxShadow = `0 0 10px ${neonColor}, 0 0 20px ${neonColor}, 0 0 30px ${neonColor}, inset 0 0 8px rgba(255, 255, 255, 0.2)`; rightGlow.style.boxShadow = `0 0 10px ${neonColorRight}, 0 0 20px ${neonColorRight}, 0 0 30px ${neonColorRight}, inset 0 0 8px rgba(255, 255, 255, 0.2)`; } if (isTrackListOpen) { renderTrackList(); } beatDetected = false; currentPulseIntensity = 0; lastBeatTime = 0; sparkParticles.forEach(spark => { if (spark.element.parentNode) { spark.element.parentNode.removeChild(spark.element); } }); sparkParticles = []; const energyWaves = [ document.getElementById('energyTop'), document.getElementById('energyRight'), document.getElementById('energyBottom'), document.getElementById('energyLeft') ]; energyWaves.forEach(wave => { wave.style.opacity = '0'; wave.style.boxShadow = 'none'; }); energySurgeActive = false; 
+        
+        // Стилизация слайдера громкости
+        const style = document.createElement('style'); 
+        style.textContent = ` .volume-slider::-webkit-slider-thumb { background: ${currentColors.accent}; } .volume-slider::-moz-range-thumb { background: ${currentColors.accent}; } `; 
+        const oldStyle = document.getElementById('dynamic-neon-styles'); 
+        if (oldStyle) oldStyle.remove(); 
+        style.id = 'dynamic-neon-styles'; 
+        document.head.appendChild(style); 
+        
+        albumImage.style.backgroundImage = `url('${currentTracks[currentTrackIndex].cover}')`; 
+        updateVolumeSlider(); 
+        
+        // Частицы и визуалайзер
+        if (particlesData.length === 0) { createParticles(); } else { updateParticles(); } 
+        if (leftGlow && rightGlow) { 
+            leftGlow.style.height = '15%'; rightGlow.style.height = '15%'; 
+            leftGlow.style.opacity = '0.8'; rightGlow.style.opacity = '0.8'; 
+            leftGlow.style.background = neonColor; rightGlow.style.background = neonColorRight; 
+            leftGlow.style.boxShadow = `0 0 10px ${neonColor}, 0 0 20px ${neonColor}, 0 0 30px ${neonColor}, inset 0 0 8px rgba(255, 255, 255, 0.2)`; 
+            rightGlow.style.boxShadow = `0 0 10px ${neonColorRight}, 0 0 20px ${neonColorRight}, 0 0 30px ${neonColorRight}, inset 0 0 8px rgba(255, 255, 255, 0.2)`; 
+        } 
+        
+        if (isTrackListOpen) { renderTrackList(); } 
+        
+        // Сброс эффектов
+        beatDetected = false; currentPulseIntensity = 0; lastBeatTime = 0; 
+        sparkParticles.forEach(spark => { if (spark.element.parentNode) { spark.element.parentNode.removeChild(spark.element); } }); 
+        sparkParticles = []; 
+        const energyWaves = [ document.getElementById('energyTop'), document.getElementById('energyRight'), document.getElementById('energyBottom'), document.getElementById('energyLeft') ]; 
+        energyWaves.forEach(wave => { wave.style.opacity = '0'; wave.style.boxShadow = 'none'; }); 
+        energySurgeActive = false;
+
+        // --- НОВОЕ: ОЧИСТКА СУБТИТРОВ ---
+        lyricsDisplay.textContent = '';
+        lyricsDisplay.className = 'lyrics-container'; // Сброс классов анимации
     }
     
     function adjustColorOpacity(hex, opacity) { let r=0, g=0, b=0; if (hex.length == 4) { r = "0x" + hex[1] + hex[1]; g = "0x" + hex[2] + hex[2]; b = "0x" + hex[3] + hex[3]; } else if (hex.length == 7) { r = "0x" + hex[1] + hex[2]; g = "0x" + hex[3] + hex[4]; b = "0x" + hex[5] + hex[6]; } return "rgba("+ +r + "," + +g + "," + +b + "," + opacity + ")"; }
     function formatTime(seconds) { if (isNaN(seconds)) return '0:00'; const mins = Math.floor(seconds / 60); const secs = Math.floor(seconds % 60); return `${mins}:${secs < 10 ? '0' : ''}${secs}`; }
-    function updateProgress() { if (audio.duration && !isNaN(audio.duration)) { const progressPercent = (audio.currentTime / audio.duration) * 100; progress.style.width = `${progressPercent}%`; currentTime.textContent = formatTime(audio.currentTime); if (isTrackListOpen) { const activeTrackItem = trackList.querySelector('.track-item.active'); if (activeTrackItem) { const progressBar = activeTrackItem.querySelector('.track-item-progress-bar'); if (progressBar) { progressBar.style.width = `${progressPercent}%`; } } } } }
+    
+    function updateProgress() { 
+        if (audio.duration && !isNaN(audio.duration)) { 
+            const progressPercent = (audio.currentTime / audio.duration) * 100; 
+            progress.style.width = `${progressPercent}%`; 
+            currentTime.textContent = formatTime(audio.currentTime); 
+            
+            if (isTrackListOpen) { 
+                const activeTrackItem = trackList.querySelector('.track-item.active'); 
+                if (activeTrackItem) { 
+                    const progressBar = activeTrackItem.querySelector('.track-item-progress-bar'); 
+                    if (progressBar) { progressBar.style.width = `${progressPercent}%`; } 
+                } 
+            } 
+
+            // --- ЛОГИКА СУБТИТРОВ ---
+            const track = currentTracks[currentTrackIndex];
+            if (track.lyrics && track.lyrics.length > 0) {
+                // Ищем текущую строку
+                const currentLine = track.lyrics.filter(l => l.time <= audio.currentTime).pop();
+                
+                if (currentLine) {
+                    if (lyricsDisplay.textContent !== currentLine.text) {
+                        lyricsDisplay.textContent = currentLine.text;
+                        
+                        if (currentLine.text !== "") {
+                            lyricsDisplay.classList.add('visible');
+                            
+                            // Эффект удара (Restart CSS animation)
+                            lyricsDisplay.classList.remove('lyrics-bounce');
+                            void lyricsDisplay.offsetWidth; // Магия JS для перезапуска анимации
+                            lyricsDisplay.classList.add('lyrics-bounce');
+                        } else {
+                            lyricsDisplay.classList.remove('visible');
+                        }
+                    }
+                }
+            } else {
+                // Если у трека нет лирики
+                if(lyricsDisplay.textContent !== '') {
+                    lyricsDisplay.textContent = '';
+                    lyricsDisplay.classList.remove('visible');
+                }
+            }
+        } 
+    }
+
     function loadTrack(index, autoPlay = false) { if (currentTracks && index >= 0 && index < currentTracks.length) { currentTrackIndex = index; const track = currentTracks[currentTrackIndex]; audio.pause(); isPlaying = false; playPauseBtn.querySelector('svg').innerHTML = '<path d="M8 5v14l11-7z"/>'; if (animationId) { cancelAnimationFrame(animationId); animationId = null; } audio.src = track.path; currentTrack.textContent = track.name; currentArtist.textContent = track.artist; updateTheme(); const onLoaded = function() { duration.textContent = formatTime(audio.duration); audio.removeEventListener('loadedmetadata', onLoaded); if (autoPlay) { setTimeout(() => playTrack(), 100); } }; audio.addEventListener('loadedmetadata', onLoaded); audio.addEventListener('error', (e) => console.error('Error loading track:', track.path, e)); audio.load(); } else { currentTrack.textContent = 'Плейлист пуст'; currentArtist.textContent = 'Выберите другой'; albumImage.style.backgroundImage = 'none'; duration.textContent = '0:00'; progress.style.width = '0%'; } }
     function playTrack() { if (!currentTracks || currentTracks.length === 0) return; initAudioAnalyzer(); const playPromise = audio.play(); if (playPromise !== undefined) { playPromise.then(() => { isPlaying = true; playPauseBtn.querySelector('svg').innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>'; if (!animationId) { visualize(); } }).catch(error => { console.error('Playback failed:', error); if (audioContext && audioContext.state === 'suspended') { audioContext.resume().then(() => { audio.play().then(() => { isPlaying = true; playPauseBtn.querySelector('svg').innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>'; if (!animationId) { visualize(); } }).catch(e => console.error('Second playback attempt failed:', e)); }); } }); } }
     function seek(seconds) { if (audio.duration) { audio.currentTime = Math.max(0, Math.min(audio.duration, audio.currentTime + seconds)); } }
