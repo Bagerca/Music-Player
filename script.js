@@ -305,7 +305,36 @@ document.addEventListener('DOMContentLoaded', function() {
     function updateEnergySurge() { if (energySurgeActive && energySurgeIntensity > 0) { energySurgeIntensity -= 0.1; if (energySurgeIntensity < 0) energySurgeIntensity = 0; const waves = [ document.getElementById('energyTop'), document.getElementById('energyRight'), document.getElementById('energyBottom'), document.getElementById('energyLeft') ]; waves.forEach(wave => { wave.style.opacity = energySurgeIntensity.toString(); }); } }
     function createEdgeGlow() { const edges = ['top', 'right', 'bottom', 'left']; const edgeGlowContainer = document.getElementById('edgeGlow'); edges.forEach(edge => { const glow = document.createElement('div'); glow.className = `edge-glow ${edge}-glow`; edgeGlowContainer.appendChild(glow); edgeGlowElements[edge] = glow; }); }
     function updateEdgeGlow(features) { if (currentTracks.length === 0) return; const { rms, bassEnergy, isBeat } = features; let baseIntensity = rms * 0.3; if (isBeat) { baseIntensity += currentPulseIntensity * 0.4; } baseIntensity += bassEnergy * 0.2; edgeGlowIntensity = Math.min(1, baseIntensity); const currentColors = currentTracks[currentTrackIndex].colors; Object.values(edgeGlowElements).forEach(glow => { glow.style.opacity = edgeGlowIntensity.toString(); glow.style.boxShadow = `0 0 ${20 + edgeGlowIntensity * 30}px ${currentColors.accent}`; }); }
-    function analyzeEdgeEffects(features) { if (currentTracks.length === 0) return; const { highEnergy, isBeat } = features; if ((highEnergy > 0.2 || (isBeat && highEnergy > 0.1)) && sparkCooldown <= 0) { const corners = ['top-left', 'top-right', 'bottom-left', 'bottom-right']; const sparkCount = Math.floor((highEnergy * 6) + (isBeat ? 3 : 0)); for (let i = 0; i < sparkCount; i++) { const randomCorner = corners[Math.floor(Math.random() * corners.length)]; createSparkParticle(randomCorner, highEnergy); } sparkCooldown = 4; } else if (sparkCooldown > 0) { sparkCooldown--; } if (isBeat) { spawnCornerShockwaves(); if (!energySurgeActive) { const intensity = 0.5 + currentPulseIntensity * 0.4; activateEnergySurge(intensity); } } }
+    
+    function analyzeEdgeEffects(features) {
+        if (currentTracks.length === 0) return;
+        const { highEnergy, isBeat } = features;
+    
+        // --- ОТКЛЮЧЕНО: ГЕНЕРАЦИЯ ИСКР ИЗ УГЛОВ ---
+        /*
+        if ((highEnergy > 0.2 || (isBeat && highEnergy > 0.1)) && sparkCooldown <= 0) {
+            const corners = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
+            const sparkCount = Math.floor((highEnergy * 6) + (isBeat ? 3 : 0));
+            for (let i = 0; i < sparkCount; i++) {
+                const randomCorner = corners[Math.floor(Math.random() * corners.length)];
+                createSparkParticle(randomCorner, highEnergy);
+            }
+            sparkCooldown = 4;
+        } else if (sparkCooldown > 0) {
+            sparkCooldown--;
+        }
+        */
+    
+        // Пульсация границ (оставлено включенным)
+        if (isBeat) {
+            spawnCornerShockwaves();
+            if (!energySurgeActive) {
+                const intensity = 0.5 + currentPulseIntensity * 0.4;
+                activateEnergySurge(intensity);
+            }
+        }
+    }
+
     function updateParticlesMovement(features) { if (isParticlesTransitioning || particlesData.length === 0 || currentTracks.length === 0) return; const { rms, bassEnergy, midEnergy, highEnergy, isBeat } = features; particlesData.forEach((particleData, index) => { const particle = particleData.element; const time = Date.now() * 0.001; const individualOffset = index * 0.1; let moveX, moveY; if (index % 10 < 3) { moveX = Math.sin(time * 0.3 + individualOffset) * bassEnergy * 2.0; moveY = Math.cos(time * 0.2 + individualOffset) * bassEnergy * 1.8; } else if (index % 10 < 7) { moveX = Math.sin(time * 0.7 + individualOffset) * midEnergy * 1.2; moveY = Math.cos(time * 0.5 + individualOffset) * midEnergy * 1.0; } else if (index % 10 < 9) { moveX = Math.sin(time * 2.0 + individualOffset) * highEnergy * 0.8; moveY = Math.cos(time * 1.8 + individualOffset) * highEnergy * 0.6; } else { moveX = isBeat ? (Math.random() - 0.5) * 12 * currentPulseIntensity : 0; moveY = isBeat ? (Math.random() - 0.5) * 10 * currentPulseIntensity : 0; } let sizeVariation = 0; if (index % 10 < 3) { sizeVariation = bassEnergy * 6; } else if (index % 10 < 7) { sizeVariation = midEnergy * 4; } else { sizeVariation = highEnergy * 3; } const newSize = particleData.baseSize + sizeVariation; const newOpacity = Math.min(1, particleData.baseOpacity + rms * 0.3); const newLeft = particleData.baseLeft + moveX; const newTop = particleData.baseTop + moveY; particle.style.left = `${newLeft}vw`; particle.style.top = `${newTop}vh`; particle.style.width = `${newSize}px`; particle.style.height = `${newSize}px`; particle.style.opacity = newOpacity; const currentColors = currentTracks[currentTrackIndex].colors; particle.style.background = currentColors.accent; const transitionTime = Math.max(0.05, 0.2 - rms * 0.15); particle.style.transition = `all ${transitionTime}s ease-out`; }); }
     function createParticles() { if (currentTracks.length === 0) return; particles.innerHTML = ''; particlesData = []; const particleCount = 15; const currentColors = currentTracks[currentTrackIndex].colors; for (let i = 0; i < particleCount; i++) { const particle = document.createElement('div'); particle.className = 'particle'; const startLeft = Math.random() * 100; const startTop = Math.random() * 100; const startSize = Math.random() * 15 + 5; const startOpacity = Math.random() * 0.3 + 0.1; const endLeft = (Math.random() * 80 + 10) + (i % 3 - 1) * 20; const endTop = (Math.random() * 80 + 10) + (i % 2 - 0.5) * 30; const endSize = Math.random() * 15 + 5; const endOpacity = Math.random() * 0.3 + 0.1; particle.style.left = `${startLeft}vw`; particle.style.top = `${startTop}vh`; particle.style.width = `${startSize}px`; particle.style.height = `${startSize}px`; particle.style.opacity = startOpacity; particle.style.background = currentColors.accent; particle.style.transition = 'all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94)'; particle.style.position = 'absolute'; particle.style.borderRadius = '50%'; particle.style.pointerEvents = 'none'; particles.appendChild(particle); particlesData.push({ element: particle, startLeft: startLeft, startTop: startTop, startSize: startSize, startOpacity: startOpacity, endLeft: endLeft, endTop: endTop, endSize: endSize, endOpacity: endOpacity, baseLeft: endLeft, baseTop: endTop, baseSize: endSize, baseOpacity: endOpacity, velocityX: 0, velocityY: 0, movementIntensity: Math.random() * 0.5 + 0.5 }); } startParticleTransition(); }
     function startParticleTransition() { isParticlesTransitioning = true; particleTransitionProgress = 0; const transitionDuration = 800; particlesData.forEach(particleData => { const particle = particleData.element; setTimeout(() => { particle.style.left = `${particleData.endLeft}vw`; particle.style.top = `${particleData.endTop}vh`; particle.style.width = `${particleData.endSize}px`; particle.style.height = `${particleData.endSize}px`; particle.style.opacity = particleData.endOpacity; particle.style.transition = 'all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94)'; particleData.baseLeft = particleData.endLeft; particleData.baseTop = particleData.endTop; particleData.baseSize = particleData.endSize; particleData.baseOpacity = particleData.endOpacity; }, 50); }); setTimeout(() => { isParticlesTransitioning = false; }, transitionDuration); }
