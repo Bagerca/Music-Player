@@ -1,4 +1,3 @@
-javascript
 document.addEventListener('DOMContentLoaded', function() {
     // --- ЭЛЕМЕНТЫ DOM ---
     const audio = document.getElementById('audioPlayer');
