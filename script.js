@@ -61,7 +61,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let draggedItemIndex = null;
     let activeMenuId = null;
     
-    // НОВОЕ: Переменная для хранения текущих загруженных субтитров
+    // Переменная для субтитров
     let currentLyricsData = []; 
     
     function getAllPlaylists() {
@@ -93,7 +93,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // ПЕРЕМЕННЫЕ ДЛЯ УМНОЙ ВОЛНЫ
     let energySurgeActive = false;
     let energySurgeIntensity = 0;
-    let currentSurgeDecay = 0.1; // Скорость затухания волны
+    let currentSurgeDecay = 0.1;
 
     let edgeGlowElements = {}, edgeGlowIntensity = 0;
     const FREQ_RANGES = { BASS: { start: 0, end: 10 }, MID: { start: 10, end: 20 }, HIGH: { start: 20, end: 30 } };
@@ -208,35 +208,57 @@ document.addEventListener('DOMContentLoaded', function() {
         return (usePound?"#":"") + (g | (b << 8) | (r << 16)).toString(16);
     }
 
+    // --- НОВАЯ ФУНКЦИЯ ДЛЯ ПРОВЕРКИ СУБТИТРОВ (60 FPS) ---
+    function checkLyrics() {
+        // Если данных нет или трек не загружен
+        if (!currentLyricsData || currentLyricsData.length === 0) {
+            if (lyricsDisplay.textContent !== '') {
+                lyricsDisplay.textContent = '';
+                lyricsDisplay.classList.remove('visible');
+            }
+            return;
+        }
+
+        // Смещение времени (0.2 сек) для компенсации задержки рендера.
+        // Текст "триггерится" чуть раньше, чтобы визуально совпасть с ударом.
+        const timeOffset = 0.2; 
+        
+        // Ищем последнюю строку, время которой меньше или равно (текущее время + смещение)
+        const currentLine = currentLyricsData.filter(l => l.time <= (audio.currentTime + timeOffset)).pop();
+
+        if (currentLine) {
+            // Обновляем DOM только если текст реально изменился (чтобы не нагружать браузер)
+            if (lyricsDisplay.textContent !== currentLine.text) {
+                lyricsDisplay.textContent = currentLine.text;
+                
+                if (currentLine.text !== "") {
+                    lyricsDisplay.classList.add('visible');
+                    // Перезапуск анимации удара
+                    lyricsDisplay.classList.remove('lyrics-bounce');
+                    void lyricsDisplay.offsetWidth; // Force reflow
+                    lyricsDisplay.classList.add('lyrics-bounce');
+                } else {
+                    lyricsDisplay.classList.remove('visible');
+                }
+            }
+        }
+    }
+
     // --- VISUALIZER & LOGIC ---
     
     function spawnCornerShockwaves(intensity = 1) {
         if (isLiteMode) return;
-        
         const allCorners = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
-        let activeCorners = [];
-
-        // Если удар сильный - все углы. Если слабый - случайные 2.
-        if (intensity > 0.8) {
-            activeCorners = allCorners;
-        } else {
-            activeCorners = allCorners.sort(() => 0.5 - Math.random()).slice(0, 2);
-        }
+        let activeCorners = intensity > 0.8 ? allCorners : allCorners.sort(() => 0.5 - Math.random()).slice(0, 2);
 
         activeCorners.forEach(corner => {
             const emitter = document.querySelector(`.corner-emitter.${corner}`);
             if (emitter) {
                 const wave = document.createElement('div');
                 wave.className = 'shockwave active';
-                
-                if (currentTracks.length > 0) { 
-                    wave.style.borderColor = currentTracks[currentTrackIndex].colors.accent; 
-                }
-                
-                // Динамический размер и прозрачность
+                if (currentTracks.length > 0) wave.style.borderColor = currentTracks[currentTrackIndex].colors.accent; 
                 wave.style.borderWidth = `${2 + (intensity * 6)}px`; 
                 wave.style.opacity = (intensity * 0.7).toString();
-
                 emitter.appendChild(wave);
                 setTimeout(() => { if (wave.parentNode) wave.parentNode.removeChild(wave); }, 800);
             }
@@ -253,11 +275,58 @@ document.addEventListener('DOMContentLoaded', function() {
     function visualize() {
         if (!analyser || !isPlaying || currentTracks.length === 0) return;
         try {
-            analyser.getByteFrequencyData(dataArray); analyzeSpectralFeatures(); 
-            for (let i = 0; i < visualizerBars.length; i++) { const barIndex = Math.floor((i / visualizerBars.length) * bufferLength); const value = dataArray[barIndex] / 255; let baseHeight = Math.max(5, value * 110); if (i < 10) { const bassBoost = audioFeatures.bassEnergy * 25; const beatBoost = audioFeatures.isBeat ? currentPulseIntensity * 40 : 0; baseHeight += bassBoost + beatBoost; } else if (i < 20) { const midBoost = audioFeatures.midEnergy * 18; const energyBoost = audioFeatures.rms * 12; baseHeight += midBoost + energyBoost; } else { const highBoost = audioFeatures.highEnergy * 20; baseHeight += highBoost; } visualizerBars[i].style.height = `${baseHeight}px`; const currentColors = currentTracks[currentTrackIndex].colors; visualizerBars[i].style.background = `linear-gradient(to top, ${currentColors.primary}, ${currentColors.accent})`; }
-            if (leftGlow && rightGlow) { const minHeight = 15; const lineHeight = minHeight + (audioFeatures.rms * 130); leftGlow.style.height = `${lineHeight}%`; rightGlow.style.height = `${lineHeight}%`; const brightness = 0.7 + (audioFeatures.spectralCentroid / bufferLength) * 0.5; leftGlow.style.opacity = brightness; rightGlow.style.opacity = brightness; const neonColor = currentTracks[currentTrackIndex].neonColor; const baseBlur = 12; const pulseBlur = currentPulseIntensity * 35; leftGlow.style.background = neonColor; leftGlow.style.boxShadow = `0 0 ${baseBlur + pulseBlur}px ${neonColor}, 0 0 ${(baseBlur + pulseBlur) * 1.8}px ${neonColor}, inset 0 0 10px rgba(255, 255, 255, 0.3)`; rightGlow.style.background = neonColor; rightGlow.style.boxShadow = `0 0 ${baseBlur + pulseBlur}px ${neonColor}, 0 0 ${(baseBlur + pulseBlur) * 1.8}px ${neonColor}, inset 0 0 10px rgba(255, 255, 255, 0.3)`; }
-            updateParticlesMovement(audioFeatures); if (!isLiteMode) analyzeEdgeEffects(audioFeatures);
-            updateSparkParticles(); updateEnergySurge(); updateEdgeGlow(audioFeatures); updatePulseIntensity();
+            analyser.getByteFrequencyData(dataArray); 
+            analyzeSpectralFeatures(); 
+            
+            // --- ВЫЗОВ ПРОВЕРКИ СУБТИТРОВ КАЖДЫЙ КАДР ---
+            checkLyrics(); 
+            // ---------------------------------------------
+
+            for (let i = 0; i < visualizerBars.length; i++) { 
+                const barIndex = Math.floor((i / visualizerBars.length) * bufferLength); 
+                const value = dataArray[barIndex] / 255; 
+                let baseHeight = Math.max(5, value * 110); 
+                if (i < 10) { 
+                    const bassBoost = audioFeatures.bassEnergy * 25; 
+                    const beatBoost = audioFeatures.isBeat ? currentPulseIntensity * 40 : 0; 
+                    baseHeight += bassBoost + beatBoost; 
+                } else if (i < 20) { 
+                    const midBoost = audioFeatures.midEnergy * 18; 
+                    const energyBoost = audioFeatures.rms * 12; 
+                    baseHeight += midBoost + energyBoost; 
+                } else { 
+                    const highBoost = audioFeatures.highEnergy * 20; 
+                    baseHeight += highBoost; 
+                } 
+                visualizerBars[i].style.height = `${baseHeight}px`; 
+                const currentColors = currentTracks[currentTrackIndex].colors; 
+                visualizerBars[i].style.background = `linear-gradient(to top, ${currentColors.primary}, ${currentColors.accent})`; 
+            }
+            
+            if (leftGlow && rightGlow) { 
+                const minHeight = 15; 
+                const lineHeight = minHeight + (audioFeatures.rms * 130); 
+                leftGlow.style.height = `${lineHeight}%`; 
+                rightGlow.style.height = `${lineHeight}%`; 
+                const brightness = 0.7 + (audioFeatures.spectralCentroid / bufferLength) * 0.5; 
+                leftGlow.style.opacity = brightness; 
+                rightGlow.style.opacity = brightness; 
+                const neonColor = currentTracks[currentTrackIndex].neonColor; 
+                const baseBlur = 12; 
+                const pulseBlur = currentPulseIntensity * 35; 
+                leftGlow.style.background = neonColor; 
+                leftGlow.style.boxShadow = `0 0 ${baseBlur + pulseBlur}px ${neonColor}, 0 0 ${(baseBlur + pulseBlur) * 1.8}px ${neonColor}, inset 0 0 10px rgba(255, 255, 255, 0.3)`; 
+                rightGlow.style.background = neonColor; 
+                rightGlow.style.boxShadow = `0 0 ${baseBlur + pulseBlur}px ${neonColor}, 0 0 ${(baseBlur + pulseBlur) * 1.8}px ${neonColor}, inset 0 0 10px rgba(255, 255, 255, 0.3)`; 
+            }
+            
+            updateParticlesMovement(audioFeatures); 
+            if (!isLiteMode) analyzeEdgeEffects(audioFeatures);
+            updateSparkParticles(); 
+            updateEnergySurge(); 
+            updateEdgeGlow(audioFeatures); 
+            updatePulseIntensity();
+            
             animationId = requestAnimationFrame(visualize);
         } catch (error) { if (animationId) cancelAnimationFrame(animationId); }
     }
@@ -299,7 +368,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const progressPercent = isTrackActive ? (audio.currentTime / audio.duration * 100) || 0 : 0;
             let dragHandleHTML = isUserPlaylist ? `<div class="drag-handle" title="Переместить"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M11 18c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2zm-2-8c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0-6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm6 4c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg></div>` : `<div style="width: 10px;"></div>`;
             if (isUserPlaylist) { trackItem.draggable = true; addDragEvents(trackItem, index); }
-            trackItem.innerHTML = `${dragHandleHTML}<div class="track-item-cover" style="background-image: url('${track.cover || 'picture/default_cover.jpg'}')"></div><div class="track-item-info"><div class="track-item-title">${track.name}</div><div class="track-item-artist">${track.artist}</div><div class="track-item-progress"><div class="track-item-progress-bar" style="width: ${progressPercent}%"></div></div></div>${isTrackActive ? `<div class="now-playing-icon"><svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M12 20c4.42 0 8-3.58 8-8s-3.58-8-8-8-8 3.58-8 8 3.58 8 8 8zM10 9.65l6 2.35-6 2.35V9.65z"/></svg></div>` : ''}<button class="track-menu-btn" id="menu-btn-${index}"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg></button><div class="context-menu" id="menu-${index}"><div class="context-menu-item add-to-pl" data-index="${index}"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 10H2v2h12v-2zm0-4H2v2h12V6zm4 8v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zM2 16h8v-2H2v2z"/></svg>Добавить в плейлист</div><div class="context-menu-item download-track" data-index="${index}"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>Скачать файл</div>${isUserPlaylist ? `<div class="menu-divider"></div><div class="context-menu-item delete-item remove-track" data-index="${index}"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>Удалить из плейлиста</div>` : ''}</div>`;
+            trackItem.innerHTML = `${dragHandleHTML}<div class="track-item-cover" style="background-image: url('${track.cover || 'picture/default_cover.jpg'}')"></div><div class="track-item-info"><div class="track-item-title">${track.name}</div><div class="track-item-artist">${track.artist}</div><div class="track-item-progress"><div class="track-item-progress-bar" style="width: ${progressPercent}%"></div></div></div>${isTrackActive ? `<div class="now-playing-icon"><svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M12 20c4.42 0 8-3.58 8-8s-3.58-8-8-8-8 3.58-8 8 8zM10 9.65l6 2.35-6 2.35V9.65z"/></svg></div>` : ''}<button class="track-menu-btn" id="menu-btn-${index}"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg></button><div class="context-menu" id="menu-${index}"><div class="context-menu-item add-to-pl" data-index="${index}"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 10H2v2h12v-2zm0-4H2v2h12V6zm4 8v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zM2 16h8v-2H2v2z"/></svg>Добавить в плейлист</div><div class="context-menu-item download-track" data-index="${index}"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>Скачать файл</div>${isUserPlaylist ? `<div class="menu-divider"></div><div class="context-menu-item delete-item remove-track" data-index="${index}"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>Удалить из плейлиста</div>` : ''}</div>`;
             trackItem.addEventListener('click', (e) => { if (e.target.closest('.track-menu-btn') || e.target.closest('.context-menu') || e.target.closest('.drag-handle')) return; loadTrack(index, true); });
             const menuBtn = trackItem.querySelector(`#menu-btn-${index}`);
             menuBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleContextMenu(index); });
@@ -336,51 +405,30 @@ document.addEventListener('DOMContentLoaded', function() {
     // Эта функция больше не используется для углов, но может пригодиться для других эффектов
     function createSparkParticle(corner, intensity) { const spark = document.createElement('div'); spark.className = 'spark'; const corners = { 'top-left': { x: 0, y: 0 }, 'top-right': { x: window.innerWidth, y: 0 }, 'bottom-left': { x: 0, y: window.innerHeight }, 'bottom-right': { x: window.innerWidth, y: window.innerHeight } }; const startPos = corners[corner]; const angle = Math.random() * Math.PI / 2 + (Math.PI / 4 * ['top-left', 'top-right', 'bottom-right', 'bottom-left'].indexOf(corner)); const speed = 2 + Math.random() * 3; const size = 2 + Math.random() * 4 * intensity; const currentColors = currentTracks[currentTrackIndex].colors; spark.style.width = `${size}px`; spark.style.height = `${size}px`; spark.style.background = currentColors.accent; spark.style.boxShadow = `0 0 ${size * 2}px ${currentColors.accent}`; spark.style.left = `${startPos.x}px`; spark.style.top = `${startPos.y}px`; spark.style.opacity = '0.8'; document.getElementById('sparkParticles').appendChild(spark); const sparkData = { element: spark, startX: startPos.x, startY: startPos.y, velocityX: Math.cos(angle) * speed, velocityY: Math.sin(angle) * speed, life: 1.0, maxLife: 1.0 }; sparkParticles.push(sparkData); setTimeout(() => { if (spark.parentNode) { spark.parentNode.removeChild(spark); } sparkParticles = sparkParticles.filter(s => s.element !== spark); }, 1000); }
     
-    // ОБНОВЛЕНО: Активация волн с разными типами затухания
     function activateEnergySurge(intensity, type = 'normal') {
         energySurgeActive = true;
         energySurgeIntensity = intensity;
-        
-        // Настраиваем скорость затухания
         if (type === 'fast') currentSurgeDecay = 0.15; 
         else if (type === 'slow') currentSurgeDecay = 0.02; 
         else currentSurgeDecay = 0.08;
-        
-        const waves = [ 
-            document.getElementById('energyTop'), 
-            document.getElementById('energyRight'), 
-            document.getElementById('energyBottom'), 
-            document.getElementById('energyLeft') 
-        ];
+        const waves = [ document.getElementById('energyTop'), document.getElementById('energyRight'), document.getElementById('energyBottom'), document.getElementById('energyLeft') ];
         const currentColors = currentTracks[currentTrackIndex].colors;
-        
         waves.forEach(wave => {
             wave.style.opacity = intensity.toString();
-            
-            // Размер тени зависит от интенсивности
             const shadowSize = 10 + (intensity * 40);
-            
             wave.style.background = `linear-gradient(${ wave.classList.contains('top') || wave.classList.contains('bottom') ? '90deg' : '180deg' }, transparent, ${currentColors.accent}, transparent)`;
             wave.style.boxShadow = `0 0 ${shadowSize}px ${currentColors.accent}`;
         });
     }
 
-    // ОБНОВЛЕНО: Плавное затухание волн
     function updateEnergySurge() {
         if (energySurgeActive && energySurgeIntensity > 0) {
             energySurgeIntensity -= currentSurgeDecay;
-            
             if (energySurgeIntensity < 0) {
                 energySurgeIntensity = 0;
                 energySurgeActive = false;
             }
-            
-            const waves = [ 
-                document.getElementById('energyTop'), 
-                document.getElementById('energyRight'), 
-                document.getElementById('energyBottom'), 
-                document.getElementById('energyLeft') 
-            ];
+            const waves = [ document.getElementById('energyTop'), document.getElementById('energyRight'), document.getElementById('energyBottom'), document.getElementById('energyLeft') ];
             waves.forEach(wave => {
                 wave.style.opacity = energySurgeIntensity.toString();
             });
@@ -390,30 +438,21 @@ document.addEventListener('DOMContentLoaded', function() {
     function createEdgeGlow() { const edges = ['top', 'right', 'bottom', 'left']; const edgeGlowContainer = document.getElementById('edgeGlow'); edges.forEach(edge => { const glow = document.createElement('div'); glow.className = `edge-glow ${edge}-glow`; edgeGlowContainer.appendChild(glow); edgeGlowElements[edge] = glow; }); }
     function updateEdgeGlow(features) { if (currentTracks.length === 0) return; const { rms, bassEnergy, isBeat } = features; let baseIntensity = rms * 0.3; if (isBeat) { baseIntensity += currentPulseIntensity * 0.4; } baseIntensity += bassEnergy * 0.2; edgeGlowIntensity = Math.min(1, baseIntensity); const currentColors = currentTracks[currentTrackIndex].colors; Object.values(edgeGlowElements).forEach(glow => { glow.style.opacity = edgeGlowIntensity.toString(); glow.style.boxShadow = `0 0 ${20 + edgeGlowIntensity * 30}px ${currentColors.accent}`; }); }
     
-    // ОБНОВЛЕНО: Основная логика "Живого выступления"
     function analyzeEdgeEffects(features) {
         if (currentTracks.length === 0) return;
         const { rms, bassEnergy, isBeat, highEnergy } = features;
-
-        // 1. Режим "Спокойствие" (Ambient / Jazz)
         if (rms < 0.15) {
             if (!energySurgeActive) {
-                // Легкое дыхание
                 const breatheIntensity = 0.1 + (highEnergy * 0.2); 
                 activateEnergySurge(breatheIntensity, 'slow');
             }
-        } 
-        // 2. Режим "Активный"
-        else {
+        } else {
             if (isBeat) {
                 let surgePower = (bassEnergy * 0.6) + (rms * 0.6); 
                 if (surgePower > 1) surgePower = 1;
-
-                // Ударные волны (круги) только на сильных ударах
                 if (surgePower > 0.65) { 
                     spawnCornerShockwaves(surgePower);
                 }
-
                 if (!energySurgeActive) {
                     const decayType = highEnergy > 0.25 ? 'fast' : 'normal';
                     activateEnergySurge(surgePower, decayType);
@@ -436,7 +475,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const neonColor = currentTracks[currentTrackIndex].neonColor; 
         const neonColorRight = currentTracks[currentTrackIndex].neonColorRight || neonColor; 
         
-        // Фон и цвета
         document.body.style.setProperty('--bg-image', `url('${currentTracks[currentTrackIndex].cover}')`); 
         document.body.style.background = ''; 
         document.body.style.setProperty('--panel-bg-color', adjustColorOpacity(currentColors.primary, 0.85));
@@ -446,7 +484,6 @@ document.addEventListener('DOMContentLoaded', function() {
         document.documentElement.style.setProperty('--neon-color', neonColor); 
         document.documentElement.style.setProperty('--accent-color', currentColors.accent); 
         
-        // Стилизация слайдера громкости
         const style = document.createElement('style'); 
         style.textContent = ` .volume-slider::-webkit-slider-thumb { background: ${currentColors.accent}; } .volume-slider::-moz-range-thumb { background: ${currentColors.accent}; } `; 
         const oldStyle = document.getElementById('dynamic-neon-styles'); 
@@ -457,7 +494,6 @@ document.addEventListener('DOMContentLoaded', function() {
         albumImage.style.backgroundImage = `url('${currentTracks[currentTrackIndex].cover}')`; 
         updateVolumeSlider(); 
         
-        // Частицы и визуалайзер
         if (particlesData.length === 0) { createParticles(); } else { updateParticles(); } 
         if (leftGlow && rightGlow) { 
             leftGlow.style.height = '15%'; rightGlow.style.height = '15%'; 
@@ -469,7 +505,6 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (isTrackListOpen) { renderTrackList(); } 
         
-        // Сброс эффектов
         beatDetected = false; currentPulseIntensity = 0; lastBeatTime = 0; 
         sparkParticles.forEach(spark => { if (spark.element.parentNode) { spark.element.parentNode.removeChild(spark.element); } }); 
         sparkParticles = []; 
@@ -477,9 +512,9 @@ document.addEventListener('DOMContentLoaded', function() {
         energyWaves.forEach(wave => { wave.style.opacity = '0'; wave.style.boxShadow = 'none'; }); 
         energySurgeActive = false;
 
-        // --- НОВОЕ: ОЧИСТКА СУБТИТРОВ ---
+        // --- ОЧИСТКА СУБТИТРОВ ---
         lyricsDisplay.textContent = '';
-        lyricsDisplay.className = 'lyrics-container'; // Сброс классов анимации
+        lyricsDisplay.className = 'lyrics-container'; 
     }
     
     function adjustColorOpacity(hex, opacity) { let r=0, g=0, b=0; if (hex.length == 4) { r = "0x" + hex[1] + hex[1]; g = "0x" + hex[2] + hex[2]; b = "0x" + hex[3] + hex[3]; } else if (hex.length == 7) { r = "0x" + hex[1] + hex[2]; g = "0x" + hex[3] + hex[4]; b = "0x" + hex[5] + hex[6]; } return "rgba("+ +r + "," + +g + "," + +b + "," + opacity + ")"; }
@@ -498,35 +533,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (progressBar) { progressBar.style.width = `${progressPercent}%`; } 
                 } 
             } 
-
-            // --- ЛОГИКА СУБТИТРОВ (ИЗ ФАЙЛА) ---
-            if (currentLyricsData && currentLyricsData.length > 0) {
-                // Ищем текущую строку
-                const currentLine = currentLyricsData.filter(l => l.time <= audio.currentTime).pop();
-                
-                if (currentLine) {
-                    if (lyricsDisplay.textContent !== currentLine.text) {
-                        lyricsDisplay.textContent = currentLine.text;
-                        
-                        if (currentLine.text !== "") {
-                            lyricsDisplay.classList.add('visible');
-                            
-                            // Перезапуск анимации "Удара"
-                            lyricsDisplay.classList.remove('lyrics-bounce');
-                            void lyricsDisplay.offsetWidth; // Магия JS для перезапуска CSS анимации
-                            lyricsDisplay.classList.add('lyrics-bounce');
-                        } else {
-                            lyricsDisplay.classList.remove('visible');
-                        }
-                    }
-                }
-            } else {
-                // Если у трека нет данных о лирике
-                if(lyricsDisplay.textContent !== '') {
-                    lyricsDisplay.textContent = '';
-                    lyricsDisplay.classList.remove('visible');
-                }
-            }
+            // Если музыка на паузе, обновляем лирику здесь (при скраббинге)
+            if (audio.paused) checkLyrics();
         } 
     }
 
