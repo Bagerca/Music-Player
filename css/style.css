@@ -1,0 +1,134 @@
+:root {
+    --bg-color: #121212;
+    --card-bg: rgba(30, 30, 30, 0.6);
+    --accent: #ff0055; /* Основной цвет, меняется через JS */
+    --text-primary: #ffffff;
+    --text-secondary: rgba(255, 255, 255, 0.6);
+    --font-main: 'Open Sans', sans-serif;
+    --font-display: 'Montserrat', sans-serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    background: var(--bg-color);
+    color: var(--text-primary);
+    font-family: var(--font-main);
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+
+/* --- ФОН --- */
+#bg-layer {
+    position: absolute; inset: 0; z-index: -2;
+    background-size: cover; background-position: center;
+    filter: blur(30px) brightness(0.4);
+    transition: background-image 0.8s ease;
+}
+#particles { position: absolute; inset: 0; z-index: -1; pointer-events: none; }
+
+/* --- ПЛЕЕР КАРТОЧКА --- */
+.player-card {
+    position: relative; z-index: 10;
+    width: 400px; padding: 30px;
+    background: var(--card-bg);
+    backdrop-filter: blur(20px);
+    border-radius: 24px;
+    border: 1px solid rgba(255,255,255,0.1);
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    transition: transform 0.4s ease, border-color 0.3s;
+}
+.player-card.shifted { transform: translateX(-150px); }
+
+/* --- ОБЛОЖКА --- */
+.cover-section { position: relative; margin-bottom: 20px; display: flex; justify-content: center; }
+.album-art {
+    width: 240px; height: 240px;
+    border-radius: 20px;
+    background-size: cover; background-position: center;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    position: relative;
+    transition: background-image 0.5s ease;
+}
+#neon-glow-left, #neon-glow-right {
+    position: absolute; bottom: 0; width: 5px; height: 0%;
+    background: var(--accent);
+    box-shadow: 0 0 15px var(--accent);
+    transition: height 0.1s, opacity 0.2s;
+    border-radius: 5px;
+}
+#neon-glow-left { left: -10px; } #neon-glow-right { right: -10px; }
+
+/* --- ИНФО --- */
+.track-info { text-align: center; margin-bottom: 10px; }
+#trackName { font-family: var(--font-display); font-weight: 700; margin-bottom: 5px; }
+#trackArtist { color: var(--text-secondary); font-size: 0.9em; }
+
+/* --- СУБТИТРЫ --- */
+.lyrics-box {
+    height: 40px; margin-top: 10px;
+    font-family: var(--font-display); font-weight: 900;
+    text-transform: uppercase; letter-spacing: 1px;
+    text-shadow: 0 0 10px var(--accent);
+    opacity: 0; transform: scale(0.9);
+    transition: opacity 0.1s, transform 0.1s;
+}
+.lyrics-box.visible { opacity: 1; transform: scale(1); }
+.lyrics-bounce { animation: bounce 0.15s cubic-bezier(.36,.07,.19,.97) both; }
+@keyframes bounce { 
+    0% { transform: scale(1) translate(0,0); } 
+    50% { transform: scale(1.1) translate(2px, 2px); } 
+    100% { transform: scale(1) translate(0,0); }
+}
+
+/* --- ВИЗУАЛАЙЗЕР --- */
+.visualizer-box {
+    height: 60px; display: flex; align-items: flex-end; justify-content: center; gap: 4px;
+    margin-bottom: 20px; opacity: 0.8;
+}
+.bar { width: 6px; background: var(--accent); border-radius: 3px 3px 0 0; transition: height 0.05s; }
+
+/* --- УПРАВЛЕНИЕ --- */
+.progress-section { margin-bottom: 20px; }
+.progress-bar {
+    height: 5px; background: rgba(255,255,255,0.1);
+    border-radius: 5px; cursor: pointer; overflow: hidden;
+}
+.progress-fill { height: 100%; width: 0%; background: var(--accent); }
+.time-labels { display: flex; justify-content: space-between; font-size: 0.8em; color: var(--text-secondary); margin-top: 5px; }
+
+.controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 0 20px; }
+.btn-control {
+    background: transparent; border: none; color: white; cursor: pointer;
+    width: 45px; height: 45px; border-radius: 50%;
+    transition: background 0.2s; display: flex; align-items: center; justify-content: center;
+}
+.btn-control:hover { background: rgba(255,255,255,0.1); }
+.btn-play { background: var(--accent); color: #000; width: 60px; height: 60px; box-shadow: 0 0 20px var(--accent); }
+.btn-play:hover { transform: scale(1.05); background: var(--accent); }
+
+.volume-section { display: flex; align-items: center; gap: 10px; padding: 0 20px; }
+#volumeSlider { flex: 1; accent-color: var(--accent); cursor: pointer; }
+
+/* --- ПЛЕЙЛИСТ --- */
+.playlist-panel {
+    position: fixed; top: 0; right: -400px; width: 350px; height: 100%;
+    background: rgba(20, 20, 20, 0.95); border-left: 1px solid rgba(255,255,255,0.1);
+    transition: right 0.4s cubic-bezier(0.2, 0, 0, 1);
+    padding: 20px; z-index: 20; display: flex; flex-direction: column;
+}
+.playlist-panel.active { right: 0; }
+.playlist-items { flex: 1; overflow-y: auto; margin-top: 20px; }
+.track-item {
+    display: flex; align-items: center; padding: 10px;
+    border-radius: 8px; cursor: pointer; transition: background 0.2s;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.track-item:hover { background: rgba(255,255,255,0.1); }
+.track-item.active { border-left: 3px solid var(--accent); background: linear-gradient(90deg, rgba(255,255,255,0.1), transparent); }
+.track-item img { width: 40px; height: 40px; border-radius: 4px; margin-right: 10px; }
+.t-info { display: flex; flex-direction: column; }
+.t-title { font-weight: 700; font-size: 0.9em; }
+.t-artist { font-size: 0.8em; color: var(--text-secondary); }
