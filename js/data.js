@@ -1,5 +1,5 @@
 /* --- БАЗА ДАННЫХ ВСЕХ ТРЕКОВ --- */
-const library = [
+const tracksData = [
     { 
         name: 'Katana', 
         artist: 'Lead Horizon', 
@@ -59,15 +59,3 @@ const library = [
     { name: 'You Will Believe (Remix/Cover)', artist: 'CG5 ft. DAGames', path: 'audio/CG5_ft_DAGames_You_Will_Believe_Remix_Cover.mp3', cover: 'picture/CG5_ft_DAGames_You_Will_Believe_Remix_Cover.jpg', colors: { primary: '#1a1d2b', secondary: '#3e4a61', accent: '#a8b4c7' }, visualizer: ['#a8b4c7', '#8e9aaf', '#748097', '#5a667f', '#3e4a61'], neonColor: '#a8b4c7' },
     { name: 'Your Reality (Remix)', artist: 'CG5 ft. Chloe DAGames', path: 'audio/CG5_ft_Chloe_DAGames_Your_Reality_Remix.mp3', cover: 'picture/CG5_ft_Chloe_DAGames_Your_Reality_Remix.jpg', colors: { primary: '#2b1d1a', secondary: '#5a3d34', accent: '#d4af37' }, visualizer: ['#d4af37', '#b89a30', '#9c8529', '#807022', '#645b1b'], neonColor: '#d4af37' }
 ];
-
-/* --- ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ --- */
-const getTrack = (namePart) => {
-    return library.find(t => t.name.toLowerCase().includes(namePart.toLowerCase()));
-};
-
-/* --- ПЛЕЙЛИСТЫ --- */
-const playlists = {
-    "Все треки": library,
-    "Энергичные": [getTrack("Katana"), getTrack("Valhalla"), getTrack("Песня смертника"), getTrack("IRIS OUT"), getTrack("2 Phút Hơn"), getTrack("Enemy"), getTrack("Soldat"), getTrack("Rapture Rising")].filter(Boolean),
-    "Chill & Retro": [getTrack("Tangled Up"), getTrack("Puttin On The Ritz"), getTrack("Man Without Love"), getTrack("Cigarette Duet"), getTrack("God Rest Ye Merry Gentlemen"), getTrack("Feeling Good")].filter(Boolean)
-};
