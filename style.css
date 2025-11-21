@@ -208,14 +208,11 @@ body.lite-mode .player-container { box-shadow: 0 0 25px var(--accent-color), 0 2
 /* Эффекты */
 .shockwave { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 20px; height: 20px; border: 4px solid var(--accent-color); border-radius: 50%; opacity: 0; pointer-events: none; box-sizing: border-box; z-index: 4; }
 .shockwave.active { animation: ripple 0.8s cubic-bezier(0.1, 0.5, 0.1, 1) forwards; }
-/* ОТКЛЮЧЕНИЕ CSS АНИМАЦИИ ДЛЯ ВОКАЛЬНЫХ (ПЛАВНЫХ) ВОЛН, КОТОРЫЕ УПРАВЛЯЮТСЯ JS */
-.shockwave[style*="transition"] { animation: none !important; }
-
 @keyframes ripple { 0% { transform: translate(-50%, -50%) scale(0.1); opacity: 0.8; border-width: 6px; } 100% { transform: translate(-50%, -50%) scale(40); opacity: 0; border-width: 0px; } }
 .corner-emitter { position: absolute; width: 20px; height: 20px; pointer-events: none; }
 .corner-emitter.top-left { top: 0; left: 0; } .corner-emitter.top-right { top: 0; right: 0; } .corner-emitter.bottom-left { bottom: 0; left: 0; } .corner-emitter.bottom-right { bottom: 0; right: 0; }
 .edge-effects { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; }
-.spark-particles { position: absolute; width: 100%; height: 100%; display: none; /* Полностью скрываем искры */ }
+.spark-particles { position: absolute; width: 100%; height: 100%; }
 .spark { position: absolute; border-radius: 50%; pointer-events: none; opacity: 0; transition: all 0.3s ease-out; }
 .edge-glow-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
 .edge-glow { position: absolute; background: transparent; opacity: 0; transition: opacity 0.3s ease, box-shadow 0.3s ease; }
