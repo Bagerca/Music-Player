@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const trackList = document.getElementById('trackList');
     const trackSearch = document.getElementById('trackSearch');
     const deletePlaylistBtn = document.getElementById('deletePlaylistBtn');
-    const lyricsDisplay = document.getElementById('lyricsDisplay'); // НОВОЕ
+    const lyricsDisplay = document.getElementById('lyricsDisplay'); 
 
     // Кастомный селект
     const playlistTrigger = document.getElementById('playlistTrigger');
@@ -60,6 +60,9 @@ document.addEventListener('DOMContentLoaded', function() {
     let pendingUploadFile = null;
     let draggedItemIndex = null;
     let activeMenuId = null;
+    
+    // НОВОЕ: Переменная для хранения текущих загруженных субтитров
+    let currentLyricsData = []; 
     
     function getAllPlaylists() {
         const combined = { ...playlists, ...userPlaylists };
@@ -496,11 +499,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 } 
             } 
 
-            // --- ЛОГИКА СУБТИТРОВ ---
-            const track = currentTracks[currentTrackIndex];
-            if (track.lyrics && track.lyrics.length > 0) {
+            // --- ЛОГИКА СУБТИТРОВ (ИЗ ФАЙЛА) ---
+            if (currentLyricsData && currentLyricsData.length > 0) {
                 // Ищем текущую строку
-                const currentLine = track.lyrics.filter(l => l.time <= audio.currentTime).pop();
+                const currentLine = currentLyricsData.filter(l => l.time <= audio.currentTime).pop();
                 
                 if (currentLine) {
                     if (lyricsDisplay.textContent !== currentLine.text) {
@@ -509,9 +511,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         if (currentLine.text !== "") {
                             lyricsDisplay.classList.add('visible');
                             
-                            // Эффект удара (Restart CSS animation)
+                            // Перезапуск анимации "Удара"
                             lyricsDisplay.classList.remove('lyrics-bounce');
-                            void lyricsDisplay.offsetWidth; // Магия JS для перезапуска анимации
+                            void lyricsDisplay.offsetWidth; // Магия JS для перезапуска CSS анимации
                             lyricsDisplay.classList.add('lyrics-bounce');
                         } else {
                             lyricsDisplay.classList.remove('visible');
@@ -519,7 +521,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }
             } else {
-                // Если у трека нет лирики
+                // Если у трека нет данных о лирике
                 if(lyricsDisplay.textContent !== '') {
                     lyricsDisplay.textContent = '';
                     lyricsDisplay.classList.remove('visible');
@@ -528,7 +530,65 @@ document.addEventListener('DOMContentLoaded', function() {
         } 
     }
 
-    function loadTrack(index, autoPlay = false) { if (currentTracks && index >= 0 && index < currentTracks.length) { currentTrackIndex = index; const track = currentTracks[currentTrackIndex]; audio.pause(); isPlaying = false; playPauseBtn.querySelector('svg').innerHTML = '<path d="M8 5v14l11-7z"/>'; if (animationId) { cancelAnimationFrame(animationId); animationId = null; } audio.src = track.path; currentTrack.textContent = track.name; currentArtist.textContent = track.artist; updateTheme(); const onLoaded = function() { duration.textContent = formatTime(audio.duration); audio.removeEventListener('loadedmetadata', onLoaded); if (autoPlay) { setTimeout(() => playTrack(), 100); } }; audio.addEventListener('loadedmetadata', onLoaded); audio.addEventListener('error', (e) => console.error('Error loading track:', track.path, e)); audio.load(); } else { currentTrack.textContent = 'Плейлист пуст'; currentArtist.textContent = 'Выберите другой'; albumImage.style.backgroundImage = 'none'; duration.textContent = '0:00'; progress.style.width = '0%'; } }
+    function loadTrack(index, autoPlay = false) {
+        if (currentTracks && index >= 0 && index < currentTracks.length) {
+            currentTrackIndex = index;
+            const track = currentTracks[currentTrackIndex];
+            audio.pause();
+            isPlaying = false;
+            playPauseBtn.querySelector('svg').innerHTML = '<path d="M8 5v14l11-7z"/>';
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+            audio.src = track.path;
+            currentTrack.textContent = track.name;
+            currentArtist.textContent = track.artist;
+
+            // --- ЛОГИКА ЗАГРУЗКИ СУБТИТРОВ ---
+            lyricsDisplay.textContent = '';
+            lyricsDisplay.classList.remove('visible');
+            currentLyricsData = []; 
+
+            if (track.lyrics) {
+                currentLyricsData = track.lyrics;
+            } 
+            else if (track.lyricsSource) {
+                fetch(track.lyricsSource)
+                    .then(response => {
+                        if (!response.ok) throw new Error("Lyrics not found");
+                        return response.json();
+                    })
+                    .then(data => {
+                        track.lyrics = data;
+                        if (currentTrackIndex === index) {
+                            currentLyricsData = data;
+                        }
+                    })
+                    .catch(err => console.log("Субтитры не найдены:", err));
+            }
+            // ----------------------------------
+
+            updateTheme();
+            const onLoaded = function() {
+                duration.textContent = formatTime(audio.duration);
+                audio.removeEventListener('loadedmetadata', onLoaded);
+                if (autoPlay) {
+                    setTimeout(() => playTrack(), 100);
+                }
+            };
+            audio.addEventListener('loadedmetadata', onLoaded);
+            audio.addEventListener('error', (e) => console.error('Error loading track:', track.path, e));
+            audio.load();
+        } else {
+            currentTrack.textContent = 'Плейлист пуст';
+            currentArtist.textContent = 'Выберите другой';
+            albumImage.style.backgroundImage = 'none';
+            duration.textContent = '0:00';
+            progress.style.width = '0%';
+        }
+    }
+
     function playTrack() { if (!currentTracks || currentTracks.length === 0) return; initAudioAnalyzer(); const playPromise = audio.play(); if (playPromise !== undefined) { playPromise.then(() => { isPlaying = true; playPauseBtn.querySelector('svg').innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>'; if (!animationId) { visualize(); } }).catch(error => { console.error('Playback failed:', error); if (audioContext && audioContext.state === 'suspended') { audioContext.resume().then(() => { audio.play().then(() => { isPlaying = true; playPauseBtn.querySelector('svg').innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>'; if (!animationId) { visualize(); } }).catch(e => console.error('Second playback attempt failed:', e)); }); } }); } }
     function seek(seconds) { if (audio.duration) { audio.currentTime = Math.max(0, Math.min(audio.duration, audio.currentTime + seconds)); } }
     playPauseBtn.addEventListener('click', () => { if (isPlaying) { audio.pause(); isPlaying = false; playPauseBtn.querySelector('svg').innerHTML = '<path d="M8 5v14l11-7z"/>'; if (animationId) { cancelAnimationFrame(animationId); animationId = null; } } else { playTrack(); } });
