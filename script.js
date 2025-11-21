@@ -84,7 +84,13 @@ document.addEventListener('DOMContentLoaded', function() {
     let beatDetected = false, lastBeatTime = 0, beatThreshold = 0.7, currentPulseIntensity = 0;
     let particlesData = [], isParticlesTransitioning = false, particleTransitionProgress = 0;
     let energyHistory = [], energyAverage = 0, spectralCentroid = 0, isBeat = false, beatCooldown = 0;
-    let sparkParticles = [], sparkCooldown = 0, energySurgeActive = false, energySurgeIntensity = 0;
+    let sparkParticles = [], sparkCooldown = 0;
+    
+    // ПЕРЕМЕННЫЕ ДЛЯ УМНОЙ ВОЛНЫ
+    let energySurgeActive = false;
+    let energySurgeIntensity = 0;
+    let currentSurgeDecay = 0.1; // Скорость затухания волны
+
     let edgeGlowElements = {}, edgeGlowIntensity = 0;
     const FREQ_RANGES = { BASS: { start: 0, end: 10 }, MID: { start: 10, end: 20 }, HIGH: { start: 20, end: 30 } };
     let audioFeatures = { rms: 0, bassEnergy: 0, midEnergy: 0, highEnergy: 0, spectralCentroid: 0, isBeat: false };
@@ -199,26 +205,48 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // --- VISUALIZER & LOGIC ---
-    function spawnCornerShockwaves() {
+    
+    // ОБНОВЛЕНО: Функция создания ударных волн с учетом интенсивности
+    function spawnCornerShockwaves(intensity = 1) {
         if (isLiteMode) return;
-        const corners = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
-        corners.forEach(corner => {
+        
+        const allCorners = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
+        let activeCorners = [];
+
+        // Если удар сильный - все углы. Если слабый - случайные 2.
+        if (intensity > 0.8) {
+            activeCorners = allCorners;
+        } else {
+            activeCorners = allCorners.sort(() => 0.5 - Math.random()).slice(0, 2);
+        }
+
+        activeCorners.forEach(corner => {
             const emitter = document.querySelector(`.corner-emitter.${corner}`);
             if (emitter) {
                 const wave = document.createElement('div');
                 wave.className = 'shockwave active';
-                if (currentTracks.length > 0) { wave.style.borderColor = currentTracks[currentTrackIndex].colors.accent; }
+                
+                if (currentTracks.length > 0) { 
+                    wave.style.borderColor = currentTracks[currentTrackIndex].colors.accent; 
+                }
+                
+                // Динамический размер и прозрачность
+                wave.style.borderWidth = `${2 + (intensity * 6)}px`; 
+                wave.style.opacity = (intensity * 0.7).toString();
+
                 emitter.appendChild(wave);
                 setTimeout(() => { if (wave.parentNode) wave.parentNode.removeChild(wave); }, 800);
             }
         });
     }
+
     function toggleLiteMode() {
         isLiteMode = !isLiteMode; localStorage.setItem('isLiteMode', isLiteMode);
         const sparkParticlesContainer = document.getElementById('sparkParticles');
         if (isLiteMode) { sparkParticlesContainer.innerHTML = ''; document.body.classList.add('lite-mode'); liteModeBtn.classList.add('active'); } 
         else { document.body.classList.remove('lite-mode'); liteModeBtn.classList.remove('active'); }
     }
+    
     function visualize() {
         if (!analyser || !isPlaying || currentTracks.length === 0) return;
         try {
@@ -230,6 +258,7 @@ document.addEventListener('DOMContentLoaded', function() {
             animationId = requestAnimationFrame(visualize);
         } catch (error) { if (animationId) cancelAnimationFrame(animationId); }
     }
+    
     function initializePlayer() {
         populatePlaylistSelector(); createVisualizer(); createParticles(); createEdgeGlow(); updatePlaybackModeButton(); updateVolumeSlider();
         if (isLiteMode) { document.body.classList.add('lite-mode'); liteModeBtn.classList.add('active'); }
@@ -300,22 +329,94 @@ document.addEventListener('DOMContentLoaded', function() {
     function analyzeSpectralFeatures() { if (!analyser || !dataArray) return; const bassEnergy = getFrequencyEnergy(FREQ_RANGES.BASS); const midEnergy = getFrequencyEnergy(FREQ_RANGES.MID); const highEnergy = getFrequencyEnergy(FREQ_RANGES.HIGH); let sum = 0; for (let i = 0; i < bufferLength; i++) { sum += dataArray[i] * dataArray[i]; } const rms = Math.sqrt(sum / bufferLength) / 255; energyHistory.push(rms); if (energyHistory.length > 30) { energyHistory.shift(); } energyAverage = energyHistory.reduce((a, b) => a + b) / energyHistory.length; let weightedSum = 0; let energySum = 0; for (let i = 0; i < bufferLength; i++) { weightedSum += i * dataArray[i]; energySum += dataArray[i]; } spectralCentroid = energySum > 0 ? weightedSum / energySum : 0; const currentTime = Date.now(); isBeat = false; if (beatCooldown <= 0) { const threshold = energyAverage * 1.4 + 0.15; if (bassEnergy > threshold && (currentTime - lastBeatTime) > 200) { isBeat = true; lastBeatTime = currentTime; currentPulseIntensity = 1.0; beatCooldown = 8; } } else { beatCooldown--; } audioFeatures.rms = rms; audioFeatures.bassEnergy = bassEnergy; audioFeatures.midEnergy = midEnergy; audioFeatures.highEnergy = highEnergy; audioFeatures.spectralCentroid = spectralCentroid; audioFeatures.isBeat = isBeat; }
     function updatePulseIntensity() { if (currentPulseIntensity > 0) { currentPulseIntensity -= 0.08; if (currentPulseIntensity < 0) currentPulseIntensity = 0; } beatDetected = false; }
     function updateSparkParticles() { sparkParticles.forEach((spark, index) => { spark.life -= 0.02; if (spark.life <= 0) { if (spark.element.parentNode) { spark.element.parentNode.removeChild(spark.element); } sparkParticles.splice(index, 1); return; } const newX = parseFloat(spark.element.style.left) + spark.velocityX; const newY = parseFloat(spark.element.style.top) + spark.velocityY; spark.element.style.left = `${newX}px`; spark.element.style.top = `${newY}px`; spark.element.style.opacity = (spark.life * 0.8).toString(); const scale = spark.life * 0.7 + 0.3; spark.element.style.transform = `scale(${scale})`; }); }
+    
+    // Эта функция больше не используется для углов, но может пригодиться для других эффектов
     function createSparkParticle(corner, intensity) { const spark = document.createElement('div'); spark.className = 'spark'; const corners = { 'top-left': { x: 0, y: 0 }, 'top-right': { x: window.innerWidth, y: 0 }, 'bottom-left': { x: 0, y: window.innerHeight }, 'bottom-right': { x: window.innerWidth, y: window.innerHeight } }; const startPos = corners[corner]; const angle = Math.random() * Math.PI / 2 + (Math.PI / 4 * ['top-left', 'top-right', 'bottom-right', 'bottom-left'].indexOf(corner)); const speed = 2 + Math.random() * 3; const size = 2 + Math.random() * 4 * intensity; const currentColors = currentTracks[currentTrackIndex].colors; spark.style.width = `${size}px`; spark.style.height = `${size}px`; spark.style.background = currentColors.accent; spark.style.boxShadow = `0 0 ${size * 2}px ${currentColors.accent}`; spark.style.left = `${startPos.x}px`; spark.style.top = `${startPos.y}px`; spark.style.opacity = '0.8'; document.getElementById('sparkParticles').appendChild(spark); const sparkData = { element: spark, startX: startPos.x, startY: startPos.y, velocityX: Math.cos(angle) * speed, velocityY: Math.sin(angle) * speed, life: 1.0, maxLife: 1.0 }; sparkParticles.push(sparkData); setTimeout(() => { if (spark.parentNode) { spark.parentNode.removeChild(spark); } sparkParticles = sparkParticles.filter(s => s.element !== spark); }, 1000); }
-    function activateEnergySurge(intensity) { energySurgeActive = true; energySurgeIntensity = intensity; const waves = [ document.getElementById('energyTop'), document.getElementById('energyRight'), document.getElementById('energyBottom'), document.getElementById('energyLeft') ]; const currentColors = currentTracks[currentTrackIndex].colors; waves.forEach(wave => { wave.style.opacity = intensity.toString(); wave.style.background = `linear-gradient(${ wave.classList.contains('top') || wave.classList.contains('bottom') ? '90deg' : '180deg' }, transparent, ${currentColors.accent}, transparent)`; wave.style.boxShadow = `0 0 ${intensity * 30}px ${currentColors.accent}`; }); setTimeout(() => { energySurgeActive = false; waves.forEach(wave => { wave.style.opacity = '0'; wave.style.boxShadow = 'none'; }); }, 300); }
-    function updateEnergySurge() { if (energySurgeActive && energySurgeIntensity > 0) { energySurgeIntensity -= 0.1; if (energySurgeIntensity < 0) energySurgeIntensity = 0; const waves = [ document.getElementById('energyTop'), document.getElementById('energyRight'), document.getElementById('energyBottom'), document.getElementById('energyLeft') ]; waves.forEach(wave => { wave.style.opacity = energySurgeIntensity.toString(); }); } }
+    
+    // ОБНОВЛЕНО: Активация волн с разными типами затухания
+    function activateEnergySurge(intensity, type = 'normal') {
+        energySurgeActive = true;
+        energySurgeIntensity = intensity;
+        
+        // Настраиваем скорость затухания
+        if (type === 'fast') currentSurgeDecay = 0.15; 
+        else if (type === 'slow') currentSurgeDecay = 0.02; 
+        else currentSurgeDecay = 0.08;
+        
+        const waves = [ 
+            document.getElementById('energyTop'), 
+            document.getElementById('energyRight'), 
+            document.getElementById('energyBottom'), 
+            document.getElementById('energyLeft') 
+        ];
+        const currentColors = currentTracks[currentTrackIndex].colors;
+        
+        waves.forEach(wave => {
+            wave.style.opacity = intensity.toString();
+            
+            // Размер тени зависит от интенсивности
+            const shadowSize = 10 + (intensity * 40);
+            
+            wave.style.background = `linear-gradient(${ wave.classList.contains('top') || wave.classList.contains('bottom') ? '90deg' : '180deg' }, transparent, ${currentColors.accent}, transparent)`;
+            wave.style.boxShadow = `0 0 ${shadowSize}px ${currentColors.accent}`;
+        });
+        
+        // setTimeout для выключения не нужен, так как мы управляем флагом в updateEnergySurge
+    }
+
+    // ОБНОВЛЕНО: Плавное затухание волн
+    function updateEnergySurge() {
+        if (energySurgeActive && energySurgeIntensity > 0) {
+            energySurgeIntensity -= currentSurgeDecay;
+            
+            if (energySurgeIntensity < 0) {
+                energySurgeIntensity = 0;
+                energySurgeActive = false;
+            }
+            
+            const waves = [ 
+                document.getElementById('energyTop'), 
+                document.getElementById('energyRight'), 
+                document.getElementById('energyBottom'), 
+                document.getElementById('energyLeft') 
+            ];
+            waves.forEach(wave => {
+                wave.style.opacity = energySurgeIntensity.toString();
+            });
+        }
+    }
+
     function createEdgeGlow() { const edges = ['top', 'right', 'bottom', 'left']; const edgeGlowContainer = document.getElementById('edgeGlow'); edges.forEach(edge => { const glow = document.createElement('div'); glow.className = `edge-glow ${edge}-glow`; edgeGlowContainer.appendChild(glow); edgeGlowElements[edge] = glow; }); }
     function updateEdgeGlow(features) { if (currentTracks.length === 0) return; const { rms, bassEnergy, isBeat } = features; let baseIntensity = rms * 0.3; if (isBeat) { baseIntensity += currentPulseIntensity * 0.4; } baseIntensity += bassEnergy * 0.2; edgeGlowIntensity = Math.min(1, baseIntensity); const currentColors = currentTracks[currentTrackIndex].colors; Object.values(edgeGlowElements).forEach(glow => { glow.style.opacity = edgeGlowIntensity.toString(); glow.style.boxShadow = `0 0 ${20 + edgeGlowIntensity * 30}px ${currentColors.accent}`; }); }
     
+    // ОБНОВЛЕНО: Основная логика "Живого выступления"
     function analyzeEdgeEffects(features) {
         if (currentTracks.length === 0) return;
-        const { highEnergy, isBeat } = features;
-    
-        // Пульсация границ (оставлено включенным)
-        if (isBeat) {
-            spawnCornerShockwaves();
+        const { rms, bassEnergy, isBeat, highEnergy } = features;
+
+        // 1. Режим "Спокойствие" (Ambient / Jazz)
+        if (rms < 0.15) {
             if (!energySurgeActive) {
-                const intensity = 0.5 + currentPulseIntensity * 0.4;
-                activateEnergySurge(intensity);
+                // Легкое дыхание
+                const breatheIntensity = 0.1 + (highEnergy * 0.2); 
+                activateEnergySurge(breatheIntensity, 'slow');
+            }
+        } 
+        // 2. Режим "Активный"
+        else {
+            if (isBeat) {
+                let surgePower = (bassEnergy * 0.6) + (rms * 0.6); 
+                if (surgePower > 1) surgePower = 1;
+
+                // Ударные волны (круги) только на сильных ударах
+                if (surgePower > 0.65) { 
+                    spawnCornerShockwaves(surgePower);
+                }
+
+                if (!energySurgeActive) {
+                    const decayType = highEnergy > 0.25 ? 'fast' : 'normal';
+                    activateEnergySurge(surgePower, decayType);
+                }
             }
         }
     }
@@ -340,7 +441,7 @@ document.addEventListener('DOMContentLoaded', function() {
         playPauseBtn.style.background = `linear-gradient(135deg, ${currentColors.accent}, ${currentColors.primary})`; 
         document.documentElement.style.setProperty('--neon-color', neonColor); 
         document.documentElement.style.setProperty('--accent-color', currentColors.accent); 
-        const style = document.createElement('style'); style.textContent = ` .volume-slider::-webkit-slider-thumb { background: ${currentColors.accent}; } .volume-slider::-moz-range-thumb { background: ${currentColors.accent}; } `; const oldStyle = document.getElementById('dynamic-neon-styles'); if (oldStyle) oldStyle.remove(); style.id = 'dynamic-neon-styles'; document.head.appendChild(style); albumImage.style.backgroundImage = `url('${currentTracks[currentTrackIndex].cover}')`; updateVolumeSlider(); if (particlesData.length === 0) { createParticles(); } else { updateParticles(); } if (leftGlow && rightGlow) { leftGlow.style.height = '15%'; rightGlow.style.height = '15%'; leftGlow.style.opacity = '0.8'; rightGlow.style.opacity = '0.8'; leftGlow.style.background = neonColor; rightGlow.style.background = neonColorRight; leftGlow.style.boxShadow = `0 0 10px ${neonColor}, 0 0 20px ${neonColor}, 0 0 30px ${neonColor}, inset 0 0 8px rgba(255, 255, 255, 0.2)`; rightGlow.style.boxShadow = `0 0 10px ${neonColorRight}, 0 0 20px ${neonColorRight}, 0 0 30px ${neonColorRight}, inset 0 0 8px rgba(255, 255, 255, 0.2)`; } if (isTrackListOpen) { renderTrackList(); } beatDetected = false; currentPulseIntensity = 0; lastBeatTime = 0; currentMusicIntensity = 0; sparkParticles.forEach(spark => { if (spark.element.parentNode) { spark.element.parentNode.removeChild(spark.element); } }); sparkParticles = []; const energyWaves = [ document.getElementById('energyTop'), document.getElementById('energyRight'), document.getElementById('energyBottom'), document.getElementById('energyLeft') ]; energyWaves.forEach(wave => { wave.style.opacity = '0'; wave.style.boxShadow = 'none'; }); energySurgeActive = false; 
+        const style = document.createElement('style'); style.textContent = ` .volume-slider::-webkit-slider-thumb { background: ${currentColors.accent}; } .volume-slider::-moz-range-thumb { background: ${currentColors.accent}; } `; const oldStyle = document.getElementById('dynamic-neon-styles'); if (oldStyle) oldStyle.remove(); style.id = 'dynamic-neon-styles'; document.head.appendChild(style); albumImage.style.backgroundImage = `url('${currentTracks[currentTrackIndex].cover}')`; updateVolumeSlider(); if (particlesData.length === 0) { createParticles(); } else { updateParticles(); } if (leftGlow && rightGlow) { leftGlow.style.height = '15%'; rightGlow.style.height = '15%'; leftGlow.style.opacity = '0.8'; rightGlow.style.opacity = '0.8'; leftGlow.style.background = neonColor; rightGlow.style.background = neonColorRight; leftGlow.style.boxShadow = `0 0 10px ${neonColor}, 0 0 20px ${neonColor}, 0 0 30px ${neonColor}, inset 0 0 8px rgba(255, 255, 255, 0.2)`; rightGlow.style.boxShadow = `0 0 10px ${neonColorRight}, 0 0 20px ${neonColorRight}, 0 0 30px ${neonColorRight}, inset 0 0 8px rgba(255, 255, 255, 0.2)`; } if (isTrackListOpen) { renderTrackList(); } beatDetected = false; currentPulseIntensity = 0; lastBeatTime = 0; sparkParticles.forEach(spark => { if (spark.element.parentNode) { spark.element.parentNode.removeChild(spark.element); } }); sparkParticles = []; const energyWaves = [ document.getElementById('energyTop'), document.getElementById('energyRight'), document.getElementById('energyBottom'), document.getElementById('energyLeft') ]; energyWaves.forEach(wave => { wave.style.opacity = '0'; wave.style.boxShadow = 'none'; }); energySurgeActive = false; 
     }
     
     function adjustColorOpacity(hex, opacity) { let r=0, g=0, b=0; if (hex.length == 4) { r = "0x" + hex[1] + hex[1]; g = "0x" + hex[2] + hex[2]; b = "0x" + hex[3] + hex[3]; } else if (hex.length == 7) { r = "0x" + hex[1] + hex[2]; g = "0x" + hex[3] + hex[4]; b = "0x" + hex[5] + hex[6]; } return "rgba("+ +r + "," + +g + "," + +b + "," + opacity + ")"; }
