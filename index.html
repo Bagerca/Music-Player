@@ -11,15 +11,10 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- --- ПРЕЛОАДЕР --- -->
     <div id="preloader">
         <div class="loader-content">
             <div class="loader-visualizer">
-                <div class="bar"></div>
-                <div class="bar"></div>
-                <div class="bar"></div>
-                <div class="bar"></div>
-                <div class="bar"></div>
+                <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
             </div>
             <h2 class="loader-text">Загрузка...</h2>
         </div>
@@ -33,18 +28,11 @@
         <div class="album-art" id="albumArt">
             <div class="album-image" id="albumImage"></div>
             <button id="liteModeBtn" class="album-overlay-btn" title="Облегченный режим (Клавиша L)">
-                <svg viewBox="0 0 24 24">
-                    <path fill="currentColor" d="M17,8C8,10,5.9,16.17,3.82,21.34L5.71,22l1.62-2.9c2,3.12,6.03,5.9,11.67,5.9c.33,0,1,0,1-1C20,16,17,8,17,8z M14.33,19.97C11.93,19.17,9.3,17.21,7.5,14.66c3.2-3.8,6.44-6.3,9.58-7.5c-1.4,3.3-2.88,6.84-4.83,10.81H14.33z M19.93,4.07C19.5,4.5,19,5,18.43,5.57L17,7l-1.43-1.43c-3.14,2.23-5.5,5.1-7.24,8.15C7.5,12.33,7,10.67,6,9c-1-1.67-2.67-3-5-3v-2c3.33,0,5.67,2.33,7,5c1.33-2.67,3.67-4.33,6-5c.67,1,1.33,2.33,2,4l2-2C21.67,6.33,22,4.67,22,3v-2C21.33,1,20.67,2.33,19.93,4.07z"/>
-                </svg>
+                <svg viewBox="0 0 24 24"><path fill="currentColor" d="M17,8C8,10,5.9,16.17,3.82,21.34L5.71,22l1.62-2.9c2,3.12,6.03,5.9,11.67,5.9c.33,0,1,0,1-1C20,16,17,8,17,8z M14.33,19.97C11.93,19.17,9.3,17.21,7.5,14.66c3.2-3.8,6.44-6.3,9.58-7.5c-1.4,3.3-2.88,6.84-4.83,10.81H14.33z M19.93,4.07C19.5,4.5,19,5,18.43,5.57L17,7l-1.43-1.43c-3.14,2.23-5.5,5.1-7.24,8.15C7.5,12.33,7,10.67,6,9c-1-1.67-2.67-3-5-3v-2c3.33,0,5.67,2.33,7,5c1.33-2.67,3.67-4.33,6-5c.67,1,1.33,2.33,2,4l2-2C21.67,6.33,22,4.67,22,3v-2C21.33,1,20.67,2.33,19.93,4.07z"/></svg>
             </button>
-            
             <div class="neon-lines-container">
-                <div class="neon-line left-line">
-                    <div class="neon-glow" id="leftGlow"></div>
-                </div>
-                <div class="neon-line right-line">
-                    <div class="neon-glow" id="rightGlow"></div>
-                </div>
+                <div class="neon-line left-line"><div class="neon-glow" id="leftGlow"></div></div>
+                <div class="neon-line right-line"><div class="neon-glow" id="rightGlow"></div></div>
             </div>
         </div>
         
@@ -68,45 +56,37 @@
         </div>
         
         <div class="controls">
-            <button id="playbackModeBtn" class="control-btn" title="Режим повтора">
-                <svg viewBox="0 0 24 24"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg>
-            </button>
-            <button id="prevBtn" class="control-btn" title="Предыдущий трек">
-                <svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
-            </button>
-            <button id="playPauseBtn" class="control-btn play-pause-btn" title="Воспроизвести/Пауза">
-                <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-            </button>
-            <button id="nextBtn" class="control-btn" title="Следующий трек">
-                <svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
-            </button>
-            <button id="trackListBtn" class="control-btn" title="Список треков">
-                <svg viewBox="0 0 24 24"><path d="M4 10.5c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5 1.5-.67 1.5-1.5-.67-1.5-1.5-1.5zm0-6c-.83 0-1.5.67-1.5 1.5S3.17 7.5 4 7.5 5.5 6.83 5.5 6 4.83 4.5 4 4.5zm0 12c-.83 0-1.5.68-1.5 1.5s.68 1.5 1.5 1.5 1.5-.68 1.5-1.5-.67-1.5-1.5-1.5zM7 19h14v-2H7v2zm0-6h14v-2H7v2zm0-8v2h14V5H7z"/></svg>
-            </button>
+            <button id="playbackModeBtn" class="control-btn"><svg viewBox="0 0 24 24"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg></button>
+            <button id="prevBtn" class="control-btn"><svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg></button>
+            <button id="playPauseBtn" class="control-btn play-pause-btn"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
+            <button id="nextBtn" class="control-btn"><svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg></button>
+            <button id="trackListBtn" class="control-btn"><svg viewBox="0 0 24 24"><path d="M4 10.5c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5 1.5-.67 1.5-1.5-.67-1.5-1.5-1.5zm0-6c-.83 0-1.5.67-1.5 1.5S3.17 7.5 4 7.5 5.5 6.83 5.5 6 4.83 4.5 4 4.5zm0 12c-.83 0-1.5.68-1.5 1.5s.68 1.5 1.5 1.5 1.5-.68 1.5-1.5-.67-1.5-1.5-1.5zM7 19h14v-2H7v2zm0-6h14v-2H7v2zm0-8v2h14V5H7z"/></svg></button>
         </div>
         
         <div class="volume-container">
-            <div class="volume-icon">
-                <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
-            </div>
+            <div class="volume-icon"><svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg></div>
             <input type="range" id="volumeSlider" class="volume-slider" min="0" max="100" value="70">
         </div>
     </div>
 
-    <!-- Боковая панель списка треков -->
+    <!-- ПАНЕЛЬ ТРЕКОВ -->
     <div class="track-list-panel" id="trackListPanel">
         <div class="track-list-header">
-            <h3>Библиотека</h3>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 id="libraryTitle">Библиотека</h3>
+                <button id="deletePlaylistBtn" class="action-btn delete-pl-btn" title="Удалить текущий плейлист" style="display: none;">
+                    🗑️
+                </button>
+            </div>
+            
             <div class="playlist-controls">
                 <select id="playlistSelector" class="playlist-select"></select>
                 <div class="playlist-actions">
                     <button id="createPlaylistBtn" class="action-btn" title="Создать плейлист">+</button>
                     <button id="uploadTrackBtn" class="action-btn" title="Загрузить файл с устройства">
-                        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-                            <path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/>
-                        </svg>
+                         <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/></svg>
                     </button>
-                    <input type="file" id="fileInput" accept="audio/*" multiple style="display: none;">
+                    <input type="file" id="fileInput" accept="audio/*" style="display: none;">
                 </div>
             </div>
             <div class="search-container">
@@ -117,7 +97,7 @@
         <div class="track-list" id="trackList"></div>
     </div>
 
-    <!-- Эффекты -->
+    <!-- ЭФФЕКТЫ -->
     <div class="edge-effects">
         <div class="spark-particles" id="sparkParticles"></div>
         <div class="edge-glow-container" id="edgeGlow"></div>
@@ -127,14 +107,13 @@
             <div class="energy-wave bottom" id="energyBottom"></div>
             <div class="energy-wave left" id="energyLeft"></div>
         </div>
-        <!-- Эмиттеры для ударных волн -->
         <div class="corner-emitter top-left"></div>
         <div class="corner-emitter top-right"></div>
         <div class="corner-emitter bottom-left"></div>
         <div class="corner-emitter bottom-right"></div>
     </div>
 
-    <!-- Модальное окно для создания плейлиста -->
+    <!-- МОДАЛЬНОЕ ОКНО: НОВЫЙ ПЛЕЙЛИСТ -->
     <div id="modalOverlay" class="modal-overlay">
         <div class="modal">
             <h3>Новый плейлист</h3>
@@ -142,6 +121,42 @@
             <div class="modal-buttons">
                 <button id="closeModalBtn" class="modal-btn cancel">Отмена</button>
                 <button id="confirmPlaylistBtn" class="modal-btn confirm">Создать</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- МОДАЛЬНОЕ ОКНО: РЕДАКТОР ТРЕКА -->
+    <div id="trackEditModalOverlay" class="modal-overlay">
+        <div class="modal" style="width: 350px;">
+            <h3>Настройка трека</h3>
+            
+            <label class="modal-label">Название</label>
+            <input type="text" id="editTrackTitle" class="modal-input" placeholder="Название трека">
+            
+            <label class="modal-label">Исполнитель</label>
+            <input type="text" id="editTrackArtist" class="modal-input" placeholder="Артист">
+
+            <label class="modal-label">Обложка</label>
+            <div class="cover-upload-container">
+                <input type="file" id="editTrackCoverInput" accept="image/*" style="display: none;">
+                <button id="editTrackCoverBtn" class="modal-btn cancel" style="margin-bottom: 10px;">Выбрать изображение...</button>
+                <div id="coverPreview" style="width: 100px; height: 100px; background: #333; margin: 0 auto; background-size: cover; border-radius: 8px;"></div>
+            </div>
+
+            <div class="color-pickers" style="display: flex; gap: 10px; margin: 15px 0;">
+                <div style="flex: 1;">
+                    <label class="modal-label">Основной</label>
+                    <input type="color" id="editColorPrimary" value="#1a1a2e" style="width: 100%;">
+                </div>
+                <div style="flex: 1;">
+                    <label class="modal-label">Акцент</label>
+                    <input type="color" id="editColorAccent" value="#00d1ff" style="width: 100%;">
+                </div>
+            </div>
+
+            <div class="modal-buttons">
+                <button id="closeTrackEditBtn" class="modal-btn cancel">Отмена</button>
+                <button id="confirmTrackEditBtn" class="modal-btn confirm">Сохранить</button>
             </div>
         </div>
     </div>
