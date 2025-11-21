@@ -11,12 +11,12 @@ body {
     overflow: hidden;
     position: relative;
     z-index: 1;
-    /* Переменные для динамической покраски боковой панели */
+    /* Переменные для динамической покраски */
     --panel-bg-color: rgba(20, 20, 35, 0.6);
     --panel-border-color: rgba(255, 255, 255, 0.08);
 }
 
-/* РАЗМЫТЫЙ ФОН (ОБЛОЖКА) */
+/* РАЗМЫТЫЙ ФОН */
 body::before {
     content: '';
     position: absolute;
@@ -53,7 +53,7 @@ body.lite-mode .player-container { box-shadow: 0 0 25px var(--accent-color), 0 2
 /* --- ПРЕМИАЛЬНАЯ БОКОВАЯ ПАНЕЛЬ --- */
 .track-list-panel {
     position: fixed;
-    top: 20px; bottom: 20px; right: -650px; /* Скрыта */
+    top: 20px; bottom: 20px; right: -650px;
     width: 480px;
     background: var(--panel-bg-color);
     backdrop-filter: blur(30px) saturate(180%);
@@ -88,20 +88,32 @@ body.lite-mode .player-container { box-shadow: 0 0 25px var(--accent-color), 0 2
 .icon-btn:hover { background: rgba(255, 255, 255, 0.1); color: #fff; transform: translateY(-1px); }
 .icon-btn.delete:hover { background: rgba(255, 50, 50, 0.2); color: #ff5555; }
 
-/* Селектор плейлиста */
-.playlist-selector-container { position: relative; margin-bottom: 15px; }
-.playlist-select {
-    width: 100%; padding: 14px 20px;
-    background: rgba(0, 0, 0, 0.2);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 16px; color: white; font-size: 16px; font-weight: 500;
-    font-family: 'Open Sans', sans-serif; outline: none; cursor: pointer; appearance: none;
-    transition: border-color 0.3s;
+/* КАСТОМНЫЙ СЕЛЕКТОР */
+.custom-select-wrapper { position: relative; user-select: none; margin-bottom: 15px; z-index: 50; }
+.custom-select { position: relative; display: flex; flex-direction: column; }
+.select-trigger {
+    position: relative; display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 20px; font-size: 16px; font-weight: 600; color: #fff;
+    background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px;
+    cursor: pointer; transition: all 0.3s;
 }
-.playlist-select:hover { border-color: rgba(255, 255, 255, 0.3); background: rgba(0, 0, 0, 0.3); }
-.playlist-select:focus { border-color: var(--accent-color); }
-.playlist-select option { background: #16213e; color: white; }
-.select-arrow { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); pointer-events: none; color: rgba(255, 255, 255, 0.5); }
+.select-trigger:hover { background: rgba(0, 0, 0, 0.3); border-color: rgba(255, 255, 255, 0.3); }
+.custom-select.open .select-trigger { border-color: var(--accent-color); box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1); }
+.select-arrow { font-size: 12px; color: rgba(255, 255, 255, 0.5); transition: transform 0.3s; }
+.custom-select.open .select-arrow { transform: rotate(180deg); color: var(--accent-color); }
+.custom-options {
+    position: absolute; display: block; top: 110%; left: 0; right: 0;
+    background: rgba(25, 25, 35, 0.95); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5); opacity: 0; visibility: hidden; pointer-events: none;
+    transform: translateY(-10px); transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    overflow: hidden; max-height: 300px; overflow-y: auto;
+}
+.custom-options::-webkit-scrollbar { width: 4px; } .custom-options::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
+.custom-select.open .custom-options { opacity: 1; visibility: visible; pointer-events: all; transform: translateY(0); }
+.custom-option { position: relative; display: block; padding: 12px 20px; font-size: 15px; font-weight: 500; color: rgba(255, 255, 255, 0.8); cursor: pointer; transition: all 0.2s; border-bottom: 1px solid rgba(255, 255, 255, 0.03); }
+.custom-option:last-child { border-bottom: none; }
+.custom-option:hover, .custom-option.selected { background: var(--accent-color); color: #1a1a2e; padding-left: 25px; }
 
 /* Поиск */
 .search-container { position: relative; }
@@ -129,11 +141,14 @@ body.lite-mode .player-container { box-shadow: 0 0 25px var(--accent-color), 0 2
     box-shadow: 0 4px 20px rgba(0,0,0,0.2);
 }
 
-/* Drag & Drop стили */
-.track-item.dragging { opacity: 0.5; background: rgba(255, 255, 255, 0.2); border: 2px dashed var(--accent-color); }
-.drag-handle { width: 20px; height: 30px; display: flex; align-items: center; justify-content: center; color: rgba(255, 255, 255, 0.2); margin-right: 8px; cursor: grab; opacity: 0; transition: opacity 0.2s; }
+/* Drag & Drop */
+.track-item.dragging { opacity: 0.4; background: rgba(255, 255, 255, 0.1); border: 1px dashed var(--accent-color); box-shadow: none; }
+.track-item.drag-over-top { border-top: 2px solid var(--accent-color) !important; }
+.track-item.drag-over-bottom { border-bottom: 2px solid var(--accent-color) !important; }
+.drag-handle { width: 24px; height: 100%; display: flex; align-items: center; justify-content: center; color: rgba(255, 255, 255, 0.3); margin-right: 5px; cursor: grab; opacity: 0; transition: all 0.2s; flex-shrink: 0; }
 .track-item:hover .drag-handle { opacity: 1; }
-.drag-handle:hover { color: var(--accent-color); }
+.drag-handle:hover { color: var(--accent-color); transform: scale(1.1); }
+.drag-handle:active { cursor: grabbing; }
 
 .track-item-cover { width: 48px; height: 48px; border-radius: 10px; background-size: cover; background-position: center; margin-right: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); flex-shrink: 0; }
 .track-item-info { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; margin-right: 10px; }
@@ -150,14 +165,7 @@ body.lite-mode .player-container { box-shadow: 0 0 25px var(--accent-color), 0 2
 .track-menu-btn:hover, .track-menu-btn.active { background: rgba(255, 255, 255, 0.1); color: #fff !important; }
 
 /* Контекстное меню */
-.context-menu {
-    position: absolute; right: 45px; top: 20px;
-    background: rgba(30, 30, 40, 0.95); backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 6px;
-    min-width: 180px; box-shadow: 0 10px 40px rgba(0,0,0,0.6); z-index: 200;
-    opacity: 0; visibility: hidden; transform: scale(0.9) translateY(-10px); transform-origin: top right;
-    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); pointer-events: none;
-}
+.context-menu { position: absolute; right: 45px; top: 20px; background: rgba(30, 30, 40, 0.95); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 6px; min-width: 180px; box-shadow: 0 10px 40px rgba(0,0,0,0.6); z-index: 200; opacity: 0; visibility: hidden; transform: scale(0.9) translateY(-10px); transform-origin: top right; transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); pointer-events: none; }
 .context-menu.show { opacity: 1; visibility: visible; transform: scale(1) translateY(0); pointer-events: all; }
 .context-menu-item { padding: 10px 12px; color: rgba(255, 255, 255, 0.8); font-size: 13px; font-weight: 500; cursor: pointer; border-radius: 8px; transition: all 0.2s; display: flex; align-items: center; gap: 12px; }
 .context-menu-item:hover { background: var(--accent-color); color: #121212; box-shadow: 0 4px 10px rgba(255,255,255,0.2); }
@@ -165,7 +173,7 @@ body.lite-mode .player-container { box-shadow: 0 0 25px var(--accent-color), 0 2
 .menu-divider { height: 1px; background: rgba(255, 255, 255, 0.08); margin: 4px 0; }
 .delete-item:hover { background: rgba(255, 50, 50, 0.2); color: #ff5555; box-shadow: none; }
 
-/* --- ЭЛЕМЕНТЫ ПЛЕЕРА (Обложка, Кнопки) --- */
+/* Элементы плеера */
 .album-art { width: 250px; height: 250px; border-radius: 20px; margin: 0 auto 25px; overflow: hidden; position: relative; box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4); transition: all 0.5s ease; }
 .album-overlay-btn { position: absolute; top: 10px; right: 10px; z-index: 15; background: rgba(0, 0, 0, 0.3); backdrop-filter: blur(5px); border: 1px solid rgba(255, 255, 255, 0.1); color: rgba(255, 255, 255, 0.7); width: 36px; height: 36px; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: all 0.3s ease; }
 .album-overlay-btn svg { width: 20px; height: 20px; }
@@ -173,9 +181,7 @@ body.lite-mode .player-container { box-shadow: 0 0 25px var(--accent-color), 0 2
 .album-overlay-btn.active { color: var(--accent-color); box-shadow: 0 0 10px var(--accent-color); border-color: var(--accent-color); }
 .album-image { width: 100%; height: 100%; background-size: cover; background-position: center; background-repeat: no-repeat; transition: all 0.5s ease; }
 .neon-lines-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; border-radius: 20px; }
-.neon-line { position: absolute; top: 0; width: 6px; height: 100%; }
-.left-line { left: 2px; }
-.right-line { right: 2px; }
+.neon-line { position: absolute; top: 0; width: 6px; height: 100%; } .left-line { left: 2px; } .right-line { right: 2px; }
 .neon-glow { position: absolute; bottom: 0; left: 0; width: 100%; height: 10%; background: var(--neon-color, #e94560); border-radius: 3px; transition: height 0.08s ease-out, opacity 0.1s ease-out, box-shadow 0.1s ease-out; box-shadow: 0 0 10px var(--neon-color), 0 0 20px var(--neon-color), 0 0 30px var(--neon-color), inset 0 0 8px rgba(255, 255, 255, 0.2); opacity: 0.8; animation: neonPulse 2s ease-in-out infinite; }
 .track-info { text-align: center; margin-bottom: 25px; }
 .track-title { font-family: 'Montserrat', sans-serif; font-size: 22px; font-weight: 600; margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -199,7 +205,7 @@ body.lite-mode .player-container { box-shadow: 0 0 25px var(--accent-color), 0 2
 .visualizer { position: absolute; bottom: 0; left: 0; right: 0; display: flex; justify-content: center; gap: 3px; height: 100%; padding: 0 15px; box-sizing: border-box; }
 .visualizer-bar { width: 8px; height: 5px; border-radius: 4px 4px 0 0; transition: height 0.1s ease; position: relative; overflow: hidden; align-self: flex-end; box-shadow: 0 0 5px rgba(0, 0, 0, 0.3); }
 
-/* --- ЭФФЕКТЫ (Shockwaves) --- */
+/* Эффекты */
 .shockwave { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 20px; height: 20px; border: 4px solid var(--accent-color); border-radius: 50%; opacity: 0; pointer-events: none; box-sizing: border-box; z-index: 4; }
 .shockwave.active { animation: ripple 0.8s cubic-bezier(0.1, 0.5, 0.1, 1) forwards; }
 @keyframes ripple { 0% { transform: translate(-50%, -50%) scale(0.1); opacity: 0.8; border-width: 6px; } 100% { transform: translate(-50%, -50%) scale(40); opacity: 0; border-width: 0px; } }
@@ -215,7 +221,7 @@ body.lite-mode .player-container { box-shadow: 0 0 25px var(--accent-color), 0 2
 .energy-wave { position: absolute; background: transparent; opacity: 0; transition: all 0.4s ease-out; }
 .energy-wave.top { top: 0; left: 0; width: 100%; height: 4px; } .energy-wave.right { top: 0; right: 0; width: 4px; height: 100%; } .energy-wave.bottom { bottom: 0; left: 0; width: 100%; height: 4px; } .energy-wave.left { top: 0; left: 0; width: 4px; height: 100%; }
 
-/* МОДАЛЬНЫЕ ОКНА */
+/* Модальные окна */
 .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(10px); z-index: 1000; display: flex; justify-content: center; align-items: center; opacity: 0; visibility: hidden; transition: all 0.3s ease; }
 .modal-overlay.active { opacity: 1; visibility: visible; }
 .modal { background: #16213e; padding: 30px; border-radius: 20px; width: 300px; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 20px 50px rgba(0,0,0,0.5); transform: scale(0.8); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); display: flex; flex-direction: column; }
@@ -230,7 +236,7 @@ body.lite-mode .player-container { box-shadow: 0 0 25px var(--accent-color), 0 2
 .modal-btn.confirm { background: var(--accent-color); color: #1a1a2e; }
 .modal-btn:hover { opacity: 0.9; }
 
-/* ПРЕЛОАДЕР И АНИМАЦИИ */
+/* Прелоадер */
 #preloader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #1a1a2e; z-index: 9999; display: flex; justify-content: center; align-items: center; transition: opacity 0.5s ease, visibility 0.5s ease; }
 #preloader.hide { opacity: 0; visibility: hidden; pointer-events: none; }
 .loader-content { display: flex; flex-direction: column; align-items: center; gap: 20px; }
