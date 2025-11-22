@@ -1,7 +1,6 @@
 import { state } from './state.js';
 import { audio, loadTrack } from './audio.js';
 import { escapeHtml, formatTime, adjustColorOpacity } from './utils.js';
-import { createParticles } from './visualizer.js';
 
 const DOM = {
     trackList: document.getElementById('trackList'),
@@ -18,7 +17,8 @@ const DOM = {
 };
 
 let currentLyricsData = [];
-let nextLyricIndex = 0; // Оптимизация поиска
+let nextLyricIndex = 0;
+let trackBaseStyle = 'default'; // Базовый стиль трека
 
 export function renderTrackList(tracks = state.currentTracks) {
     DOM.trackList.innerHTML = '';
@@ -37,7 +37,6 @@ export function renderTrackList(tracks = state.currentTracks) {
              if (!e.target.closest('.track-menu-btn')) loadTrack(originalIndex, true);
         };
         
-        // Безопасная вставка HTML
         el.innerHTML = `
             <div class="track-item-cover" style="background-image: url('${escapeHtml(track.cover || 'picture/default_cover.jpg')}')"></div>
             <div class="track-item-info">
@@ -53,8 +52,8 @@ export function renderTrackList(tracks = state.currentTracks) {
 
 export function updatePlayPauseIcon(isPlaying) {
     const path = isPlaying 
-        ? '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>' // Pause
-        : '<path d="M8 5v14l11-7z"/>'; // Play
+        ? '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>' 
+        : '<path d="M8 5v14l11-7z"/>';
     DOM.playPauseBtn.querySelector('svg').innerHTML = path;
 }
 
@@ -63,7 +62,7 @@ export function updateTrackInfo(track) {
     DOM.currentArtist.textContent = track.artist;
     DOM.albumImage.style.backgroundImage = `url('${track.cover}')`;
     document.title = `${track.name} - ${track.artist}`;
-    renderTrackList(); // Обновить активный класс в списке
+    renderTrackList(); 
 }
 
 export function updateTheme(track) {
@@ -77,17 +76,20 @@ export function updateTheme(track) {
     DOM.playPauseBtn.style.background = `linear-gradient(135deg, ${colors.accent}, ${colors.primary})`;
     DOM.progress.style.background = `linear-gradient(90deg, ${colors.accent}, ${colors.primary})`;
     
-    // Обновление частиц
-    createParticles();
+    // createParticles удалено по запросу
 }
 
-// --- Субтитры ---
+// --- СУБТИТРЫ (ОБНОВЛЕННАЯ ЛОГИКА СТИЛЕЙ) ---
 
 export function loadLyrics(track) {
     DOM.lyricsDisplay.textContent = '';
-    DOM.lyricsDisplay.classList.remove('visible');
+    DOM.lyricsDisplay.className = 'lyrics-container'; // Сброс классов анимации
+    
     currentLyricsData = [];
     nextLyricIndex = 0;
+    
+    // Запоминаем стиль всего трека (если есть), иначе default
+    trackBaseStyle = track.lyricsStyle || 'default';
 
     if (track.lyrics) {
         currentLyricsData = track.lyrics;
@@ -95,10 +97,9 @@ export function loadLyrics(track) {
         fetch(track.lyricsSource)
             .then(res => res.json())
             .then(data => {
-                // Если трек не переключили пока грузилось
                 if (track === state.currentTracks[state.currentTrackIndex]) {
                     currentLyricsData = data;
-                    track.lyrics = data; // Кешируем
+                    track.lyrics = data; 
                 }
             })
             .catch(() => console.log('Lyrics not found'));
@@ -108,26 +109,36 @@ export function loadLyrics(track) {
 export function checkLyrics(time) {
     if (!currentLyricsData.length) return;
 
-    // Оптимизация: проверяем только следующую строку, а не весь массив
-    // Смещаем время на 0.2 сек вперед для компенсации реакции глаза
+    // Смотрим чуть вперед (0.2с) для синхронности
     const lookAheadTime = time + 0.2;
 
-    // Если пользователь перемотал назад
+    // Если перемотали назад
     if (nextLyricIndex > 0 && currentLyricsData[nextLyricIndex - 1].time > lookAheadTime) {
         nextLyricIndex = 0;
         DOM.lyricsDisplay.textContent = '';
+        DOM.lyricsDisplay.classList.remove('visible');
     }
 
-    // Ищем актуальную строку
+    // Ищем строки
     while (currentLyricsData[nextLyricIndex] && currentLyricsData[nextLyricIndex].time <= lookAheadTime) {
         const line = currentLyricsData[nextLyricIndex];
+        
         if (line.text) {
             DOM.lyricsDisplay.textContent = line.text;
+            
+            // 1. Определяем стиль: Специфичный для строки -> Или базовый для трека -> Или default
+            const currentStyle = line.style || trackBaseStyle || 'default';
+            
+            // 2. Полный сброс анимации для перезапуска
+            DOM.lyricsDisplay.className = 'lyrics-container';
+            void DOM.lyricsDisplay.offsetWidth; // Trigger reflow (перезапуск CSS анимации)
+            
+            // 3. Добавляем нужные классы
             DOM.lyricsDisplay.classList.add('visible');
-            DOM.lyricsDisplay.classList.remove('lyrics-bounce');
-            void DOM.lyricsDisplay.offsetWidth; // Trigger reflow
-            DOM.lyricsDisplay.classList.add('lyrics-bounce');
+            DOM.lyricsDisplay.classList.add(`lyrics-anim-${currentStyle}`); // напр. lyrics-anim-rage
+            
         } else {
+            // Если текст пустой - скрываем
             DOM.lyricsDisplay.classList.remove('visible');
         }
         nextLyricIndex++;
