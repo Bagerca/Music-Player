@@ -15,11 +15,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     Vis.initVisualizerDOM();
     
-    // --- ИСПРАВЛЕНИЕ ---
-    // 1. Сначала ставим дефолтный цвет (на случай, если плейлист пустой)
+    // Устанавливаем дефолтную фавиконку
     UI.updateFavicon('#00d1ff');
+    // Устанавливаем правильную иконку режима
+    UI.updatePlaybackModeIcon(state.playbackMode);
 
-    // 2. Потом загружаем трек. Если трек есть, он ПЕРЕКРАСИТ иконку в свой цвет (например, в красный)
+    // Загрузка первого трека
     if (state.playbackList.length) {
         AudioCore.loadTrack(0);
     }
@@ -43,8 +44,26 @@ function setupEventListeners() {
     
     // Кнопки Prev/Next меняют трек в playbackList
     document.getElementById('prevBtn').onclick = () => changePlaybackTrack(-1);
-    document.getElementById('nextBtn').onclick = () => changePlaybackTrack(1);
     
+    // Кнопка Next с учетом рандома
+    document.getElementById('nextBtn').onclick = () => {
+        if (state.playbackMode === PLAYBACK_MODES.SHUFFLE) {
+            changePlaybackTrack('random');
+        } else {
+            changePlaybackTrack(1);
+        }
+    };
+    
+    // ОБРАБОТЧИК КНОПКИ РЕЖИМОВ ВОСПРОИЗВЕДЕНИЯ
+    document.getElementById('playbackModeBtn').onclick = () => {
+        // 0 -> 1 -> 2 -> 0
+        state.playbackMode = (state.playbackMode + 1) % 3;
+        UI.updatePlaybackModeIcon(state.playbackMode);
+        
+        const modes = ["Повтор плейлиста", "Повтор трека", "Рандом"];
+        UI.showNotification(`Режим: ${modes[state.playbackMode]}`, 'info');
+    };
+
     document.getElementById('progressBar').onclick = (e) => {
         const width = e.currentTarget.clientWidth;
         const duration = AudioCore.audio.duration;
@@ -52,9 +71,19 @@ function setupEventListeners() {
     };
 
     AudioCore.audio.addEventListener('timeupdate', UI.updateProgress);
+    
+    // ЛОГИКА ОКОНЧАНИЯ ТРЕКА
     AudioCore.audio.addEventListener('ended', () => {
-        if (state.playbackMode === PLAYBACK_MODES.ONCE) return;
-        changePlaybackTrack(1);
+        if (state.playbackMode === PLAYBACK_MODES.LOOP_ONE) {
+            // Повтор текущего
+            AudioCore.loadTrack(state.playbackIndex, true);
+        } else if (state.playbackMode === PLAYBACK_MODES.SHUFFLE) {
+            // Рандом
+            changePlaybackTrack('random');
+        } else {
+            // Следующий
+            changePlaybackTrack(1);
+        }
     });
 
     // --- ЗАГРУЗКА ТРЕКОВ (ЛОГИКА МОДАЛКИ) ---
@@ -66,28 +95,22 @@ function setupEventListeners() {
         
         state.pendingUploadFile = file;
         
-        // Заполняем форму дефолтными данными
         document.getElementById('uploadFileName').textContent = file.name;
-        document.getElementById('upTitle').value = file.name.replace(/\.[^/.]+$/, ""); // Убрать расширение
+        document.getElementById('upTitle').value = file.name.replace(/\.[^/.]+$/, ""); 
         document.getElementById('upArtist').value = "Unknown Artist";
         document.getElementById('upCoverUrl').value = "";
         document.getElementById('upCoverFile').value = "";
         
-        // Открываем модалку
         document.getElementById('uploadModal').classList.add('active');
-        
-        // Сброс инпута, чтобы можно было выбрать тот же файл снова
         e.target.value = '';
     };
 
-    // Кнопка "Рандом цвета"
     document.getElementById('randomColorsBtn').onclick = () => {
         const hue = Math.floor(Math.random() * 360);
         document.getElementById('upColorBg').value = hslToHex(hue, 60, 10);
         document.getElementById('upColorAccent').value = hslToHex(hue, 80, 60);
     };
 
-    // Кнопка "Сохранить" в модалке загрузки
     document.getElementById('saveUploadBtn').onclick = confirmUploadTrack;
     document.getElementById('cancelUploadBtn').onclick = () => document.getElementById('uploadModal').classList.remove('active');
 
@@ -177,13 +200,29 @@ function setupEventListeners() {
 /* --- ФУНКЦИИ ЛОГИКИ --- */
 
 function changePlaybackTrack(direction) {
-    let newIndex = state.playbackIndex + direction;
-    if (newIndex >= state.playbackList.length) newIndex = 0;
-    if (newIndex < 0) newIndex = state.playbackList.length - 1;
+    let newIndex;
+
+    // Рандомный выбор
+    if (direction === 'random') {
+        const max = state.playbackList.length;
+        if (max <= 1) {
+            newIndex = 0;
+        } else {
+            // Защита от повтора того же трека
+            do {
+                newIndex = Math.floor(Math.random() * max);
+            } while (newIndex === state.playbackIndex);
+        }
+    } 
+    // Стандартный выбор (+1 или -1)
+    else {
+        newIndex = state.playbackIndex + direction;
+        if (newIndex >= state.playbackList.length) newIndex = 0;
+        if (newIndex < 0) newIndex = state.playbackList.length - 1;
+    }
     
     state.playbackIndex = newIndex;
     AudioCore.loadTrack(newIndex, true); 
-    // Обновляем подсветку списка, если трек виден
     UI.renderTrackList(state.viewedTracks);
 }
 
