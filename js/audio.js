@@ -30,7 +30,8 @@ export function initAudioContext() {
 }
 
 export function playTrack() {
-    if (!state.currentTracks.length) return;
+    // Важно: используем playbackList
+    if (!state.playbackList.length) return;
     initAudioContext();
     
     const playPromise = audio.play();
@@ -58,23 +59,24 @@ export function togglePlay() {
     state.isPlaying ? pauseTrack() : playTrack();
 }
 
+// Загружает трек по индексу из playbackList
 export function loadTrack(index, autoPlay = false) {
-    if (!state.currentTracks || index < 0 || index >= state.currentTracks.length) return;
+    if (!state.playbackList || index < 0 || index >= state.playbackList.length) return;
     
-    state.currentTrackIndex = index;
-    const track = state.currentTracks[index];
+    state.playbackIndex = index;
+    const track = state.playbackList[index];
     
     // Сброс
     pauseTrack();
     audio.src = track.path;
     audio.load();
     
+    // Обновляем UI плеера (левая часть)
     UI.updateTrackInfo(track);
-    UI.loadLyrics(track); // Загрузка субтитров
+    UI.loadLyrics(track);
     UI.updateTheme(track);
 
     if (autoPlay) {
-        // Небольшая задержка для уверенности
         setTimeout(() => playTrack(), 100);
     }
 }
