@@ -15,16 +15,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     Vis.initVisualizerDOM();
     
-    // Загружаем первый трек в плеер (но не играем)
+    // --- ИСПРАВЛЕНИЕ ---
+    // 1. Сначала ставим дефолтный цвет (на случай, если плейлист пустой)
+    UI.updateFavicon('#00d1ff');
+
+    // 2. Потом загружаем трек. Если трек есть, он ПЕРЕКРАСИТ иконку в свой цвет (например, в красный)
     if (state.playbackList.length) {
         AudioCore.loadTrack(0);
     }
     
     UI.renderPlaylistSelector();
     UI.renderTrackList(state.viewedTracks);
-    
-    // Инициализация фавиконки (ставим дефолтный цвет)
-    UI.updateFavicon('#00d1ff');
     
     setupEventListeners();
     
