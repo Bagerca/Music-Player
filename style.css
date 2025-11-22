@@ -236,6 +236,10 @@ body.lite-mode .player-container { box-shadow: 0 0 25px var(--accent-color), 0 2
 .modal-btn.confirm { background: var(--accent-color); color: #1a1a2e; }
 .modal-btn:hover { opacity: 0.9; }
 
+/* Стиль для опасной кнопки (удаление) */
+.modal-btn.delete-btn { background: rgba(255, 50, 50, 0.15); color: #ff5555; border: 1px solid rgba(255, 50, 50, 0.3); }
+.modal-btn.delete-btn:hover { background: rgba(255, 50, 50, 0.3); box-shadow: 0 0 15px rgba(255, 0, 0, 0.2); }
+
 /* НОВАЯ МОДАЛКА ЗАГРУЗКИ */
 .upload-modal { width: 400px; max-width: 90%; }
 .upload-form { display: flex; flex-direction: column; gap: 15px; }
