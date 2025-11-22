@@ -152,6 +152,49 @@ body.lite-mode .player-container { box-shadow: 0 0 25px var(--accent-color), 0 2
 .track-item-artist { font-size: 13px; color: rgba(255, 255, 255, 0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .now-playing-icon { margin-left: 10px; color: var(--accent-color); font-size: 12px; animation: pulse 2s infinite; }
 
+/* КНОПКА ТРЕХ ТОЧЕК */
+.track-menu-btn {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 18px;
+    cursor: pointer;
+    display: flex; justify-content: center; align-items: center;
+    transition: all 0.2s;
+    margin-left: 10px;
+    flex-shrink: 0;
+    opacity: 0.5;
+}
+.track-menu-btn:hover { background: rgba(255, 255, 255, 0.1); color: #fff; opacity: 1; }
+.track-item:hover .track-menu-btn { opacity: 1; }
+
+/* КОНТЕКСТНОЕ МЕНЮ */
+.context-menu {
+    position: absolute;
+    width: 220px;
+    background: rgba(20, 20, 35, 0.95);
+    backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+    padding: 8px 0;
+    z-index: 1000;
+    opacity: 0; visibility: hidden; transform: translateY(10px);
+    transition: opacity 0.2s, transform 0.2s, visibility 0.2s;
+    pointer-events: none;
+}
+.context-menu.active { opacity: 1; visibility: visible; transform: translateY(0); pointer-events: all; }
+.ctx-item { padding: 12px 20px; display: flex; align-items: center; gap: 10px; color: rgba(255, 255, 255, 0.9); cursor: pointer; font-size: 14px; transition: background 0.2s; }
+.ctx-item:hover { background: rgba(255, 255, 255, 0.1); }
+.ctx-item.delete:hover { background: rgba(255, 50, 50, 0.2); color: #ff5555; }
+
+/* СПИСОК ПЛЕЙЛИСТОВ В МОДАЛКЕ */
+.playlist-options-list { display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto; width: 100%; }
+.playlist-option-btn { background: rgba(255, 255, 255, 0.05); border: 1px solid transparent; padding: 12px; border-radius: 8px; color: white; text-align: left; cursor: pointer; transition: all 0.2s; }
+.playlist-option-btn:hover { border-color: var(--accent-color); background: rgba(255, 255, 255, 0.1); }
+
 /* Элементы плеера */
 .album-art { width: 250px; height: 250px; border-radius: 20px; margin: 0 auto 25px; overflow: hidden; position: relative; box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4); transition: all 0.5s ease; }
 .album-image { width: 100%; height: 100%; background-size: cover; background-position: center; background-repeat: no-repeat; transition: all 0.5s ease; }
