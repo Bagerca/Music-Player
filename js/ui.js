@@ -1,4 +1,4 @@
-import { state } from './state.js';
+import { state, saveUserPlaylists } from './state.js';
 import { audio, loadTrack } from './audio.js';
 import { getAllPlaylists } from './data.js';
 import { escapeHtml, formatTime, adjustColorOpacity } from './utils.js';
@@ -38,24 +38,36 @@ export function showNotification(text, icon = 'info') {
 // --- РЕНДЕР СПИСКА ТРЕКОВ ---
 export function renderTrackList(tracks = state.viewedTracks) {
     DOM.trackList.innerHTML = '';
+    
+    // Проверка условий для включения Drag & Drop
+    const isSystemPlaylist = ["Все треки", "Энергичные", "Chill & Retro", "Мои загрузки"].includes(state.currentPlaylistName);
+    const isDefaultSort = state.sort.type === 'default';
+    const enableDrag = !isSystemPlaylist && isDefaultSort;
+
+    if (enableDrag) DOM.trackList.classList.add('sortable');
+    else DOM.trackList.classList.remove('sortable');
+
     if (!tracks.length) {
         DOM.trackList.innerHTML = '<div class="track-item-title" style="text-align:center; padding:20px; opacity: 0.5;">Здесь пока пусто...</div>';
         return;
     }
     const currentPlayingTrack = state.playbackList[state.playbackIndex];
+    
     tracks.forEach((track, index) => {
         const isPlayingThis = currentPlayingTrack && track.path === currentPlayingTrack.path;
         const el = document.createElement('div');
         el.className = `track-item ${isPlayingThis ? 'active' : ''}`;
-        el.onclick = (e) => {
-             if (!e.target.closest('.track-menu-btn')) {
-                 state.playbackList = [...state.viewedTracks]; 
-                 state.playbackIndex = index;
-                 loadTrack(index, true);
-                 renderTrackList(state.viewedTracks);
-             }
-        };
+        
+        if (enableDrag) {
+            el.setAttribute('draggable', 'true');
+            el.dataset.index = index;
+        }
+
         el.innerHTML = `
+            ${enableDrag ? `
+            <div class="drag-handle" title="Перетащить">
+                <svg viewBox="0 0 24 24"><path fill="currentColor" d="M11 18c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2zm-2-8c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0-6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm6 4c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+            </div>` : ''}
             <div class="track-item-cover" style="background-image: url('${escapeHtml(track.cover || 'picture/default_cover.jpg')}')"></div>
             <div class="track-item-info">
                 <div class="track-item-title">${escapeHtml(track.name)}</div>
@@ -64,35 +76,109 @@ export function renderTrackList(tracks = state.viewedTracks) {
             ${isPlayingThis ? '<div class="now-playing-icon">▶</div>' : ''}
             <button class="track-menu-btn" title="Опции"><svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg></button>
         `;
-        el.querySelector('.track-menu-btn').onclick = (e) => { e.stopPropagation(); openContextMenu(e, index); };
+        
+        el.onclick = (e) => {
+             if (!e.target.closest('.track-menu-btn') && !e.target.closest('.drag-handle')) {
+                 state.playbackList = [...state.viewedTracks]; 
+                 state.playbackIndex = index;
+                 loadTrack(index, true);
+                 renderTrackList(state.viewedTracks);
+             }
+        };
+
+        el.querySelector('.track-menu-btn').onclick = (e) => {
+             e.stopPropagation();
+             // Отправляем событие в main.js для открытия меню
+             const event = new CustomEvent('open-track-context', { 
+                 detail: { originalEvent: e, index: index } 
+             });
+             document.dispatchEvent(event);
+        };
+
+        if (enableDrag) addDragListeners(el, index);
         DOM.trackList.appendChild(el);
     });
 }
 
-// --- МЕНЮ И ПЛЕЙЛИСТЫ ---
-function openContextMenu(e, index) {
-    state.contextTrackIndex = index;
-    const menu = document.getElementById('contextMenu');
-    const removeBtn = document.getElementById('ctxRemoveFromPlaylist');
-    const rect = e.target.getBoundingClientRect();
-    let top = rect.bottom + window.scrollY;
-    let left = rect.left + window.scrollX - 190; 
-    if (left < 10) left = 10;
-    if (window.innerHeight - rect.bottom < 150) top = rect.top - 140;
-    menu.style.top = `${top}px`; menu.style.left = `${left}px`;
-    menu.classList.add('active');
-    const currentPlaylist = state.currentPlaylistName;
-    const isSystem = ["Все треки", "Энергичные", "Chill & Retro", "Мои загрузки"].includes(currentPlaylist);
-    removeBtn.style.display = isSystem ? 'none' : 'flex';
+// --- ЛОГИКА DRAG & DROP ---
+let draggedItemIndex = null;
+
+function addDragListeners(el, index) {
+    el.addEventListener('dragstart', (e) => {
+        draggedItemIndex = index;
+        e.dataTransfer.effectAllowed = 'move';
+        setTimeout(() => el.classList.add('dragging'), 0);
+    });
+
+    el.addEventListener('dragend', () => {
+        draggedItemIndex = null;
+        el.classList.remove('dragging');
+        document.querySelectorAll('.track-item').forEach(item => item.classList.remove('drag-over'));
+    });
+
+    el.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        const targetEl = e.target.closest('.track-item'); 
+        if (targetEl && targetEl !== el) {
+            document.querySelectorAll('.track-item').forEach(item => item.classList.remove('drag-over'));
+            targetEl.classList.add('drag-over');
+        }
+    });
+
+    el.addEventListener('drop', (e) => {
+        e.preventDefault();
+        const targetEl = e.target.closest('.track-item');
+        if (!targetEl) return;
+        const targetIndex = parseInt(targetEl.dataset.index);
+        if (draggedItemIndex !== null && draggedItemIndex !== targetIndex) {
+            reorderTracks(draggedItemIndex, targetIndex);
+        }
+    });
 }
 
+function reorderTracks(fromIndex, toIndex) {
+    const playlistName = state.currentPlaylistName;
+    const playlist = state.userPlaylists[playlistName];
+    if (!playlist) return;
+
+    const [movedTrack] = playlist.splice(fromIndex, 1);
+    playlist.splice(toIndex, 0, movedTrack);
+
+    saveUserPlaylists();
+    state.viewedTracks = playlist;
+
+    // Синхронизация текущего воспроизводимого трека
+    if (state.playbackList.length === playlist.length && state.playbackList.every((t, i) => t.path === state.viewedTracks[i].path)) {
+       state.playbackList = [...playlist];
+    }
+    // Если играл перемещенный трек, обновляем индекс
+    if (state.isPlaying || state.playbackIndex >= 0) {
+        const currentlyPlayingPath = state.playbackList[state.playbackIndex]?.path;
+        if(currentlyPlayingPath) {
+             const newIndex = playlist.findIndex(t => t.path === currentlyPlayingPath);
+             if (newIndex !== -1) state.playbackIndex = newIndex;
+        }
+    }
+
+    renderTrackList(state.viewedTracks);
+}
+
+// --- МЕНЮ И ПЛЕЙЛИСТЫ ---
 export function switchPlaylist(name) {
     const playlistSelect = document.getElementById('playlistSelect');
     state.currentPlaylistName = name;
+    // При переключении плейлиста сбрасываем сортировку на дефолт
+    state.sort.type = 'default';
+    state.sort.direction = 'asc';
+    
     state.viewedTracks = getAllPlaylists(state.userPlaylists, state.uploadedTracks)[name];
     renderPlaylistSelector();
     renderTrackList(state.viewedTracks);
     playlistSelect.classList.remove('open');
+    
+    // Обновляем визуал сортировки
+    document.querySelectorAll('.sort-item').forEach(i => i.classList.remove('active', 'desc'));
+    document.querySelector('.sort-item[data-type="default"]').classList.add('active');
 }
 
 export function renderPlaylistSelector() {
@@ -145,8 +231,6 @@ export function updateTheme(track) {
     document.documentElement.style.setProperty('--neon-color', track.neonColor);
     DOM.playPauseBtn.style.background = `linear-gradient(135deg, ${colors.accent}, ${colors.primary})`;
     DOM.progress.style.background = `linear-gradient(90deg, ${colors.accent}, ${colors.primary})`;
-    
-    // ! ВЫЗЫВАЕМ ОБНОВЛЕНИЕ ЦВЕТА ФАВИКОНКИ !
     updateFavicon(colors.accent);
 }
 
@@ -203,50 +287,33 @@ export function updateFavicon(accentColor) {
     newLink.id = 'dynamic-favicon';
     newLink.rel = 'icon';
     newLink.type = 'image/svg+xml';
-
     const svgString = `
     <svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
       <rect width="64" height="64" rx="20" fill="#1a1a2e"/>
       <path d="M46 14H22V43C20.5 42.3 18.8 42 17 42C12.6 42 9 45.6 9 50C9 54.4 12.6 58 17 58C21.4 58 25 54.4 25 50V23H43V43C41.5 42.3 39.8 42 38 42C33.6 42 30 45.6 30 50C30 54.4 33.6 58 38 58C42.4 58 46 54.4 46 50V14Z" fill="${accentColor}"/>
     </svg>`.trim();
-
     newLink.href = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgString)}`;
-
     if (oldLink) document.head.removeChild(oldLink);
     document.head.appendChild(newLink);
 }
 
-// --- НОВАЯ ФУНКЦИЯ: ОБНОВЛЕНИЕ ИКОНКИ РЕЖИМА ВОСПРОИЗВЕДЕНИЯ ---
+// --- ИКОНКА РЕЖИМА ВОСПРОИЗВЕДЕНИЯ ---
 export function updatePlaybackModeIcon(mode) {
     const btn = document.getElementById('playbackModeBtn');
     let svg = '';
     let title = '';
-
-    // 0: LOOP_PLAYLIST (По умолчанию)
     if (mode === 0) {
         title = 'Повтор плейлиста';
         svg = '<path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/>';
-    } 
-    // 1: LOOP_ONE (Повтор одного трека)
-    else if (mode === 1) {
+    } else if (mode === 1) {
         title = 'Повтор одного трека';
-        // Иконка цикла с единичкой
         svg = '<path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/><text x="10" y="16" font-size="10" fill="currentColor" font-weight="bold">1</text>';
-    } 
-    // 2: SHUFFLE (Рандом)
-    else if (mode === 2) {
+    } else if (mode === 2) {
         title = 'Случайный порядок';
         svg = '<path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/>';
     }
-
     btn.innerHTML = `<svg viewBox="0 0 24 24">${svg}</svg>`;
     btn.title = title;
-    
-    if (mode !== 0) {
-        btn.style.color = 'var(--accent-color)';
-        btn.style.opacity = '1';
-    } else {
-        btn.style.color = 'white';
-        btn.style.opacity = '';
-    }
+    if (mode !== 0) { btn.style.color = 'var(--accent-color)'; btn.style.opacity = '1'; } 
+    else { btn.style.color = 'white'; btn.style.opacity = ''; }
 }
