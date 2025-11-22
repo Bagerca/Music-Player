@@ -14,6 +14,12 @@ export const state = {
     // 0: LOOP_PLAYLIST, 1: LOOP_ONE, 2: SHUFFLE
     playbackMode: 0, 
     
+    // СОРТИРОВКА
+    sort: {
+        type: 'default', // 'name', 'artist', 'shuffle', 'default'
+        direction: 'asc' // 'asc' или 'desc'
+    },
+    
     // ДАННЫЕ
     userPlaylists: JSON.parse(localStorage.getItem('myUserPlaylists')) || {},
     uploadedTracks: [],
