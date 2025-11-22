@@ -39,11 +39,13 @@ export function playTrack() {
         playPromise.then(() => {
             state.isPlaying = true;
             UI.updatePlayPauseIcon(true);
+            UI.updateFavicon(true); // Включаем анимацию фавиконки
             startVisualizer();
         }).catch(err => {
             console.error("Playback failed", err);
             state.isPlaying = false;
             UI.updatePlayPauseIcon(false);
+            UI.updateFavicon(false); // Выключаем анимацию при ошибке
         });
     }
 }
@@ -52,6 +54,7 @@ export function pauseTrack() {
     audio.pause();
     state.isPlaying = false;
     UI.updatePlayPauseIcon(false);
+    UI.updateFavicon(false); // Выключаем анимацию фавиконки
     stopVisualizer();
 }
 
