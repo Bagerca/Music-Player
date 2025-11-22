@@ -24,6 +24,7 @@ let lastBeatTime = 0;
 let currentPulseIntensity = 0;
 
 export function initVisualizerDOM() {
+    if (!visualizerContainer) return;
     visualizerContainer.innerHTML = '';
     visualizerBars = [];
     for (let i = 0; i < 30; i++) {
@@ -49,28 +50,38 @@ export function stopVisualizer() {
 
 function loop() {
     if (!analyser) return;
-    analyser.getByteFrequencyData(dataArray);
     
-    const features = analyzeAudioFeatures();
-    
-    checkLyrics(audio.currentTime);
-    drawBars(features);
-    updateGlow(features);
-    
-    // Затухание пульсации бита
-    if (currentPulseIntensity > 0) {
-        currentPulseIntensity -= 0.08;
-        if (currentPulseIntensity < 0) currentPulseIntensity = 0;
-    }
+    try {
+        analyser.getByteFrequencyData(dataArray);
+        
+        const features = analyzeAudioFeatures();
+        
+        // Проверка субтитров (синхронизируем с текущим временем)
+        checkLyrics(audio.currentTime);
+        
+        drawBars(features);
+        updateGlow(features);
+        
+        // Затухание пульсации бита
+        if (currentPulseIntensity > 0) {
+            currentPulseIntensity -= 0.08;
+            if (currentPulseIntensity < 0) currentPulseIntensity = 0;
+        }
 
-    animationId = requestAnimationFrame(loop);
+        animationId = requestAnimationFrame(loop);
+    } catch (e) {
+        console.error("Visualizer loop error:", e);
+        stopVisualizer();
+    }
 }
 
 function getFrequencyEnergy(range) {
     let sum = 0;
     const count = range.end - range.start;
     for (let i = range.start; i < range.end; i++) {
-        sum += dataArray[i];
+        if (dataArray[i] !== undefined) {
+            sum += dataArray[i];
+        }
     }
     return sum / count / 255;
 }
@@ -109,8 +120,11 @@ function analyzeAudioFeatures() {
 }
 
 function drawBars(features) {
-    const track = state.currentTracks[state.currentTrackIndex];
-    const visualizerColors = track ? track.visualizer : ['#fff', '#ccc'];
+    // ИСПРАВЛЕНИЕ ЗДЕСЬ: Берем трек из playbackList
+    const track = state.playbackList[state.playbackIndex];
+    
+    // Защита от ошибки: если трек не найден, используем запасные цвета
+    const visualizerColors = track && track.visualizer ? track.visualizer : ['#fff', '#ccc'];
     
     for (let i = 0; i < visualizerBars.length; i++) {
         const index = Math.floor((i / visualizerBars.length) * bufferLength);
@@ -118,7 +132,6 @@ function drawBars(features) {
         
         let baseHeight = Math.max(5, value * 110);
         
-        // Продвинутый буст разных частот для разных полос (взято из нового скрипта)
         if (i < 10) {
             baseHeight += features.bassEnergy * 25;
             if (features.isBeat) baseHeight += currentPulseIntensity * 20;
@@ -129,19 +142,22 @@ function drawBars(features) {
         }
         
         visualizerBars[i].style.height = `${baseHeight}px`;
-        visualizerBars[i].style.background = `linear-gradient(to top, ${visualizerColors[0]}, ${visualizerColors[1] || visualizerColors[0]})`;
+        
+        // Безопасное получение цветов
+        const color1 = visualizerColors[0] || '#fff';
+        const color2 = visualizerColors[1] || visualizerColors[0] || '#ccc';
+        
+        visualizerBars[i].style.background = `linear-gradient(to top, ${color1}, ${color2})`;
     }
 }
 
 function updateGlow(features) {
     if (state.isLiteMode) {
-        leftGlow.style.height = '10%';
-        rightGlow.style.height = '10%';
+        if (leftGlow) leftGlow.style.height = '10%';
+        if (rightGlow) rightGlow.style.height = '10%';
         return;
     }
 
-    // Используем RMS (общую громкость) и возводим в степень 1.5
-    // Это дает плавный, но живой отклик, не улетающий в потолок.
     let h = Math.pow(features.rms, 1.5) * 200;
     
     if (h > 100) h = 100;
@@ -151,13 +167,12 @@ function updateGlow(features) {
         leftGlow.style.height = `${h}%`;
         rightGlow.style.height = `${h}%`;
         
-        // Яркость тоже меняется
         const opacityVal = 0.3 + (features.rms * 1.2);
         leftGlow.style.opacity = opacityVal;
         rightGlow.style.opacity = opacityVal;
     }
 }
 
-// Пустые функции, чтобы main.js не ломался, если вдруг попытается их вызвать
+// Заглушки для старого кода, если он где-то вызывается
 export function createParticles() {} 
 export function createCornerParticles() {}
