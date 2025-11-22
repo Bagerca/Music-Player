@@ -237,8 +237,8 @@ body.lite-mode .player-container { box-shadow: 0 0 25px var(--accent-color), 0 2
 
 /* --- ОБНОВЛЕННАЯ ЦЕНТРАЛЬНАЯ КНОПКА --- */
 .play-pause-btn { 
-    width: 85px;  /* Увеличенный диаметр */
-    height: 85px; 
+    width: 65px;  /* Увеличенный диаметр */
+    height: 65px; 
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
     display: flex;
     justify-content: center;
