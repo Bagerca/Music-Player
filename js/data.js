@@ -429,39 +429,41 @@ export const library = [
     }
 ];
 
-/* --- ВНУТРЕННИЕ ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ --- */
 const getTrack = (namePart) => {
     return library.find(t => t.name.toLowerCase().includes(namePart.toLowerCase()));
 };
 
-/* --- ОПРЕДЕЛЕНИЕ СТАНДАРТНЫХ ПЛЕЙЛИСТОВ --- */
 const defaultPlaylists = {
     "Все треки": library,
     "Энергичные": [
         getTrack("Katana"), 
-        getTrack("Valhalla"), 
-        getTrack("Песня смертника"), 
-        getTrack("IRIS OUT"), 
-        getTrack("2 Phút Hơn"), 
-        getTrack("Enemy"), 
-        getTrack("Soldat"), 
-        getTrack("Rapture Rising")
-    ].filter(Boolean), // filter(Boolean) убирает undefined, если трек не найден
+        getTrack("Tangled Up") // Пример заполнения
+    ].filter(Boolean),
     "Chill & Retro": [
-        getTrack("Tangled Up"), 
-        getTrack("Puttin On The Ritz"), 
-        getTrack("Man Without Love"), 
-        getTrack("Cigarette Duet"), 
-        getTrack("God Rest Ye Merry Gentlemen"), 
-        getTrack("Feeling Good")
+        getTrack("Tangled Up")
     ].filter(Boolean)
 };
 
 /* --- ГЛАВНАЯ ФУНКЦИЯ ЭКСПОРТА --- */
 export function getAllPlaylists(userPlaylists = {}, uploadedTracks = []) {
+    // Копируем дефолтные плейлисты
     const combined = { ...defaultPlaylists, ...userPlaylists };
-    if (uploadedTracks.length > 0) {
+    
+    // Добавляем "Мои загрузки", если есть
+    if (uploadedTracks && uploadedTracks.length > 0) {
         combined["Мои загрузки"] = uploadedTracks;
     }
+
+    // Обновляем плейлист "Все треки", добавляя туда загрузки, чтобы они были в общем списке
+    // Используем Set или проверку пути, чтобы не дублировать
+    const allTracks = [...combined["Все треки"]];
+    if (uploadedTracks.length > 0) {
+        uploadedTracks.forEach(t => {
+             if(!allTracks.find(x => x.path === t.path)) {
+                 allTracks.push(t);
+             }
+        });
+        combined["Все треки"] = allTracks;
+    }
+
     return combined;
-}
