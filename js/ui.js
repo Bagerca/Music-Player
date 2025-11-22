@@ -39,7 +39,7 @@ export function showNotification(text, icon = 'info') {
 export function renderTrackList(tracks = state.viewedTracks) {
     DOM.trackList.innerHTML = '';
     
-    // Проверка условий для включения Drag & Drop
+    // Условия Drag & Drop
     const isSystemPlaylist = ["Все треки", "Энергичные", "Chill & Retro", "Мои загрузки"].includes(state.currentPlaylistName);
     const isDefaultSort = state.sort.type === 'default';
     const enableDrag = !isSystemPlaylist && isDefaultSort;
@@ -58,9 +58,11 @@ export function renderTrackList(tracks = state.viewedTracks) {
         const el = document.createElement('div');
         el.className = `track-item ${isPlayingThis ? 'active' : ''}`;
         
+        // Для логики перетаскивания нам нужен ID или индекс в dataset
+        el.dataset.index = index;
+
         if (enableDrag) {
             el.setAttribute('draggable', 'true');
-            el.dataset.index = index;
         }
 
         el.innerHTML = `
@@ -88,73 +90,151 @@ export function renderTrackList(tracks = state.viewedTracks) {
 
         el.querySelector('.track-menu-btn').onclick = (e) => {
              e.stopPropagation();
-             // Отправляем событие в main.js для открытия меню
              const event = new CustomEvent('open-track-context', { 
                  detail: { originalEvent: e, index: index } 
              });
              document.dispatchEvent(event);
         };
 
-        if (enableDrag) addDragListeners(el, index);
+        if (enableDrag) addDragListeners(el);
         DOM.trackList.appendChild(el);
     });
 }
 
-// --- ЛОГИКА DRAG & DROP ---
-let draggedItemIndex = null;
+// --- ПРОФЕССИОНАЛЬНАЯ ЛОГИКА DRAG & DROP ---
 
-function addDragListeners(el, index) {
+// Элемент-заполнитель (призрак)
+const placeholder = document.createElement('div');
+placeholder.className = 'track-placeholder';
+
+function addDragListeners(el) {
     el.addEventListener('dragstart', (e) => {
-        draggedItemIndex = index;
+        // Указываем браузеру, что мы переносим
         e.dataTransfer.effectAllowed = 'move';
-        setTimeout(() => el.classList.add('dragging'), 0);
+        
+        // Добавляем класс элементу (он станет прозрачным и absolute)
+        // Делаем это с небольшой задержкой, чтобы браузер успел создать "картинку" перетаскивания
+        setTimeout(() => {
+            el.classList.add('dragging');
+            // Вставляем плейсхолдер сразу на место элемента, который начали тащить
+            el.parentNode.insertBefore(placeholder, el.nextSibling); 
+        }, 0);
     });
 
     el.addEventListener('dragend', () => {
-        draggedItemIndex = null;
         el.classList.remove('dragging');
-        document.querySelectorAll('.track-item').forEach(item => item.classList.remove('drag-over'));
-    });
-
-    el.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        const targetEl = e.target.closest('.track-item'); 
-        if (targetEl && targetEl !== el) {
-            document.querySelectorAll('.track-item').forEach(item => item.classList.remove('drag-over'));
-            targetEl.classList.add('drag-over');
-        }
-    });
-
-    el.addEventListener('drop', (e) => {
-        e.preventDefault();
-        const targetEl = e.target.closest('.track-item');
-        if (!targetEl) return;
-        const targetIndex = parseInt(targetEl.dataset.index);
-        if (draggedItemIndex !== null && draggedItemIndex !== targetIndex) {
-            reorderTracks(draggedItemIndex, targetIndex);
+        // Удаляем плейсхолдер из DOM
+        if (placeholder.parentNode) {
+            placeholder.parentNode.removeChild(placeholder);
         }
     });
 }
+
+// Слушатель на самом контейнере списка (один общий для всех)
+DOM.trackList.addEventListener('dragover', (e) => {
+    e.preventDefault(); // Разрешаем drop
+    
+    // Если список не в режиме sortable, выходим
+    if (!DOM.trackList.classList.contains('sortable')) return;
+
+    // Находим ближайший элемент ПОСЛЕ курсора мыши
+    const afterElement = getDragAfterElement(DOM.trackList, e.clientY);
+    
+    // Элемент, который мы тащим
+    const draggingEl = document.querySelector('.dragging');
+    if (!draggingEl) return;
+
+    // Магия перемещения плейсхолдера:
+    // Если afterElement нет (мы в конце списка), вставляем плейсхолдер в конец.
+    // Если есть, вставляем ПЕРЕД ним.
+    if (afterElement == null) {
+        DOM.trackList.appendChild(placeholder);
+    } else {
+        DOM.trackList.insertBefore(placeholder, afterElement);
+    }
+});
+
+DOM.trackList.addEventListener('drop', (e) => {
+    e.preventDefault();
+    if (!DOM.trackList.classList.contains('sortable')) return;
+
+    const draggingEl = document.querySelector('.dragging');
+    if (!draggingEl) return;
+
+    // --- ФИНАЛИЗАЦИЯ ПЕРЕМЕЩЕНИЯ ---
+    
+    // 1. Получаем индекс элемента, который тащили (из его dataset)
+    const oldIndex = parseInt(draggingEl.dataset.index);
+    
+    // 2. Определяем новый индекс.
+    // Для этого смотрим, где сейчас находится placeholder среди своих соседей (.track-item)
+    // Важно: placeholder - это div, но не .track-item.
+    // Собираем всех детей контейнера в массив
+    const allChildren = [...DOM.trackList.children];
+    // Индекс плейсхолдера в DOM
+    const placeholderIndex = allChildren.indexOf(placeholder);
+    
+    // Так как original draggingEl имеет position:absolute/hidden, он может не влиять на индекс визуально, 
+    // но он всё ещё в DOM. Нам нужно посчитать "чистый" индекс.
+    // Проще всего: считаем количество .track-item ПЕРЕД placeholder-ом.
+    let newIndex = 0;
+    for (let i = 0; i < placeholderIndex; i++) {
+        if (allChildren[i].classList.contains('track-item') && !allChildren[i].classList.contains('dragging')) {
+            newIndex++;
+        }
+    }
+
+    // Если мы тащим элемент вниз, индекс может сместиться, но логика "сколько перед ним" работает надежно,
+    // так как сам dragging элемент исключен из подсчета выше.
+    
+    if (oldIndex !== newIndex) {
+        reorderTracks(oldIndex, newIndex);
+    }
+});
+
+// Математика: находим элемент, центр которого находится сразу за курсором мыши
+function getDragAfterElement(container, y) {
+    // Берем все элементы, которые НЕ тащим (и не плейсхолдер)
+    const draggableElements = [...container.querySelectorAll('.track-item:not(.dragging)')];
+
+    return draggableElements.reduce((closest, child) => {
+        const box = child.getBoundingClientRect();
+        // offset - расстояние от курсора до центра элемента
+        const offset = y - box.top - box.height / 2;
+        
+        // Нам нужны только те, где offset < 0 (курсор ВЫШЕ центра элемента)
+        // И из них ищем тот, у которого offset ближе всего к 0 (самый близкий снизу)
+        if (offset < 0 && offset > closest.offset) {
+            return { offset: offset, element: child };
+        } else {
+            return closest;
+        }
+    }, { offset: Number.NEGATIVE_INFINITY }).element;
+}
+
 
 function reorderTracks(fromIndex, toIndex) {
     const playlistName = state.currentPlaylistName;
     const playlist = state.userPlaylists[playlistName];
     if (!playlist) return;
 
+    // Переставляем элементы в массиве
     const [movedTrack] = playlist.splice(fromIndex, 1);
     playlist.splice(toIndex, 0, movedTrack);
 
+    // Сохраняем
     saveUserPlaylists();
     state.viewedTracks = playlist;
 
-    // Синхронизация текущего воспроизводимого трека
+    // Синхронизация плеера
     if (state.playbackList.length === playlist.length && state.playbackList.every((t, i) => t.path === state.viewedTracks[i].path)) {
        state.playbackList = [...playlist];
     }
-    // Если играл перемещенный трек, обновляем индекс
+    // Если играл перемещенный трек, обновляем его индекс в памяти плеера
     if (state.isPlaying || state.playbackIndex >= 0) {
         const currentlyPlayingPath = state.playbackList[state.playbackIndex]?.path;
         if(currentlyPlayingPath) {
+             // Ищем новый индекс играющего трека (он мог сдвинуться)
              const newIndex = playlist.findIndex(t => t.path === currentlyPlayingPath);
              if (newIndex !== -1) state.playbackIndex = newIndex;
         }
@@ -280,23 +360,6 @@ export function checkLyrics(time) {
     }
 }
 
-// --- ФАВИКОНКА ---
-export function updateFavicon(accentColor) {
-    const oldLink = document.getElementById('dynamic-favicon');
-    const newLink = document.createElement('link');
-    newLink.id = 'dynamic-favicon';
-    newLink.rel = 'icon';
-    newLink.type = 'image/svg+xml';
-    const svgString = `
-    <svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-      <rect width="64" height="64" rx="20" fill="#1a1a2e"/>
-      <path d="M46 14H22V43C20.5 42.3 18.8 42 17 42C12.6 42 9 45.6 9 50C9 54.4 12.6 58 17 58C21.4 58 25 54.4 25 50V23H43V43C41.5 42.3 39.8 42 38 42C33.6 42 30 45.6 30 50C30 54.4 33.6 58 38 58C42.4 58 46 54.4 46 50V14Z" fill="${accentColor}"/>
-    </svg>`.trim();
-    newLink.href = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgString)}`;
-    if (oldLink) document.head.removeChild(oldLink);
-    document.head.appendChild(newLink);
-}
-
 // --- ИКОНКА РЕЖИМА ВОСПРОИЗВЕДЕНИЯ ---
 export function updatePlaybackModeIcon(mode) {
     const btn = document.getElementById('playbackModeBtn');
@@ -316,4 +379,20 @@ export function updatePlaybackModeIcon(mode) {
     btn.title = title;
     if (mode !== 0) { btn.style.color = 'var(--accent-color)'; btn.style.opacity = '1'; } 
     else { btn.style.color = 'white'; btn.style.opacity = ''; }
+}
+
+export function updateFavicon(accentColor) {
+    const oldLink = document.getElementById('dynamic-favicon');
+    const newLink = document.createElement('link');
+    newLink.id = 'dynamic-favicon';
+    newLink.rel = 'icon';
+    newLink.type = 'image/svg+xml';
+    const svgString = `
+    <svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+      <rect width="64" height="64" rx="20" fill="#1a1a2e"/>
+      <path d="M46 14H22V43C20.5 42.3 18.8 42 17 42C12.6 42 9 45.6 9 50C9 54.4 12.6 58 17 58C21.4 58 25 54.4 25 50V23H43V43C41.5 42.3 39.8 42 38 42C33.6 42 30 45.6 30 50C30 54.4 33.6 58 38 58C42.4 58 46 54.4 46 50V14Z" fill="${accentColor}"/>
+    </svg>`.trim();
+    newLink.href = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgString)}`;
+    if (oldLink) document.head.removeChild(oldLink);
+    document.head.appendChild(newLink);
 }
