@@ -5,9 +5,10 @@ import * as UI from './ui.js';
 import * as Vis from './visualizer.js';
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Инициализация
     const allPlaylists = getAllPlaylists(state.userPlaylists, state.uploadedTracks);
     
-    // Инициализация: View и Playback совпадают
+    // Изначально viewed и playback совпадают (Все треки)
     state.viewedTracks = allPlaylists["Все треки"];
     state.playbackList = [...state.viewedTracks];
     state.currentPlaylistName = "Все треки";
@@ -57,25 +58,31 @@ function setupEventListeners() {
     document.getElementById('fileInput').onchange = (e) => {
         const file = e.target.files[0];
         if (!file) return;
+        
         state.pendingUploadFile = file;
         
-        // Заполняем форму
+        // Заполняем форму дефолтными данными
         document.getElementById('uploadFileName').textContent = file.name;
-        document.getElementById('upTitle').value = file.name.replace(/\.[^/.]+$/, ""); 
+        document.getElementById('upTitle').value = file.name.replace(/\.[^/.]+$/, ""); // Убрать расширение
         document.getElementById('upArtist').value = "Unknown Artist";
         document.getElementById('upCoverUrl').value = "";
         document.getElementById('upCoverFile').value = "";
         
+        // Открываем модалку
         document.getElementById('uploadModal').classList.add('active');
+        
+        // Сброс инпута, чтобы можно было выбрать тот же файл снова
         e.target.value = '';
     };
 
+    // Кнопка "Рандом цвета"
     document.getElementById('randomColorsBtn').onclick = () => {
         const hue = Math.floor(Math.random() * 360);
         document.getElementById('upColorBg').value = hslToHex(hue, 60, 10);
         document.getElementById('upColorAccent').value = hslToHex(hue, 80, 60);
     };
 
+    // Кнопка "Сохранить" в модалке загрузки
     document.getElementById('saveUploadBtn').onclick = confirmUploadTrack;
     document.getElementById('cancelUploadBtn').onclick = () => document.getElementById('uploadModal').classList.remove('active');
 
@@ -101,6 +108,21 @@ function setupEventListeners() {
         document.getElementById('contextMenu').classList.remove('active');
     };
 
+    // --- МОДАЛКА ПОДТВЕРЖДЕНИЯ (УДАЛЕНИЕ) ---
+    const confirmModal = document.getElementById('confirmationModal');
+    document.getElementById('cancelConfirmBtn').onclick = () => {
+        confirmModal.classList.remove('active');
+        state.pendingAction = null;
+    };
+    document.getElementById('actionConfirmBtn').onclick = () => {
+        if (state.pendingAction) {
+            state.pendingAction();
+            state.pendingAction = null;
+        }
+        confirmModal.classList.remove('active');
+    };
+
+
     // --- ОСТАЛЬНОЕ ---
     const volSlider = document.getElementById('volumeSlider');
     const updateVolume = (val) => {
@@ -118,7 +140,6 @@ function setupEventListeners() {
         updateVolume(volSlider.value);
     };
     
-    // Панель и Плейлисты
     document.getElementById('trackListBtn').onclick = () => document.getElementById('trackListPanel').classList.toggle('active');
     document.getElementById('playlistTrigger').onclick = UI.togglePlaylistSelect;
     
@@ -148,16 +169,17 @@ function setupEventListeners() {
     });
 }
 
-/* --- ФУНКЦИИ --- */
+/* --- ФУНКЦИИ ЛОГИКИ --- */
 
 function changePlaybackTrack(direction) {
     let newIndex = state.playbackIndex + direction;
     if (newIndex >= state.playbackList.length) newIndex = 0;
     if (newIndex < 0) newIndex = state.playbackList.length - 1;
     
-    // Обновляем только плеер, список справа не трогаем (если он не совпадает)
     state.playbackIndex = newIndex;
     AudioCore.loadTrack(newIndex, true); 
+    // Обновляем подсветку списка, если трек виден
+    UI.renderTrackList(state.viewedTracks);
 }
 
 async function confirmUploadTrack() {
@@ -193,7 +215,6 @@ async function confirmUploadTrack() {
 
     state.uploadedTracks.push(newTrack);
 
-    // Если мы сейчас смотрим "Мои загрузки" или кастомный плейлист, добавляем туда
     const currentName = state.currentPlaylistName;
     const isSystem = ["Все треки", "Энергичные", "Chill & Retro"].includes(currentName);
     
@@ -221,7 +242,6 @@ function hslToHex(h, s, l) {
     return `#${f(0)}${f(8)}${f(4)}`;
 }
 
-// --- Контекстное меню ---
 function showAddToPlaylistModal() {
     const list = document.getElementById('addToPlaylistOptions');
     list.innerHTML = '';
@@ -299,11 +319,18 @@ function createNewPlaylist() {
 
 function deleteCurrentPlaylist() {
     const name = state.currentPlaylistName;
-    if (!confirm(`Удалить плейлист "${name}"?`)) return;
-    delete state.userPlaylists[name];
-    saveUserPlaylists();
-    UI.switchPlaylist("Все треки");
-    UI.showNotification('Плейлист удален', 'info');
+    
+    const msg = document.getElementById('confirmationMessage');
+    msg.textContent = `Вы действительно хотите удалить плейлист "${name}"?`;
+    
+    state.pendingAction = () => {
+        delete state.userPlaylists[name];
+        saveUserPlaylists();
+        UI.switchPlaylist("Все треки");
+        UI.showNotification('Плейлист удален', 'info');
+    };
+    
+    document.getElementById('confirmationModal').classList.add('active');
 }
 
 function toggleLiteMode() {
