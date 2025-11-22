@@ -11,16 +11,17 @@ const visualizerContainer = document.getElementById('visualizer');
 const leftGlow = document.getElementById('leftGlow');
 const rightGlow = document.getElementById('rightGlow');
 
-// Частицы (оставляем пустым)
-let particlesData = [];
+// Переменные анализа
+const FREQ_RANGES = { 
+    BASS: { start: 0, end: 10 }, 
+    MID: { start: 10, end: 20 }, 
+    HIGH: { start: 20, end: 30 } 
+};
 
-// Переменные анализа бита
+let energyHistory = [];
 let beatCooldown = 0;
 let lastBeatTime = 0;
 let currentPulseIntensity = 0;
-let energyHistory = [];
-let energySurgeActive = false;
-let energySurgeIntensity = 0;
 
 export function initVisualizerDOM() {
     visualizerContainer.innerHTML = '';
@@ -48,125 +49,115 @@ export function stopVisualizer() {
 
 function loop() {
     if (!analyser) return;
-    
     analyser.getByteFrequencyData(dataArray);
     
     const features = analyzeAudioFeatures();
+    
     checkLyrics(audio.currentTime);
     drawBars(features);
-    
-    // Обновление линий (с новой формулой)
     updateGlow(features);
     
-    if (!state.isLiteMode) {
-        updateEnergySurge();
+    // Затухание пульсации бита
+    if (currentPulseIntensity > 0) {
+        currentPulseIntensity -= 0.08;
+        if (currentPulseIntensity < 0) currentPulseIntensity = 0;
     }
-    
+
     animationId = requestAnimationFrame(loop);
 }
 
-function analyzeAudioFeatures() {
+function getFrequencyEnergy(range) {
     let sum = 0;
-    let bassSum = 0;
-    
-    for (let i = 0; i < bufferLength; i++) {
+    const count = range.end - range.start;
+    for (let i = range.start; i < range.end; i++) {
         sum += dataArray[i];
-        if (i < 10) bassSum += dataArray[i];
     }
+    return sum / count / 255;
+}
+
+function analyzeAudioFeatures() {
+    const bassEnergy = getFrequencyEnergy(FREQ_RANGES.BASS);
+    const midEnergy = getFrequencyEnergy(FREQ_RANGES.MID);
+    const highEnergy = getFrequencyEnergy(FREQ_RANGES.HIGH);
     
-    const rms = sum / bufferLength / 255;
-    const bassEnergy = bassSum / 10 / 255;
+    // RMS (Общая энергия)
+    let sum = 0;
+    for (let i = 0; i < bufferLength; i++) {
+        sum += dataArray[i] * dataArray[i];
+    }
+    const rms = Math.sqrt(sum / bufferLength) / 255;
     
+    // Детектор бита
     let isBeat = false;
     energyHistory.push(rms);
     if (energyHistory.length > 30) energyHistory.shift();
     const energyAverage = energyHistory.reduce((a, b) => a + b, 0) / energyHistory.length;
     
-    if (beatCooldown <= 0 && bassEnergy > energyAverage * 1.4 + 0.15) {
-        isBeat = true;
-        beatCooldown = 10;
-        currentPulseIntensity = 1.0;
-        activateEnergySurge(0.8);
+    const currentTime = Date.now();
+    if (beatCooldown <= 0) {
+        if (bassEnergy > energyAverage * 1.4 + 0.15 && (currentTime - lastBeatTime) > 200) {
+            isBeat = true;
+            lastBeatTime = currentTime;
+            currentPulseIntensity = 1.0;
+            beatCooldown = 8;
+        }
     } else {
         beatCooldown--;
     }
-    
-    if (currentPulseIntensity > 0) currentPulseIntensity -= 0.05;
-    
-    return { rms, bassEnergy, isBeat };
+
+    return { rms, bassEnergy, midEnergy, highEnergy, isBeat };
 }
 
 function drawBars(features) {
     const track = state.currentTracks[state.currentTrackIndex];
-    const colors = track ? track.colors : { primary: '#fff', accent: '#fff' };
+    const visualizerColors = track ? track.visualizer : ['#fff', '#ccc'];
     
     for (let i = 0; i < visualizerBars.length; i++) {
         const index = Math.floor((i / visualizerBars.length) * bufferLength);
         const value = dataArray[index] / 255;
-        let height = Math.max(5, value * 120);
         
-        if (features.isBeat) height += 10;
+        let baseHeight = Math.max(5, value * 110);
         
-        visualizerBars[i].style.height = `${height}px`;
-        visualizerBars[i].style.background = `linear-gradient(to top, ${colors.primary}, ${colors.accent})`;
+        // Продвинутый буст разных частот для разных полос (взято из нового скрипта)
+        if (i < 10) {
+            baseHeight += features.bassEnergy * 25;
+            if (features.isBeat) baseHeight += currentPulseIntensity * 20;
+        } else if (i < 20) {
+            baseHeight += features.midEnergy * 18;
+        } else {
+            baseHeight += features.highEnergy * 20;
+        }
+        
+        visualizerBars[i].style.height = `${baseHeight}px`;
+        visualizerBars[i].style.background = `linear-gradient(to top, ${visualizerColors[0]}, ${visualizerColors[1] || visualizerColors[0]})`;
     }
 }
 
-// --- ОБНОВЛЕННАЯ ФУНКЦИЯ ЛИНИЙ (МЕНЕЕ ЧУВСТВИТЕЛЬНАЯ) ---
 function updateGlow(features) {
     if (state.isLiteMode) {
-        if (leftGlow) leftGlow.style.height = '10%';
-        if (rightGlow) rightGlow.style.height = '10%';
+        leftGlow.style.height = '10%';
+        rightGlow.style.height = '10%';
         return;
     }
 
-    // НОВАЯ ФОРМУЛА:
-    // Math.pow(x, 1.5) - это делает реакцию нелинейной. 
-    // Тихие звуки гасятся сильнее, громкие остаются громкими.
-    // Множитель снижен до 200.
-    
-    // Пример расчетов:
-    // Тихая музыка (rms 0.2) -> 0.09 * 200 = 18%
-    // Средняя музыка (rms 0.4) -> 0.25 * 200 = 50% (Идеальная середина!)
-    // Громкий пик (rms 0.6) -> 0.46 * 200 = 92%
-    
+    // Используем RMS (общую громкость) и возводим в степень 1.5
+    // Это дает плавный, но живой отклик, не улетающий в потолок.
     let h = Math.pow(features.rms, 1.5) * 200;
-
-    // Базовый минимум 5%, максимум 100%
+    
     if (h > 100) h = 100;
     if (h < 5) h = 5;
 
     if (leftGlow && rightGlow) {
-        const heightStr = `${h}%`;
+        leftGlow.style.height = `${h}%`;
+        rightGlow.style.height = `${h}%`;
         
-        // Прозрачность тоже делаем чуть мягче, чтобы не мигало
-        // База 0.2 + динамика
-        const opacityVal = 0.2 + (features.rms * 1.2);
-
-        leftGlow.style.height = heightStr;
+        // Яркость тоже меняется
+        const opacityVal = 0.3 + (features.rms * 1.2);
         leftGlow.style.opacity = opacityVal;
-
-        rightGlow.style.height = heightStr;
         rightGlow.style.opacity = opacityVal;
     }
 }
 
-function activateEnergySurge(intensity) {
-    energySurgeActive = true;
-    energySurgeIntensity = intensity;
-}
-
-function updateEnergySurge() {
-    if (!energySurgeActive) return;
-    energySurgeIntensity -= 0.04;
-    if (energySurgeIntensity < 0) {
-        energySurgeIntensity = 0;
-        energySurgeActive = false;
-    }
-    const waves = document.querySelectorAll('.energy-wave');
-    waves.forEach(w => {
-        w.style.opacity = energySurgeIntensity;
-    });
-}
-
-export function createParticles() {}
+// Пустые функции, чтобы main.js не ломался, если вдруг попытается их вызвать
+export function createParticles() {} 
+export function createCornerParticles() {}
