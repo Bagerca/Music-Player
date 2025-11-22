@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
     state.currentTracks = allPlaylists[state.currentPlaylistName];
 
     Vis.initVisualizerDOM();
-    Vis.createParticles();
+    // УДАЛЕНО: Vis.createParticles();
     
     if (state.currentTracks.length) {
         AudioCore.loadTrack(0);
@@ -95,8 +95,6 @@ function setupEventListeners() {
 
     // Плейлисты (открытие списка)
     document.getElementById('trackListBtn').onclick = () => {
-        // УБРАНО: document.getElementById('playerContainer').classList.toggle('shifted');
-        // Теперь плеер остается на месте
         document.getElementById('trackListPanel').classList.toggle('active');
     };
 
@@ -122,5 +120,5 @@ function toggleLiteMode() {
     localStorage.setItem('isLiteMode', state.isLiteMode);
     document.body.classList.toggle('lite-mode', state.isLiteMode);
     document.getElementById('liteModeBtn').classList.toggle('active', state.isLiteMode);
-    Vis.createParticles(); // Пересоздать (или очистить) частицы
+    // УДАЛЕНО: Vis.createParticles();
 }
