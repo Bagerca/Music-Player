@@ -196,7 +196,7 @@ export function checkLyrics(time) {
     }
 }
 
-// --- ФАВИКОНКА (FIX: ДОБАВИЛ EXPORT) ---
+// --- ФАВИКОНКА ---
 export function updateFavicon(accentColor) {
     const oldLink = document.getElementById('dynamic-favicon');
     const newLink = document.createElement('link');
@@ -204,7 +204,6 @@ export function updateFavicon(accentColor) {
     newLink.rel = 'icon';
     newLink.type = 'image/svg+xml';
 
-    // SVG с исправленными ножками
     const svgString = `
     <svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
       <rect width="64" height="64" rx="20" fill="#1a1a2e"/>
@@ -215,4 +214,39 @@ export function updateFavicon(accentColor) {
 
     if (oldLink) document.head.removeChild(oldLink);
     document.head.appendChild(newLink);
+}
+
+// --- НОВАЯ ФУНКЦИЯ: ОБНОВЛЕНИЕ ИКОНКИ РЕЖИМА ВОСПРОИЗВЕДЕНИЯ ---
+export function updatePlaybackModeIcon(mode) {
+    const btn = document.getElementById('playbackModeBtn');
+    let svg = '';
+    let title = '';
+
+    // 0: LOOP_PLAYLIST (По умолчанию)
+    if (mode === 0) {
+        title = 'Повтор плейлиста';
+        svg = '<path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/>';
+    } 
+    // 1: LOOP_ONE (Повтор одного трека)
+    else if (mode === 1) {
+        title = 'Повтор одного трека';
+        // Иконка цикла с единичкой
+        svg = '<path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/><text x="10" y="16" font-size="10" fill="currentColor" font-weight="bold">1</text>';
+    } 
+    // 2: SHUFFLE (Рандом)
+    else if (mode === 2) {
+        title = 'Случайный порядок';
+        svg = '<path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/>';
+    }
+
+    btn.innerHTML = `<svg viewBox="0 0 24 24">${svg}</svg>`;
+    btn.title = title;
+    
+    if (mode !== 0) {
+        btn.style.color = 'var(--accent-color)';
+        btn.style.opacity = '1';
+    } else {
+        btn.style.color = 'white';
+        btn.style.opacity = '';
+    }
 }
