@@ -46,7 +46,7 @@ function setupEventListeners() {
         changeTrack(1);
     });
 
-    // --- ГРОМКОСТЬ (НОВАЯ ЛОГИКА) ---
+    // --- ГРОМКОСТЬ ---
     const volSlider = document.getElementById('volumeSlider');
     const volIcon = document.getElementById('volumeIcon');
     
@@ -95,7 +95,8 @@ function setupEventListeners() {
 
     // Плейлисты (открытие списка)
     document.getElementById('trackListBtn').onclick = () => {
-        document.getElementById('playerContainer').classList.toggle('shifted');
+        // УБРАНО: document.getElementById('playerContainer').classList.toggle('shifted');
+        // Теперь плеер остается на месте
         document.getElementById('trackListPanel').classList.toggle('active');
     };
 
