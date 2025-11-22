@@ -118,6 +118,19 @@
         <div class="track-list" id="trackList"></div>
     </div>
 
+    <!-- КОНТЕКСТНОЕ МЕНЮ ТРЕКА -->
+    <div id="contextMenu" class="context-menu">
+        <div class="ctx-item" id="ctxAddToPlaylist">
+            <span>➕</span> Добавить в плейлист
+        </div>
+        <div class="ctx-item" id="ctxDownload">
+            <span>⬇️</span> Скачать трек
+        </div>
+        <div class="ctx-item delete" id="ctxRemoveFromPlaylist" style="display: none;">
+            <span>🗑️</span> Удалить из плейлиста
+        </div>
+    </div>
+
     <!-- ЭФФЕКТЫ -->
     <div class="edge-effects">
         <div class="energy-surges">
@@ -128,7 +141,7 @@
         </div>
     </div>
 
-    <!-- МОДАЛКИ -->
+    <!-- МОДАЛКА СОЗДАНИЯ ПЛЕЙЛИСТА -->
     <div id="modalOverlay" class="modal-overlay">
         <div class="modal">
             <h3>Новый плейлист</h3>
@@ -137,6 +150,17 @@
                 <button id="closeModalBtn" class="modal-btn cancel">Отмена</button>
                 <button id="confirmPlaylistBtn" class="modal-btn confirm">Создать</button>
             </div>
+        </div>
+    </div>
+
+    <!-- МОДАЛКА ВЫБОРА ПЛЕЙЛИСТА (КУДА ДОБАВИТЬ) -->
+    <div id="addToPlaylistModal" class="modal-overlay">
+        <div class="modal">
+            <h3>Выберите плейлист</h3>
+            <div id="addToPlaylistOptions" class="playlist-options-list">
+                <!-- Сюда JS сгенерирует кнопки -->
+            </div>
+            <button id="closeAddToPlaylistBtn" class="modal-btn cancel" style="margin-top: 15px;">Отмена</button>
         </div>
     </div>
 
