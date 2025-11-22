@@ -4,18 +4,23 @@ import * as AudioCore from './audio.js';
 import * as UI from './ui.js';
 import * as Vis from './visualizer.js';
 
-// Инициализация
 document.addEventListener('DOMContentLoaded', () => {
+    // Инициализация плейлистов
     const allPlaylists = getAllPlaylists(state.userPlaylists, state.uploadedTracks);
-    state.currentTracks = allPlaylists[state.currentPlaylistName];
+    state.currentTracks = allPlaylists[state.currentPlaylistName] || allPlaylists["Все треки"];
 
+    // Визуализатор
     Vis.initVisualizerDOM();
-    // Vis.createParticles(); - УДАЛЕНО
     
+    // Загрузка первого трека
     if (state.currentTracks.length) {
         AudioCore.loadTrack(0);
     }
     
+    // Рендер UI
+    UI.renderPlaylistSelector();
+    UI.renderTrackList();
+
     setupEventListeners();
     
     // Скрываем прелоадер
@@ -27,17 +32,15 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function setupEventListeners() {
-    // Аудио управление
+    // --- АУДИО ---
     document.getElementById('playPauseBtn').onclick = AudioCore.togglePlay;
     document.getElementById('prevBtn').onclick = () => changeTrack(-1);
     document.getElementById('nextBtn').onclick = () => changeTrack(1);
     
-    // Прогресс бар
     document.getElementById('progressBar').onclick = (e) => {
         const width = e.currentTarget.clientWidth;
-        const clickX = e.offsetX;
         const duration = AudioCore.audio.duration;
-        AudioCore.audio.currentTime = (clickX / width) * duration;
+        AudioCore.audio.currentTime = (e.offsetX / width) * duration;
     };
 
     AudioCore.audio.addEventListener('timeupdate', UI.updateProgress);
@@ -48,50 +51,45 @@ function setupEventListeners() {
 
     // --- ГРОМКОСТЬ ---
     const volSlider = document.getElementById('volumeSlider');
-    const volIcon = document.getElementById('volumeIcon');
-    
-    const updateVolumeVisuals = (val) => {
+    const updateVolume = (val) => {
         volSlider.style.backgroundSize = `${val}% 100%`;
         AudioCore.audio.volume = val / 100;
-        
-        if(val == 0) {
-            volIcon.innerHTML = '<path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>';
-            volIcon.style.fill = 'rgba(255,255,255,0.4)';
-        } else {
-            volIcon.innerHTML = '<path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>';
-            volIcon.style.fill = 'rgba(255,255,255,0.7)';
-        }
     };
-
-    updateVolumeVisuals(volSlider.value);
-
-    volSlider.oninput = (e) => {
-        updateVolumeVisuals(e.target.value);
-    };
-
+    updateVolume(volSlider.value);
+    volSlider.oninput = (e) => updateVolume(e.target.value);
+    
     document.getElementById('muteBtn').onclick = () => {
         if (AudioCore.audio.volume > 0) {
-            volSlider.dataset.prevVol = volSlider.value;
+            volSlider.dataset.prev = volSlider.value;
             volSlider.value = 0;
         } else {
-            volSlider.value = volSlider.dataset.prevVol || 70;
+            volSlider.value = volSlider.dataset.prev || 70;
         }
-        updateVolumeVisuals(volSlider.value);
+        updateVolume(volSlider.value);
     };
 
-    // Клавиши
-    document.addEventListener('keydown', (e) => {
-        if (e.target.tagName === 'INPUT') return;
-        if (e.code === 'Space') { e.preventDefault(); AudioCore.togglePlay(); }
-        if (e.code === 'ArrowRight') AudioCore.audio.currentTime += 5;
-        if (e.code === 'ArrowLeft') AudioCore.audio.currentTime -= 5;
-        if (e.code === 'KeyL') toggleLiteMode();
-    });
-
-    // Плейлисты
+    // --- ПЛЕЙЛИСТЫ И ПАНЕЛЬ ---
     document.getElementById('trackListBtn').onclick = () => {
         document.getElementById('trackListPanel').classList.toggle('active');
     };
+
+    document.getElementById('playlistTrigger').onclick = UI.togglePlaylistSelect;
+
+    // Создание плейлиста
+    const modalOverlay = document.getElementById('modalOverlay');
+    document.getElementById('createPlaylistBtn').onclick = () => {
+        modalOverlay.classList.add('active');
+        document.getElementById('newPlaylistName').focus();
+    };
+    document.getElementById('closeModalBtn').onclick = () => modalOverlay.classList.remove('active');
+    document.getElementById('confirmPlaylistBtn').onclick = createNewPlaylist;
+
+    // Удаление плейлиста
+    document.getElementById('deletePlaylistBtn').onclick = deleteCurrentPlaylist;
+
+    // Загрузка треков
+    document.getElementById('uploadTrackBtn').onclick = () => document.getElementById('fileInput').click();
+    document.getElementById('fileInput').onchange = handleFileUpload;
 
     // Поиск
     document.getElementById('trackSearch').oninput = (e) => {
@@ -101,13 +99,92 @@ function setupEventListeners() {
         );
         UI.renderTrackList(filtered);
     };
+
+    // Клавиши
+    document.addEventListener('keydown', (e) => {
+        if (e.target.tagName === 'INPUT') return;
+        if (e.code === 'Space') { e.preventDefault(); AudioCore.togglePlay(); }
+        if (e.code === 'KeyL') toggleLiteMode();
+    });
 }
+
+// --- ЛОГИКА ФУНКЦИЙ ---
 
 function changeTrack(direction) {
     let newIndex = state.currentTrackIndex + direction;
     if (newIndex >= state.currentTracks.length) newIndex = 0;
     if (newIndex < 0) newIndex = state.currentTracks.length - 1;
     AudioCore.loadTrack(newIndex, true);
+}
+
+function createNewPlaylist() {
+    const input = document.getElementById('newPlaylistName');
+    const name = input.value.trim();
+    const modalOverlay = document.getElementById('modalOverlay');
+
+    if (!name) return;
+    const allLists = getAllPlaylists(state.userPlaylists, state.uploadedTracks);
+    if (allLists[name]) {
+        alert('Плейлист с таким именем уже существует!');
+        return;
+    }
+
+    state.userPlaylists[name] = [];
+    saveUserPlaylists();
+    
+    input.value = '';
+    modalOverlay.classList.remove('active');
+    UI.switchPlaylist(name);
+}
+
+function deleteCurrentPlaylist() {
+    const name = state.currentPlaylistName;
+    if (!confirm(`Удалить плейлист "${name}"?`)) return;
+    
+    delete state.userPlaylists[name];
+    saveUserPlaylists();
+    UI.switchPlaylist("Все треки");
+}
+
+function handleFileUpload(e) {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+
+    let addedCount = 0;
+
+    files.forEach(file => {
+        const objectUrl = URL.createObjectURL(file);
+        const hue = Math.floor(Math.random() * 360);
+        const randomColor = `hsl(${hue}, 80%, 60%)`;
+        const randomBg = `hsl(${hue}, 60%, 10%)`;
+
+        const newTrack = {
+            name: file.name.replace(/\.[^/.]+$/, ""),
+            artist: 'Local Upload',
+            path: objectUrl,
+            cover: 'picture/default_cover.jpg', // Убедись что эта картинка есть, или замени на любую
+            colors: { primary: '#1a1a2e', secondary: randomBg, accent: randomColor },
+            neonColor: randomColor,
+            visualizer: [randomColor, '#ffffff', randomColor]
+        };
+
+        state.uploadedTracks.push(newTrack);
+        
+        // Добавляем в текущий пользовательский плейлист
+        const currentName = state.currentPlaylistName;
+        const isSystem = ["Все треки", "Энергичные", "Chill & Retro", "Мои загрузки"].includes(currentName);
+        if (!isSystem && state.userPlaylists[currentName]) {
+            state.userPlaylists[currentName].push(newTrack);
+            saveUserPlaylists();
+        }
+        addedCount++;
+    });
+
+    e.target.value = '';
+    if (addedCount > 0) {
+        UI.renderPlaylistSelector();
+        UI.switchPlaylist(state.currentPlaylistName);
+    }
 }
 
 function toggleLiteMode() {
