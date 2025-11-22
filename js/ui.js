@@ -264,35 +264,34 @@ export function updateFavicon(isPlaying) {
     const link = document.getElementById('dynamic-favicon');
     if (!link) return;
 
-    // Цвета для иконки
     const colorBg = '#1a1a2e';
     const colorBar = '#00d1ff';
 
-    // CSS для анимации (активен только если музыка играет)
+    // CSS анимация. Важно: используем проценты корректно
+    // Уменьшил амплитуду, чтобы выглядело плавнее
     const animationCSS = isPlaying ? `
         .bar:nth-child(2) { animation: dance 0.8s ease-in-out infinite; }
         .bar:nth-child(3) { animation: dance 1.2s ease-in-out infinite; animation-delay: 0.1s; }
         .bar:nth-child(4) { animation: dance 0.6s ease-in-out infinite; animation-delay: 0.2s; }
         @keyframes dance {
             0%, 100% { height: 10px; y: 42px; opacity: 0.6; }
-            50% { height: 34px; y: 18px; opacity: 1; }
+            50% { height: 28px; y: 24px; opacity: 1; } 
         }
     ` : '';
 
-    // SVG код
-    const svg = `
-    <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+    // Собираем SVG строку. Убираем лишние переносы строк для безопасности url
+    const svgString = `
+    <svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
       <style>
-        .bar { fill: ${colorBar}; rx: 3; transition: all 0.3s; }
+        .bar { fill: ${colorBar}; rx: 3; }
         ${animationCSS}
       </style>
       <rect width="64" height="64" rx="20" fill="${colorBg}"/>
-      <rect class="bar" x="14" y="30" width="8" height="20" />
-      <rect class="bar" x="28" y="20" width="8" height="30" />
-      <rect class="bar" x="42" y="25" width="8" height="25" />
-    </svg>
-    `.trim();
+      <rect class="bar" x="14" y="30" width="8" height="10" />
+      <rect class="bar" x="28" y="20" width="8" height="10" />
+      <rect class="bar" x="42" y="25" width="8" height="10" />
+    </svg>`.trim();
 
-    // Кодируем и заменяем
-    link.href = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+    // Используем encodeURIComponent, чтобы превратить строку в валидный URL
+    link.href = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgString)}`;
 }
