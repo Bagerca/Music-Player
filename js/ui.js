@@ -39,7 +39,6 @@ export function showNotification(text, icon = 'info') {
 export function renderTrackList(tracks = state.viewedTracks) {
     DOM.trackList.innerHTML = '';
     
-    // Условия Drag & Drop
     const isSystemPlaylist = ["Все треки", "Энергичные", "Chill & Retro", "Мои загрузки"].includes(state.currentPlaylistName);
     const isDefaultSort = state.sort.type === 'default';
     const enableDrag = !isSystemPlaylist && isDefaultSort;
@@ -100,7 +99,7 @@ export function renderTrackList(tracks = state.viewedTracks) {
     });
 }
 
-// --- ПРОФЕССИОНАЛЬНАЯ ЛОГИКА DRAG & DROP (FIXED JITTER) ---
+// --- DRAG & DROP ---
 
 const placeholder = document.createElement('div');
 placeholder.className = 'track-placeholder';
@@ -108,9 +107,6 @@ placeholder.className = 'track-placeholder';
 function addDragListeners(el) {
     el.addEventListener('dragstart', (e) => {
         e.dataTransfer.effectAllowed = 'move';
-        // Убираем стандартную прозрачную картинку драга, если хотим (опционально)
-        // e.dataTransfer.setDragImage(new Image(), 0, 0); 
-        
         setTimeout(() => {
             el.classList.add('dragging');
             el.parentNode.insertBefore(placeholder, el.nextSibling); 
@@ -125,22 +121,17 @@ function addDragListeners(el) {
     });
 }
 
-// СЛУШАТЕЛЬ DRAG OVER (ИСПРАВЛЕННЫЙ)
 DOM.trackList.addEventListener('dragover', (e) => {
     e.preventDefault(); 
     if (!DOM.trackList.classList.contains('sortable')) return;
 
-    // Находим элемент, ПОСЛЕ которого нужно вставить
     const afterElement = getDragAfterElement(DOM.trackList, e.clientY);
     
-    // ИСПРАВЛЕНИЕ ДЕРГАНИЯ:
-    // Если плейсхолдер уже стоит ПЕРЕД найденным элементом, ничего не делаем.
-    // Если afterElement == null (конец списка), проверяем, является ли плейсхолдер последним.
     if (afterElement == null) {
-        if (DOM.trackList.lastElementChild === placeholder) return; // Уже в конце
+        if (DOM.trackList.lastElementChild === placeholder) return;
         DOM.trackList.appendChild(placeholder);
     } else {
-        if (placeholder.nextElementSibling === afterElement) return; // Уже на месте
+        if (placeholder.nextElementSibling === afterElement) return;
         DOM.trackList.insertBefore(placeholder, afterElement);
     }
 });
@@ -152,15 +143,11 @@ DOM.trackList.addEventListener('drop', (e) => {
     const draggingEl = document.querySelector('.dragging');
     if (!draggingEl) return;
 
-    // 1. Получаем старый индекс
     const oldIndex = parseInt(draggingEl.dataset.index);
-    
-    // 2. Вычисляем новый индекс на основе позиции плейсхолдера
     const allChildren = [...DOM.trackList.children];
     const placeholderIndex = allChildren.indexOf(placeholder);
     
     let newIndex = 0;
-    // Считаем только реальные треки, идущие до плейсхолдера
     for (let i = 0; i < placeholderIndex; i++) {
         if (allChildren[i].classList.contains('track-item') && !allChildren[i].classList.contains('dragging')) {
             newIndex++;
@@ -173,16 +160,11 @@ DOM.trackList.addEventListener('drop', (e) => {
 });
 
 function getDragAfterElement(container, y) {
-    // Ищем среди треков, которые НЕ тащим в данный момент
     const draggableElements = [...container.querySelectorAll('.track-item:not(.dragging)')];
 
     return draggableElements.reduce((closest, child) => {
         const box = child.getBoundingClientRect();
-        // Смещение относительно центра элемента
         const offset = y - box.top - box.height / 2;
-        
-        // Нас интересуют элементы, центр которых НИЖЕ курсора (offset < 0)
-        // Из них выбираем тот, чей центр БЛИЖЕ всего к курсору (максимальный отрицательный offset)
         if (offset < 0 && offset > closest.offset) {
             return { offset: offset, element: child };
         } else {
@@ -191,32 +173,46 @@ function getDragAfterElement(container, y) {
     }, { offset: Number.NEGATIVE_INFINITY }).element;
 }
 
+// === ИСПРАВЛЕННАЯ ФУНКЦИЯ REORDER ===
 function reorderTracks(fromIndex, toIndex) {
     const playlistName = state.currentPlaylistName;
     const playlist = state.userPlaylists[playlistName];
     if (!playlist) return;
 
+    // 1. Запоминаем текущий играющий трек ДО изменений
+    // (берем из playbackList, чтобы получить именно играющий объект)
+    const playingTrack = state.playbackList[state.playbackIndex];
+    
+    // Проверяем, совпадает ли сейчас плейлист с очередью воспроизведения (чтобы знать, надо ли синхронизировать)
+    // Проверка по длине и путям достаточно надежна
+    const needSyncPlayback = state.playbackList.length === playlist.length && 
+                             state.playbackList.every((t, i) => t.path === state.viewedTracks[i].path);
+
+    // 2. Меняем порядок в массиве плейлиста
     const [movedTrack] = playlist.splice(fromIndex, 1);
     playlist.splice(toIndex, 0, movedTrack);
 
+    // 3. Сохраняем изменения
     saveUserPlaylists();
     state.viewedTracks = playlist;
 
-    // Синхронизация плеера
-    if (state.playbackList.length === playlist.length && state.playbackList.every((t, i) => t.path === state.viewedTracks[i].path)) {
-       state.playbackList = [...playlist];
-    }
-    
-    if (state.isPlaying || state.playbackIndex >= 0) {
-        const currentlyPlayingPath = state.playbackList[state.playbackIndex]?.path;
-        if(currentlyPlayingPath) {
-             const newIndex = playlist.findIndex(t => t.path === currentlyPlayingPath);
-             if (newIndex !== -1) state.playbackIndex = newIndex;
+    // 4. Если плейлист был активен, обновляем и очередь воспроизведения
+    if (needSyncPlayback) {
+        state.playbackList = [...playlist];
+        
+        // 5. ИЩЕМ, КУДА УЕХАЛ ИГРАЮЩИЙ ТРЕК
+        // Это чинит баг с переключением цветов и активного класса
+        if (playingTrack) {
+            const newPlayingIndex = state.playbackList.findIndex(t => t.path === playingTrack.path);
+            if (newPlayingIndex !== -1) {
+                state.playbackIndex = newPlayingIndex;
+            }
         }
     }
 
     renderTrackList(state.viewedTracks);
 }
+// =====================================
 
 // --- МЕНЮ И ПЛЕЙЛИСТЫ ---
 export function switchPlaylist(name) {
