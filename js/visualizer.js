@@ -11,8 +11,7 @@ const visualizerContainer = document.getElementById('visualizer');
 const leftGlow = document.getElementById('leftGlow');
 const rightGlow = document.getElementById('rightGlow');
 
-// Частицы (контейнер остался в HTML для эффектов краев, хоть сами частицы мы убрали)
-// Оставляем массив пустым, чтобы не было ошибок
+// Частицы (контейнер остался для эффектов краев)
 let particlesData = [];
 
 // Переменные анализа бита
@@ -26,7 +25,6 @@ let energySurgeIntensity = 0;
 export function initVisualizerDOM() {
     visualizerContainer.innerHTML = '';
     visualizerBars = [];
-    // Создаем 30 полос
     for (let i = 0; i < 30; i++) {
         const bar = document.createElement('div');
         bar.className = 'visualizer-bar';
@@ -51,22 +49,21 @@ export function stopVisualizer() {
 function loop() {
     if (!analyser) return;
     
-    // Получаем данные частот (от 0 до 255)
     analyser.getByteFrequencyData(dataArray);
     
-    // 1. Анализ звука (вычисляем энергию басов и общую громкость)
+    // 1. Анализ звука
     const features = analyzeAudioFeatures();
     
     // 2. Проверка субтитров
     checkLyrics(audio.currentTime);
 
-    // 3. Отрисовка баров эквалайзера
+    // 3. Отрисовка баров
     drawBars(features);
     
-    // 4. Оживление неоновых линий
+    // 4. Оживление неоновых линий (ИСПРАВЛЕНО)
     updateGlow(features);
     
-    // 5. Эффекты краев (если не Lite Mode)
+    // 5. Эффекты краев
     if (!state.isLiteMode) {
         updateEnergySurge();
     }
@@ -78,27 +75,23 @@ function analyzeAudioFeatures() {
     let sum = 0;
     let bassSum = 0;
     
-    // dataArray содержит 256 значений частот. 
-    // Первые ~10-15 значений - это басы.
     for (let i = 0; i < bufferLength; i++) {
         sum += dataArray[i];
         if (i < 10) bassSum += dataArray[i];
     }
     
-    // Нормализуем значения от 0 до 1
-    const rms = sum / bufferLength / 255; // Средняя громкость
-    const bassEnergy = bassSum / 10 / 255; // Энергия баса
+    const rms = sum / bufferLength / 255;
+    const bassEnergy = bassSum / 10 / 255;
     
-    // Детектор бита (ударных)
+    // Детектор бита
     let isBeat = false;
     energyHistory.push(rms);
     if (energyHistory.length > 30) energyHistory.shift();
     const energyAverage = energyHistory.reduce((a, b) => a + b, 0) / energyHistory.length;
     
-    // Если текущий бас резко выше среднего значения
     if (beatCooldown <= 0 && bassEnergy > energyAverage * 1.4 + 0.15) {
         isBeat = true;
-        beatCooldown = 10; // Пауза перед следующим детектированием бита
+        beatCooldown = 10;
         currentPulseIntensity = 1.0;
         activateEnergySurge(0.8);
     } else {
@@ -115,53 +108,49 @@ function drawBars(features) {
     const colors = track ? track.colors : { primary: '#fff', accent: '#fff' };
     
     for (let i = 0; i < visualizerBars.length; i++) {
-        // Распределяем частоты по барам
         const index = Math.floor((i / visualizerBars.length) * bufferLength);
         const value = dataArray[index] / 255;
+        let height = Math.max(5, value * 120);
         
-        let height = Math.max(5, value * 120); // Базовая высота
-        
-        // Эффект "подпрыгивания" баров при ударе бита
-        if (features.isBeat) {
-            height += 10;
-        }
+        if (features.isBeat) height += 10;
         
         visualizerBars[i].style.height = `${height}px`;
         visualizerBars[i].style.background = `linear-gradient(to top, ${colors.primary}, ${colors.accent})`;
     }
 }
 
-// --- НОВАЯ ЛОГИКА ДЛЯ НЕОНОВЫХ ЛИНИЙ ---
+// --- ОБНОВЛЕННАЯ ФУНКЦИЯ ДЛЯ ЛИНИЙ ---
 function updateGlow(features) {
-    // Если Lite Mode включен - линии статичны (для экономии ресурсов)
     if (state.isLiteMode) {
         if (leftGlow) leftGlow.style.height = '15%';
         if (rightGlow) rightGlow.style.height = '15%';
         return;
     }
 
-    if (leftGlow) {
-        // Левая линия: реагирует на БАС
-        // Умножаем на коэффициент, чтобы линия "прыгала" заметнее
-        let h = Math.max(10, features.bassEnergy * 400); 
-        if (h > 100) h = 100; // Ограничиваем 100%
-        
-        leftGlow.style.height = `${h}%`;
-        // Меняем прозрачность: чем громче, тем ярче
-        leftGlow.style.opacity = 0.4 + (features.bassEnergy * 0.6);
-    }
+    // 1. Расчет высоты (ЕДИНЫЙ для обеих линий)
+    // Мы берем энергию баса и умножаем на 180 (было 400).
+    // Это значит, чтобы линия достигла 100% высоты, бас должен быть очень мощным.
+    // Math.max(5, ...) гарантирует, что линия никогда не исчезнет полностью (минимум 5%).
+    let h = Math.max(5, features.bassEnergy * 180);
 
-    if (rightGlow) {
-        // Правая линия: реагирует на ОБЩУЮ ГРОМКОСТЬ (RMS)
-        let h = Math.max(10, features.rms * 500);
-        if (h > 100) h = 100;
-        
-        rightGlow.style.height = `${h}%`;
-        rightGlow.style.opacity = 0.4 + (features.rms * 0.6);
+    // Ограничиваем высоту, чтобы не вылезало за пределы
+    if (h > 100) h = 100;
+
+    // 2. Применяем одинаковые значения к левой и правой линии
+    if (leftGlow && rightGlow) {
+        const heightStr = `${h}%`;
+        // Прозрачность тоже делаем помягче
+        const opacityVal = 0.5 + (features.bassEnergy * 0.5);
+
+        leftGlow.style.height = heightStr;
+        leftGlow.style.opacity = opacityVal;
+
+        rightGlow.style.height = heightStr;
+        rightGlow.style.opacity = opacityVal;
     }
 }
 
-// --- ЭФФЕКТЫ КРАЕВ ЭКРАНА ---
+// --- ЭФФЕКТЫ КРАЕВ ---
 function activateEnergySurge(intensity) {
     energySurgeActive = true;
     energySurgeIntensity = intensity;
@@ -169,22 +158,17 @@ function activateEnergySurge(intensity) {
 
 function updateEnergySurge() {
     if (!energySurgeActive) return;
-    
-    energySurgeIntensity -= 0.04; // Скорость затухания волны
-    
+    energySurgeIntensity -= 0.04;
     if (energySurgeIntensity < 0) {
         energySurgeIntensity = 0;
         energySurgeActive = false;
     }
-    
-    // Применяем прозрачность к волнам по краям экрана
     const waves = document.querySelectorAll('.energy-wave');
     waves.forEach(w => {
         w.style.opacity = energySurgeIntensity;
     });
 }
 
-// Пустая функция инициализации частиц (чтобы main.js не ругался)
 export function createParticles() {
-    // Частицы удалены
+    // Частицы отключены
 }
