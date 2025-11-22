@@ -30,22 +30,33 @@ export function initAudioContext() {
 }
 
 export function playTrack() {
-    // Важно: используем playbackList
     if (!state.playbackList.length) return;
     initAudioContext();
     
     const playPromise = audio.play();
+    
     if (playPromise !== undefined) {
         playPromise.then(() => {
+            // Успешный старт
             state.isPlaying = true;
             UI.updatePlayPauseIcon(true);
-            UI.updateFavicon(true); // Включаем анимацию фавиконки
+            UI.updateFavicon(true); // Включаем анимацию
             startVisualizer();
         }).catch(err => {
+            // ОБРАБОТКА ОШИБОК
+            
+            // AbortError возникает, если быстро переключать треки.
+            // В этом случае мы НЕ должны сбрасывать UI, так как следующий трек уже грузится.
+            if (err.name === 'AbortError') {
+                return; 
+            }
+
+            // Реальная ошибка
             console.error("Playback failed", err);
             state.isPlaying = false;
             UI.updatePlayPauseIcon(false);
-            UI.updateFavicon(false); // Выключаем анимацию при ошибке
+            UI.updateFavicon(false); // Выключаем анимацию
+            stopVisualizer();
         });
     }
 }
@@ -54,7 +65,7 @@ export function pauseTrack() {
     audio.pause();
     state.isPlaying = false;
     UI.updatePlayPauseIcon(false);
-    UI.updateFavicon(false); // Выключаем анимацию фавиконки
+    UI.updateFavicon(false); // Выключаем анимацию
     stopVisualizer();
 }
 
@@ -62,24 +73,31 @@ export function togglePlay() {
     state.isPlaying ? pauseTrack() : playTrack();
 }
 
-// Загружает трек по индексу из playbackList
 export function loadTrack(index, autoPlay = false) {
     if (!state.playbackList || index < 0 || index >= state.playbackList.length) return;
     
     state.playbackIndex = index;
     const track = state.playbackList[index];
     
-    // Сброс
-    pauseTrack();
+    // Важный момент: не вызываем pauseTrack() здесь, чтобы не триггерить лишние события UI
+    audio.pause(); 
+    state.isPlaying = false;
+    
     audio.src = track.path;
     audio.load();
     
-    // Обновляем UI плеера (левая часть)
     UI.updateTrackInfo(track);
     UI.loadLyrics(track);
     UI.updateTheme(track);
 
     if (autoPlay) {
-        setTimeout(() => playTrack(), 100);
+        // Небольшая задержка, чтобы браузер успел подгрузить метаданные
+        const playAttempt = setTimeout(() => {
+            playTrack();
+        }, 150); 
+    } else {
+        // Если автоплея нет (ручная загрузка), сбрасываем иконку в статику
+        UI.updatePlayPauseIcon(false);
+        UI.updateFavicon(false);
     }
 }
