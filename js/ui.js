@@ -261,37 +261,60 @@ export function checkLyrics(time) {
 
 // --- УПРАВЛЕНИЕ ФАВИКОНКОЙ (ДИНАМИЧЕСКАЯ) ---
 export function updateFavicon(isPlaying) {
-    const link = document.getElementById('dynamic-favicon');
-    if (!link) return;
+    // 1. Находим старую иконку
+    const oldLink = document.getElementById('dynamic-favicon');
+    
+    // 2. Создаем новую ссылку (это заставит браузер перерисовать иконку)
+    const newLink = document.createElement('link');
+    newLink.id = 'dynamic-favicon';
+    newLink.rel = 'icon';
+    newLink.type = 'image/svg+xml';
 
     const colorBg = '#1a1a2e';
     const colorBar = '#00d1ff';
 
-    // CSS анимация. Важно: используем проценты корректно
-    // Уменьшил амплитуду, чтобы выглядело плавнее
-    const animationCSS = isPlaying ? `
-        .bar:nth-child(2) { animation: dance 0.8s ease-in-out infinite; }
-        .bar:nth-child(3) { animation: dance 1.2s ease-in-out infinite; animation-delay: 0.1s; }
-        .bar:nth-child(4) { animation: dance 0.6s ease-in-out infinite; animation-delay: 0.2s; }
-        @keyframes dance {
-            0%, 100% { height: 10px; y: 42px; opacity: 0.6; }
-            50% { height: 28px; y: 24px; opacity: 1; } 
-        }
-    ` : '';
+    // Генерируем контент баров.
+    // Если isPlaying = true, добавляем теги <animate> (SMIL), это работает лучше, чем CSS
+    
+    // Бар 1
+    const bar1 = isPlaying 
+        ? `<rect x="14" width="8" fill="${colorBar}" rx="3">
+             <animate attributeName="height" values="10;30;10" dur="0.8s" repeatCount="indefinite" />
+             <animate attributeName="y" values="42;22;42" dur="0.8s" repeatCount="indefinite" />
+           </rect>`
+        : `<rect x="14" y="30" width="8" height="20" fill="${colorBar}" rx="3" />`;
 
-    // Собираем SVG строку. Убираем лишние переносы строк для безопасности url
+    // Бар 2 (другая скорость)
+    const bar2 = isPlaying 
+        ? `<rect x="28" width="8" fill="${colorBar}" rx="3">
+             <animate attributeName="height" values="10;40;10" dur="1s" repeatCount="indefinite" begin="0.1s" />
+             <animate attributeName="y" values="42;12;42" dur="1s" repeatCount="indefinite" begin="0.1s" />
+           </rect>`
+        : `<rect x="28" y="20" width="8" height="30" fill="${colorBar}" rx="3" />`;
+
+    // Бар 3 (быстрая скорость)
+    const bar3 = isPlaying 
+        ? `<rect x="42" width="8" fill="${colorBar}" rx="3">
+             <animate attributeName="height" values="10;25;10" dur="0.6s" repeatCount="indefinite" begin="0.2s" />
+             <animate attributeName="y" values="42;27;42" dur="0.6s" repeatCount="indefinite" begin="0.2s" />
+           </rect>`
+        : `<rect x="42" y="25" width="8" height="25" fill="${colorBar}" rx="3" />`;
+
+    // Собираем SVG
     const svgString = `
     <svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-      <style>
-        .bar { fill: ${colorBar}; rx: 3; }
-        ${animationCSS}
-      </style>
       <rect width="64" height="64" rx="20" fill="${colorBg}"/>
-      <rect class="bar" x="14" y="30" width="8" height="10" />
-      <rect class="bar" x="28" y="20" width="8" height="10" />
-      <rect class="bar" x="42" y="25" width="8" height="10" />
+      ${bar1}
+      ${bar2}
+      ${bar3}
     </svg>`.trim();
 
-    // Используем encodeURIComponent, чтобы превратить строку в валидный URL
-    link.href = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgString)}`;
+    // Кодируем
+    newLink.href = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgString)}`;
+
+    // 3. Подменяем в DOM
+    if (oldLink) {
+        document.head.removeChild(oldLink);
+    }
+    document.head.appendChild(newLink);
 }
