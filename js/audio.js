@@ -37,25 +37,14 @@ export function playTrack() {
     
     if (playPromise !== undefined) {
         playPromise.then(() => {
-            // Успешный старт
             state.isPlaying = true;
             UI.updatePlayPauseIcon(true);
-            UI.updateFavicon(true); // Включаем анимацию
             startVisualizer();
         }).catch(err => {
-            // ОБРАБОТКА ОШИБОК
-            
-            // AbortError возникает, если быстро переключать треки.
-            // В этом случае мы НЕ должны сбрасывать UI, так как следующий трек уже грузится.
-            if (err.name === 'AbortError') {
-                return; 
-            }
-
-            // Реальная ошибка
+            if (err.name === 'AbortError') return;
             console.error("Playback failed", err);
             state.isPlaying = false;
             UI.updatePlayPauseIcon(false);
-            UI.updateFavicon(false); // Выключаем анимацию
             stopVisualizer();
         });
     }
@@ -65,7 +54,6 @@ export function pauseTrack() {
     audio.pause();
     state.isPlaying = false;
     UI.updatePlayPauseIcon(false);
-    UI.updateFavicon(false); // Выключаем анимацию
     stopVisualizer();
 }
 
@@ -79,25 +67,20 @@ export function loadTrack(index, autoPlay = false) {
     state.playbackIndex = index;
     const track = state.playbackList[index];
     
-    // Важный момент: не вызываем pauseTrack() здесь, чтобы не триггерить лишние события UI
     audio.pause(); 
     state.isPlaying = false;
     
     audio.src = track.path;
     audio.load();
     
+    // Здесь внутри updateTheme вызовется updateFavicon и покрасит ноту
     UI.updateTrackInfo(track);
     UI.loadLyrics(track);
-    UI.updateTheme(track);
+    UI.updateTheme(track); 
 
     if (autoPlay) {
-        // Небольшая задержка, чтобы браузер успел подгрузить метаданные
-        const playAttempt = setTimeout(() => {
-            playTrack();
-        }, 150); 
+        setTimeout(() => playTrack(), 150); 
     } else {
-        // Если автоплея нет (ручная загрузка), сбрасываем иконку в статику
         UI.updatePlayPauseIcon(false);
-        UI.updateFavicon(false);
     }
 }
