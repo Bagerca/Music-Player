@@ -346,3 +346,84 @@ body.lite-mode .player-container { box-shadow: 0 0 25px var(--accent-color), 0 2
     .controls { gap: 10px; }
     .album-art { width: 200px; height: 200px; }
 }
+
+/* --- МЕНЮ СОРТИРОВКИ --- */
+.sort-menu {
+    position: absolute;
+    width: 200px;
+    background: rgba(20, 20, 35, 0.95);
+    backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+    padding: 10px 0;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px) scale(0.95);
+    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transform-origin: top right;
+}
+
+.sort-menu.active {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0) scale(1);
+}
+
+.sort-header {
+    padding: 5px 20px 10px;
+    font-size: 11px;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.4);
+    letter-spacing: 1px;
+    font-weight: 600;
+}
+
+.sort-item {
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: rgba(255, 255, 255, 0.8);
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+    border-left: 3px solid transparent;
+}
+
+.sort-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: #fff;
+    padding-left: 25px;
+}
+
+/* Активное состояние сортировки */
+.sort-item.active {
+    color: var(--accent-color);
+    background: linear-gradient(90deg, rgba(255,255,255,0.08), transparent);
+    border-left-color: var(--accent-color);
+}
+
+/* Стрелочка направления */
+.sort-arrow {
+    width: 16px;
+    height: 16px;
+    opacity: 0;
+    transition: transform 0.3s ease, opacity 0.2s;
+}
+
+.sort-item.active .sort-arrow {
+    opacity: 1;
+}
+
+/* Если сортировка по убыванию (rotate) */
+.sort-item.desc .sort-arrow {
+    transform: rotate(180deg);
+}
+
+.sort-divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.1);
+    margin: 5px 0;
+}
