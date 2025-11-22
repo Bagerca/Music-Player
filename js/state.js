@@ -20,6 +20,7 @@ export const state = {
     // ВРЕМЕННЫЕ
     contextTrackIndex: null, // Индекс трека (в viewedTracks) для контекстного меню
     pendingUploadFile: null, // Файл, который выбран, но еще не сохранен
+    pendingAction: null, // Функция для модалки подтверждения
 };
 
 export const PLAYBACK_MODES = { PLAYLIST: 0, SINGLE: 1, ONCE: 2 };
