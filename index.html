@@ -91,8 +91,8 @@
                     <button id="deletePlaylistBtn" class="icon-btn delete" title="Удалить плейлист" style="display: none;">
                         <svg viewBox="0 0 24 24"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
                     </button>
-                    <!-- Скрытый инпут -->
-                    <input type="file" id="fileInput" accept="audio/*" multiple style="display: none;">
+                    <!-- Скрытый инпут для файлов -->
+                    <input type="file" id="fileInput" accept="audio/*, .mp3, .wav, .m4a, .ogg" multiple style="display: none;">
                 </div>
             </div>
             
@@ -118,19 +118,6 @@
         <div class="track-list" id="trackList"></div>
     </div>
 
-    <!-- КОНТЕКСТНОЕ МЕНЮ ТРЕКА -->
-    <div id="contextMenu" class="context-menu">
-        <div class="ctx-item" id="ctxAddToPlaylist">
-            <span>➕</span> Добавить в плейлист
-        </div>
-        <div class="ctx-item" id="ctxDownload">
-            <span>⬇️</span> Скачать трек
-        </div>
-        <div class="ctx-item delete" id="ctxRemoveFromPlaylist" style="display: none;">
-            <span>🗑️</span> Удалить из плейлиста
-        </div>
-    </div>
-
     <!-- ЭФФЕКТЫ -->
     <div class="edge-effects">
         <div class="energy-surges">
@@ -138,6 +125,75 @@
             <div class="energy-wave right" id="energyRight"></div>
             <div class="energy-wave bottom" id="energyBottom"></div>
             <div class="energy-wave left" id="energyLeft"></div>
+        </div>
+    </div>
+
+    <!-- КОНТЕЙНЕР УВЕДОМЛЕНИЙ -->
+    <div id="notificationContainer" class="notification-container"></div>
+
+    <!-- КОНТЕКСТНОЕ МЕНЮ ТРЕКА -->
+    <div id="contextMenu" class="context-menu">
+        <div class="ctx-item" id="ctxAddToPlaylist">
+            <svg viewBox="0 0 24 24"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+            Добавить в плейлист
+        </div>
+        <div class="ctx-item" id="ctxDownload">
+            <svg viewBox="0 0 24 24"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+            Скачать трек
+        </div>
+        <div class="ctx-item delete" id="ctxRemoveFromPlaylist" style="display: none;">
+            <svg viewBox="0 0 24 24"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+            Удалить из плейлиста
+        </div>
+    </div>
+
+    <!-- МОДАЛКА ЗАГРУЗКИ ТРЕКА -->
+    <div id="uploadModal" class="modal-overlay">
+        <div class="modal upload-modal">
+            <h3>Загрузка трека</h3>
+            
+            <div class="upload-form">
+                <div class="form-group">
+                    <label>Файл</label>
+                    <div class="file-name-display" id="uploadFileName">Файл не выбран</div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Название</label>
+                        <input type="text" id="upTitle" class="modal-input">
+                    </div>
+                    <div class="form-group">
+                        <label>Исполнитель</label>
+                        <input type="text" id="upArtist" class="modal-input" value="Unknown Artist">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Ссылка на обложку (URL) или оставьте пустым</label>
+                    <input type="text" id="upCoverUrl" class="modal-input" placeholder="https://...">
+                    <div class="or-divider">или файл обложки</div>
+                    <input type="file" id="upCoverFile" accept="image/*" class="modal-input-file">
+                </div>
+
+                <label>Оформление</label>
+                <div class="color-settings">
+                    <div class="color-input-group">
+                        <span>Фон</span>
+                        <input type="color" id="upColorBg" value="#1a1a2e">
+                    </div>
+                    <div class="color-input-group">
+                        <span>Акцент</span>
+                        <input type="color" id="upColorAccent" value="#00d1ff">
+                    </div>
+                    <button id="randomColorsBtn" class="modal-btn small">🎲 Random</button>
+                </div>
+            </div>
+
+            <div class="modal-buttons">
+                <button id="cancelUploadBtn" class="modal-btn cancel">Отмена</button>
+                <button id="saveUploadBtn" class="modal-btn confirm">Сохранить</button>
+            </div>
         </div>
     </div>
 
@@ -157,9 +213,7 @@
     <div id="addToPlaylistModal" class="modal-overlay">
         <div class="modal">
             <h3>Выберите плейлист</h3>
-            <div id="addToPlaylistOptions" class="playlist-options-list">
-                <!-- Сюда JS сгенерирует кнопки -->
-            </div>
+            <div id="addToPlaylistOptions" class="playlist-options-list"></div>
             <button id="closeAddToPlaylistBtn" class="modal-btn cancel" style="margin-top: 15px;">Отмена</button>
         </div>
     </div>
