@@ -37,8 +37,6 @@ body::before {
 }
 body.lite-mode::before { filter: blur(0) brightness(0.2); }
 
-/* УДАЛЕНО: .particles и .particle */
-
 /* --- ГЛАВНЫЙ ПЛЕЕР --- */
 .player-container {
     background: rgba(255, 255, 255, 0.08);
@@ -188,7 +186,7 @@ body.lite-mode .player-container { box-shadow: 0 0 25px var(--accent-color), 0 2
     outline: none;
     cursor: pointer;
     background-image: linear-gradient(var(--accent-color), var(--accent-color));
-    background-size: 70% 100%; /* Управляется через JS */
+    background-size: 70% 100%;
     background-repeat: no-repeat;
     transition: background-image 0.3s ease;
 }
@@ -272,6 +270,66 @@ body.lite-mode .player-container { box-shadow: 0 0 25px var(--accent-color), 0 2
 @keyframes pulse-text { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
 @keyframes neonPulse { 0%, 100% { opacity: 0.7; box-shadow: 0 0 10px var(--neon-color); } 50% { opacity: 1; box-shadow: 0 0 25px var(--neon-color); } }
 @keyframes pulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
+
+/* --- СУБТИТРЫ (НОВАЯ СИСТЕМА СТИЛЕЙ) --- */
+.lyrics-container {
+    min-height: 30px; 
+    margin-top: 15px;
+    font-family: 'Montserrat', sans-serif; 
+    font-size: 20px; 
+    font-weight: 900;
+    text-transform: uppercase; 
+    text-align: center; 
+    letter-spacing: 2px;
+    color: #fff; 
+    /* Цвет тени берется из темы трека автоматически! */
+    text-shadow: 0 0 15px var(--accent-color);
+    opacity: 0; 
+    transform: scale(0.95); 
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    pointer-events: none; 
+    z-index: 20;
+}
+
+.lyrics-container.visible { opacity: 1; transform: scale(1); }
+
+/* СТИЛЬ: RAGE (Дрожание для агрессивных моментов) */
+.lyrics-anim-rage {
+    font-size: 24px;
+    animation: rageShake 0.2s cubic-bezier(.36,.07,.19,.97) both;
+    text-shadow: 3px 3px 0px var(--accent-color), -3px -3px 0px #000;
+}
+
+/* СТИЛЬ: CHILL (Мягкое появление для спокойных моментов) */
+.lyrics-anim-chill {
+    font-weight: 500;
+    letter-spacing: 4px;
+    animation: softPulse 1.5s ease-out;
+    text-shadow: 0 0 5px var(--accent-color);
+}
+
+/* СТИЛЬ: DEFAULT (Обычный прыжок) */
+.lyrics-anim-default {
+    animation: gentleBounce 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes rageShake {
+  10%, 90% { transform: translate3d(-2px, 0, 0) scale(1.1); }
+  20%, 80% { transform: translate3d(3px, 0, 0) scale(1.2); }
+  30%, 50%, 70% { transform: translate3d(-5px, 0, 0) scale(1.2); }
+  40%, 60% { transform: translate3d(5px, 0, 0) scale(1.1); }
+}
+
+@keyframes gentleBounce {
+    0% { transform: scale(0.9); opacity: 0.5; }
+    50% { transform: scale(1.05); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes softPulse {
+    0% { opacity: 0; transform: translateY(10px) scale(0.95); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+}
 
 @media (max-width: 600px) { 
     .track-list-panel { width: 100%; top: 0; bottom: 0; right: -100%; border-radius: 0; border-left: none; } 
