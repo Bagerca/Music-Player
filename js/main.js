@@ -142,6 +142,30 @@ function setupEventListeners() {
 
 
     // --- КОНТЕКСТНОЕ МЕНЮ ---
+    // Слушаем событие от UI.js
+    document.addEventListener('open-track-context', (e) => {
+        const { originalEvent, index } = e.detail;
+        
+        state.contextTrackIndex = index;
+        const menu = document.getElementById('contextMenu');
+        const removeBtn = document.getElementById('ctxRemoveFromPlaylist');
+        
+        const rect = originalEvent.target.getBoundingClientRect();
+        let top = rect.bottom + window.scrollY;
+        let left = rect.left + window.scrollX - 190; 
+        
+        if (left < 10) left = 10;
+        if (window.innerHeight - rect.bottom < 150) top = rect.top - 140;
+        
+        menu.style.top = `${top}px`; 
+        menu.style.left = `${left}px`;
+        menu.classList.add('active');
+        
+        const currentPlaylist = state.currentPlaylistName;
+        const isSystem = ["Все треки", "Энергичные", "Chill & Retro", "Мои загрузки"].includes(currentPlaylist);
+        removeBtn.style.display = isSystem ? 'none' : 'flex';
+    });
+
     document.addEventListener('click', (e) => {
         const menu = document.getElementById('contextMenu');
         if (!menu.contains(e.target)) {
@@ -429,7 +453,7 @@ function removeTrackFromCurrentPlaylist() {
     
     // Обновляем список
     state.viewedTracks = state.userPlaylists[playlistName];
-    applySortToViewedTracks(); // Применяем сортировку если она включена
+    applySortToViewedTracks(); 
     UI.renderTrackList(state.viewedTracks);
     UI.showNotification('Трек удален из плейлиста', 'info');
 }
