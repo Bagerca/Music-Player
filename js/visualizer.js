@@ -54,7 +54,9 @@ function loop() {
     const features = analyzeAudioFeatures();
     checkLyrics(audio.currentTime);
     drawBars(features);
-    updateGlow(features); // Обновление линий
+    
+    // Обновление линий (теперь от громкости)
+    updateGlow(features);
     
     if (!state.isLiteMode) {
         updateEnergySurge();
@@ -72,6 +74,7 @@ function analyzeAudioFeatures() {
         if (i < 10) bassSum += dataArray[i];
     }
     
+    // RMS - это средняя громкость всех частот (от 0.0 до ~0.5 для обычной музыки)
     const rms = sum / bufferLength / 255;
     const bassEnergy = bassSum / 10 / 255;
     
@@ -110,7 +113,7 @@ function drawBars(features) {
     }
 }
 
-// --- ИСПРАВЛЕННАЯ ФУНКЦИЯ ЛИНИЙ ---
+// --- ОБНОВЛЕННАЯ ФУНКЦИЯ ЛИНИЙ (ОТ ГРОМКОСТИ) ---
 function updateGlow(features) {
     if (state.isLiteMode) {
         if (leftGlow) leftGlow.style.height = '10%';
@@ -118,21 +121,22 @@ function updateGlow(features) {
         return;
     }
 
-    // ФОРМУЛА: 5% (минимум) + (Энергия * Энергия * 100)
-    // Возведение в квадрат делает движение более резким на ударах, 
-    // но держит линию низкой, когда просто идет мелодия.
-    // Пример: 
-    // Если бас 0.3 (тихо) -> 0.09 * 100 = 9% (+5% база) = 14% (низко)
-    // Если бас 0.9 (громко) -> 0.81 * 100 = 81% (+5% база) = 86% (высоко)
-    let h = 5 + (features.bassEnergy * features.bassEnergy * 100);
+    // features.rms - это средняя громкость трека.
+    // Обычно в тихих местах она 0.05-0.1, в громких 0.3-0.5.
+    
+    // Умножаем на 250. 
+    // 0.1 (тихо) * 250 = 25% высоты.
+    // 0.4 (громко) * 250 = 100% высоты.
+    let h = features.rms * 250;
 
-    // Жесткое ограничение, чтобы точно не улетало
+    // Ограничиваем, чтобы не улетало за пределы
     if (h > 100) h = 100;
+    if (h < 5) h = 5; // Минимальная высота 5%
 
     if (leftGlow && rightGlow) {
         const heightStr = `${h}%`;
-        // Прозрачность тоже делаем более динамичной
-        const opacityVal = 0.3 + (features.bassEnergy * 0.7);
+        // Прозрачность тоже зависит от громкости (ярче = громче)
+        const opacityVal = 0.3 + (features.rms * 1.5);
 
         leftGlow.style.height = heightStr;
         leftGlow.style.opacity = opacityVal;
