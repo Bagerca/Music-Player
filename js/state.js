@@ -11,9 +11,8 @@ export const state = {
     userPlaylists: JSON.parse(localStorage.getItem('myUserPlaylists')) || {},
     uploadedTracks: [],
     
-    // Временные
-    pendingUploadFile: null,
-    draggedItemIndex: null,
+    // Временные переменные
+    contextTrackIndex: null, // Индекс трека, для которого открыто меню
     activeMenuId: null,
 };
 
