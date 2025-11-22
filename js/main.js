@@ -86,6 +86,32 @@ function setupEventListeners() {
         }
     });
 
+    // --- СОРТИРОВКА (НОВОЕ) ---
+    const sortBtn = document.getElementById('sortBtn');
+    const sortMenu = document.getElementById('sortMenu');
+
+    sortBtn.onclick = (e) => {
+        e.stopPropagation();
+        const rect = sortBtn.getBoundingClientRect();
+        sortMenu.style.top = `${rect.bottom + 10}px`;
+        sortMenu.style.left = `${rect.right - 200}px`; 
+        sortMenu.classList.toggle('active');
+    };
+
+    document.addEventListener('click', (e) => {
+        if (!sortMenu.contains(e.target) && e.target !== sortBtn) {
+            sortMenu.classList.remove('active');
+        }
+    });
+
+    document.querySelectorAll('.sort-item').forEach(item => {
+        item.onclick = () => {
+            const type = item.dataset.type;
+            handleSort(type, item);
+        };
+    });
+
+
     // --- ЗАГРУЗКА ТРЕКОВ (ЛОГИКА МОДАЛКИ) ---
     document.getElementById('uploadTrackBtn').onclick = () => document.getElementById('fileInput').click();
     
@@ -199,6 +225,78 @@ function setupEventListeners() {
 
 /* --- ФУНКЦИИ ЛОГИКИ --- */
 
+// --- ФУНКЦИИ СОРТИРОВКИ ---
+function handleSort(type, domItem) {
+    if (state.sort.type === type && type !== 'shuffle' && type !== 'default') {
+        state.sort.direction = state.sort.direction === 'asc' ? 'desc' : 'asc';
+    } else {
+        state.sort.type = type;
+        state.sort.direction = 'asc';
+    }
+
+    updateSortMenuVisuals();
+    applySortToViewedTracks();
+    UI.renderTrackList(state.viewedTracks);
+    
+    const names = {
+        'name': 'По названию',
+        'artist': 'По исполнителю',
+        'shuffle': 'Вперемешку',
+        'default': 'По умолчанию'
+    };
+    UI.showNotification(`Сортировка: ${names[type] || type}`);
+}
+
+function updateSortMenuVisuals() {
+    document.querySelectorAll('.sort-item').forEach(item => {
+        item.classList.remove('active', 'desc');
+        if (item.dataset.type === state.sort.type) {
+            item.classList.add('active');
+            if (state.sort.direction === 'desc') {
+                item.classList.add('desc');
+            }
+        }
+    });
+}
+
+function applySortToViewedTracks() {
+    // Получаем оригинальный порядок
+    const allLists = getAllPlaylists(state.userPlaylists, state.uploadedTracks);
+    const originalList = [...allLists[state.currentPlaylistName]];
+
+    if (state.sort.type === 'default') {
+        state.viewedTracks = originalList;
+        return;
+    }
+
+    if (state.sort.type === 'shuffle') {
+        let array = [...originalList];
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        state.viewedTracks = array;
+        return;
+    }
+
+    state.viewedTracks.sort((a, b) => {
+        let valA, valB;
+
+        if (state.sort.type === 'name') {
+            valA = a.name.toLowerCase();
+            valB = b.name.toLowerCase();
+        } else if (state.sort.type === 'artist') {
+            valA = a.artist.toLowerCase();
+            valB = b.artist.toLowerCase();
+        } 
+        
+        if (valA < valB) return state.sort.direction === 'asc' ? -1 : 1;
+        if (valA > valB) return state.sort.direction === 'asc' ? 1 : -1;
+        return 0;
+    });
+}
+// ----------------------------
+
 function changePlaybackTrack(direction) {
     let newIndex;
 
@@ -267,7 +365,8 @@ async function confirmUploadTrack() {
             state.userPlaylists[currentName].push(newTrack);
             saveUserPlaylists();
         }
-        state.viewedTracks = getAllPlaylists(state.userPlaylists, state.uploadedTracks)[currentName];
+        // Обновляем список с учетом сортировки
+        applySortToViewedTracks();
         UI.renderTrackList(state.viewedTracks);
     }
 
@@ -328,7 +427,9 @@ function removeTrackFromCurrentPlaylist() {
     state.userPlaylists[playlistName].splice(state.contextTrackIndex, 1);
     saveUserPlaylists();
     
+    // Обновляем список
     state.viewedTracks = state.userPlaylists[playlistName];
+    applySortToViewedTracks(); // Применяем сортировку если она включена
     UI.renderTrackList(state.viewedTracks);
     UI.showNotification('Трек удален из плейлиста', 'info');
 }
