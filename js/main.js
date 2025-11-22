@@ -23,8 +23,8 @@ document.addEventListener('DOMContentLoaded', () => {
     UI.renderPlaylistSelector();
     UI.renderTrackList(state.viewedTracks);
     
-    // Инициализация статичной фавиконки
-    UI.updateFavicon(false);
+    // Инициализация фавиконки (ставим дефолтный цвет)
+    UI.updateFavicon('#00d1ff');
     
     setupEventListeners();
     
