@@ -153,20 +153,22 @@ body.lite-mode .player-container { box-shadow: 0 0 25px var(--accent-color), 0 2
 .album-overlay-btn:hover { background: rgba(0, 0, 0, 0.5); color: white; transform: scale(1.1); }
 .album-overlay-btn.active { color: var(--accent-color); box-shadow: 0 0 10px var(--accent-color); border-color: var(--accent-color); }
 
-/* Неоновые линии */
+/* --- НЕОНОВЫЕ ЛИНИИ (НА ОБЛОЖКЕ) --- */
 .neon-lines-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; border-radius: 20px; }
-.neon-line { position: absolute; top: 0; width: 6px; height: 100%; } .left-line { left: 2px; } .right-line { right: 2px; }
+.neon-line { position: absolute; top: 0; width: 6px; height: 100%; } 
+.left-line { left: 2px; } 
+.right-line { right: 2px; }
 
-/* ОБНОВЛЕННЫЙ стиль для neon-glow (для работы с JS) */
 .neon-glow { 
     position: absolute; 
     bottom: 0; 
     left: 0; 
     width: 100%; 
-    height: 10%; /* Стартовое значение, меняется JS-ом */
+    height: 10%; /* Меняется JS-ом */
     background: var(--neon-color); 
     border-radius: 3px; 
     box-shadow: 0 0 10px var(--neon-color), 0 0 20px var(--neon-color), inset 0 0 8px rgba(255, 255, 255, 0.2); 
+    /* Плавность движения */
     transition: height 0.1s linear, opacity 0.1s linear;
 }
 
@@ -199,7 +201,7 @@ body.lite-mode .player-container { box-shadow: 0 0 25px var(--accent-color), 0 2
     outline: none;
     cursor: pointer;
     background-image: linear-gradient(var(--accent-color), var(--accent-color));
-    background-size: 70% 100%; /* Управляется через JS */
+    background-size: 70% 100%;
     background-repeat: no-repeat;
     transition: background-image 0.3s ease;
 }
@@ -236,14 +238,6 @@ body.lite-mode .player-container { box-shadow: 0 0 25px var(--accent-color), 0 2
 .visualizer { position: absolute; bottom: 0; left: 0; right: 0; display: flex; justify-content: center; gap: 3px; height: 100%; padding: 0 15px; box-sizing: border-box; }
 .visualizer-bar { width: 8px; height: 5px; border-radius: 4px 4px 0 0; transition: height 0.05s ease; align-self: flex-end; box-shadow: 0 0 5px rgba(0, 0, 0, 0.3); }
 
-/* Эффекты (волны и углы) */
-.edge-effects { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; }
-.energy-wave { position: absolute; background: transparent; opacity: 0; transition: opacity 0.1s ease; }
-.energy-wave.top { top: 0; left: 0; width: 100%; height: 4px; background: linear-gradient(90deg, transparent, var(--accent-color), transparent); box-shadow: 0 0 20px var(--accent-color); }
-.energy-wave.bottom { bottom: 0; left: 0; width: 100%; height: 4px; background: linear-gradient(90deg, transparent, var(--accent-color), transparent); box-shadow: 0 0 20px var(--accent-color); }
-.energy-wave.left { top: 0; left: 0; width: 4px; height: 100%; background: linear-gradient(180deg, transparent, var(--accent-color), transparent); box-shadow: 0 0 20px var(--accent-color); }
-.energy-wave.right { top: 0; right: 0; width: 4px; height: 100%; background: linear-gradient(180deg, transparent, var(--accent-color), transparent); box-shadow: 0 0 20px var(--accent-color); }
-
 /* Модальные окна */
 .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(10px); z-index: 1000; display: flex; justify-content: center; align-items: center; opacity: 0; visibility: hidden; transition: all 0.3s ease; }
 .modal-overlay.active { opacity: 1; visibility: visible; }
@@ -259,7 +253,7 @@ body.lite-mode .player-container { box-shadow: 0 0 25px var(--accent-color), 0 2
 .modal-btn.confirm { background: var(--accent-color); color: #1a1a2e; }
 .modal-btn:hover { opacity: 0.9; }
 
-/* --- Новые стили для редактора (из рефакторинга) --- */
+/* --- Новые стили для редактора --- */
 .cover-preview { width: 100px; height: 100px; background: #333; margin: 10px auto; background-size: cover; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
 .color-pickers { display: flex; gap: 10px; margin: 15px 0; }
 .color-pickers > div { flex: 1; }
@@ -284,7 +278,7 @@ body.lite-mode .player-container { box-shadow: 0 0 25px var(--accent-color), 0 2
 @keyframes neonPulse { 0%, 100% { opacity: 0.7; box-shadow: 0 0 10px var(--neon-color); } 50% { opacity: 1; box-shadow: 0 0 25px var(--neon-color); } }
 @keyframes pulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
 
-/* --- СУБТИТРЫ (НОВАЯ СИСТЕМА СТИЛЕЙ) --- */
+/* --- СУБТИТРЫ --- */
 .lyrics-container {
     min-height: 30px; 
     margin-top: 15px;
@@ -295,7 +289,6 @@ body.lite-mode .player-container { box-shadow: 0 0 25px var(--accent-color), 0 2
     text-align: center; 
     letter-spacing: 2px;
     color: #fff; 
-    /* Цвет тени берется из темы трека автоматически! */
     text-shadow: 0 0 15px var(--accent-color);
     opacity: 0; 
     transform: scale(0.95); 
@@ -306,14 +299,12 @@ body.lite-mode .player-container { box-shadow: 0 0 25px var(--accent-color), 0 2
 
 .lyrics-container.visible { opacity: 1; transform: scale(1); }
 
-/* СТИЛЬ: RAGE (Дрожание для агрессивных моментов) */
 .lyrics-anim-rage {
     font-size: 24px;
     animation: rageShake 0.2s cubic-bezier(.36,.07,.19,.97) both;
     text-shadow: 3px 3px 0px var(--accent-color), -3px -3px 0px #000;
 }
 
-/* СТИЛЬ: CHILL (Мягкое появление для спокойных моментов) */
 .lyrics-anim-chill {
     font-weight: 500;
     letter-spacing: 4px;
@@ -321,7 +312,6 @@ body.lite-mode .player-container { box-shadow: 0 0 25px var(--accent-color), 0 2
     text-shadow: 0 0 5px var(--accent-color);
 }
 
-/* СТИЛЬ: DEFAULT (Обычный прыжок) */
 .lyrics-anim-default {
     animation: gentleBounce 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
