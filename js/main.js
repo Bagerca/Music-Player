@@ -6,18 +6,24 @@ import * as Vis from './visualizer.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     const allPlaylists = getAllPlaylists(state.userPlaylists, state.uploadedTracks);
-    state.currentTracks = allPlaylists[state.currentPlaylistName] || allPlaylists["Все треки"];
+    
+    // Инициализация: View и Playback совпадают
+    state.viewedTracks = allPlaylists["Все треки"];
+    state.playbackList = [...state.viewedTracks];
+    state.currentPlaylistName = "Все треки";
 
     Vis.initVisualizerDOM();
     
-    if (state.currentTracks.length) {
+    // Загружаем первый трек в плеер (но не играем)
+    if (state.playbackList.length) {
         AudioCore.loadTrack(0);
     }
     
     UI.renderPlaylistSelector();
-    UI.renderTrackList();
+    UI.renderTrackList(state.viewedTracks);
     setupEventListeners();
     
+    // Скрываем прелоадер
     setTimeout(() => {
         const pre = document.getElementById('preloader');
         pre.classList.add('hide');
@@ -26,24 +32,55 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function setupEventListeners() {
-    // --- АУДИО ---
+    // --- АУДИО КОНТРОЛЬ ---
     document.getElementById('playPauseBtn').onclick = AudioCore.togglePlay;
-    document.getElementById('prevBtn').onclick = () => changeTrack(-1);
-    document.getElementById('nextBtn').onclick = () => changeTrack(1);
+    
+    // Кнопки Prev/Next меняют трек в playbackList
+    document.getElementById('prevBtn').onclick = () => changePlaybackTrack(-1);
+    document.getElementById('nextBtn').onclick = () => changePlaybackTrack(1);
+    
     document.getElementById('progressBar').onclick = (e) => {
         const width = e.currentTarget.clientWidth;
         const duration = AudioCore.audio.duration;
         AudioCore.audio.currentTime = (e.offsetX / width) * duration;
     };
+
     AudioCore.audio.addEventListener('timeupdate', UI.updateProgress);
     AudioCore.audio.addEventListener('ended', () => {
         if (state.playbackMode === PLAYBACK_MODES.ONCE) return;
-        changeTrack(1);
+        changePlaybackTrack(1);
     });
 
-    // --- КОНТЕКСТНОЕ МЕНЮ И ЕГО ДЕЙСТВИЯ ---
+    // --- ЗАГРУЗКА ТРЕКОВ (ЛОГИКА МОДАЛКИ) ---
+    document.getElementById('uploadTrackBtn').onclick = () => document.getElementById('fileInput').click();
     
-    // 1. Закрытие меню при клике в любом месте
+    document.getElementById('fileInput').onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        state.pendingUploadFile = file;
+        
+        // Заполняем форму
+        document.getElementById('uploadFileName').textContent = file.name;
+        document.getElementById('upTitle').value = file.name.replace(/\.[^/.]+$/, ""); 
+        document.getElementById('upArtist').value = "Unknown Artist";
+        document.getElementById('upCoverUrl').value = "";
+        document.getElementById('upCoverFile').value = "";
+        
+        document.getElementById('uploadModal').classList.add('active');
+        e.target.value = '';
+    };
+
+    document.getElementById('randomColorsBtn').onclick = () => {
+        const hue = Math.floor(Math.random() * 360);
+        document.getElementById('upColorBg').value = hslToHex(hue, 60, 10);
+        document.getElementById('upColorAccent').value = hslToHex(hue, 80, 60);
+    };
+
+    document.getElementById('saveUploadBtn').onclick = confirmUploadTrack;
+    document.getElementById('cancelUploadBtn').onclick = () => document.getElementById('uploadModal').classList.remove('active');
+
+
+    // --- КОНТЕКСТНОЕ МЕНЮ ---
     document.addEventListener('click', (e) => {
         const menu = document.getElementById('contextMenu');
         if (!menu.contains(e.target)) {
@@ -51,36 +88,25 @@ function setupEventListeners() {
         }
     });
 
-    // 2. Добавить в плейлист
     document.getElementById('ctxAddToPlaylist').onclick = () => {
         showAddToPlaylistModal();
         document.getElementById('contextMenu').classList.remove('active');
     };
-
-    // 3. Скачать
     document.getElementById('ctxDownload').onclick = () => {
         downloadCurrentContextTrack();
         document.getElementById('contextMenu').classList.remove('active');
     };
-
-    // 4. Удалить из плейлиста
     document.getElementById('ctxRemoveFromPlaylist').onclick = () => {
         removeTrackFromCurrentPlaylist();
         document.getElementById('contextMenu').classList.remove('active');
     };
 
-    // 5. Модалка добавления
-    document.getElementById('closeAddToPlaylistBtn').onclick = () => {
-        document.getElementById('addToPlaylistModal').classList.remove('active');
-    };
-
-    // --- ГРОМКОСТЬ ---
+    // --- ОСТАЛЬНОЕ ---
     const volSlider = document.getElementById('volumeSlider');
     const updateVolume = (val) => {
         volSlider.style.backgroundSize = `${val}% 100%`;
         AudioCore.audio.volume = val / 100;
     };
-    updateVolume(volSlider.value);
     volSlider.oninput = (e) => updateVolume(e.target.value);
     document.getElementById('muteBtn').onclick = () => {
         if (AudioCore.audio.volume > 0) {
@@ -92,10 +118,10 @@ function setupEventListeners() {
         updateVolume(volSlider.value);
     };
     
-    // --- ПАНЕЛЬ И ПЛЕЙЛИСТЫ ---
+    // Панель и Плейлисты
     document.getElementById('trackListBtn').onclick = () => document.getElementById('trackListPanel').classList.toggle('active');
     document.getElementById('playlistTrigger').onclick = UI.togglePlaylistSelect;
-
+    
     const modalOverlay = document.getElementById('modalOverlay');
     document.getElementById('createPlaylistBtn').onclick = () => {
         modalOverlay.classList.add('active');
@@ -104,19 +130,17 @@ function setupEventListeners() {
     document.getElementById('closeModalBtn').onclick = () => modalOverlay.classList.remove('active');
     document.getElementById('confirmPlaylistBtn').onclick = createNewPlaylist;
     document.getElementById('deletePlaylistBtn').onclick = deleteCurrentPlaylist;
-    document.getElementById('uploadTrackBtn').onclick = () => document.getElementById('fileInput').click();
-    document.getElementById('fileInput').onchange = handleFileUpload;
+    
+    document.getElementById('closeAddToPlaylistBtn').onclick = () => document.getElementById('addToPlaylistModal').classList.remove('active');
 
-    // --- ПОИСК ---
     document.getElementById('trackSearch').oninput = (e) => {
         const val = e.target.value.toLowerCase();
-        const filtered = state.currentTracks.filter(t => 
+        const filtered = state.viewedTracks.filter(t => 
             t.name.toLowerCase().includes(val) || t.artist.toLowerCase().includes(val)
         );
         UI.renderTrackList(filtered);
     };
 
-    // --- КЛАВИШИ ---
     document.addEventListener('keydown', (e) => {
         if (e.target.tagName === 'INPUT') return;
         if (e.code === 'Space') { e.preventDefault(); AudioCore.togglePlay(); }
@@ -124,15 +148,80 @@ function setupEventListeners() {
     });
 }
 
-/* --- ФУНКЦИИ ЛОГИКИ --- */
+/* --- ФУНКЦИИ --- */
 
-function changeTrack(direction) {
-    let newIndex = state.currentTrackIndex + direction;
-    if (newIndex >= state.currentTracks.length) newIndex = 0;
-    if (newIndex < 0) newIndex = state.currentTracks.length - 1;
-    AudioCore.loadTrack(newIndex, true);
+function changePlaybackTrack(direction) {
+    let newIndex = state.playbackIndex + direction;
+    if (newIndex >= state.playbackList.length) newIndex = 0;
+    if (newIndex < 0) newIndex = state.playbackList.length - 1;
+    
+    // Обновляем только плеер, список справа не трогаем (если он не совпадает)
+    state.playbackIndex = newIndex;
+    AudioCore.loadTrack(newIndex, true); 
 }
 
+async function confirmUploadTrack() {
+    const file = state.pendingUploadFile;
+    if (!file) return;
+
+    const title = document.getElementById('upTitle').value.trim() || "Unknown Title";
+    const artist = document.getElementById('upArtist').value.trim() || "Unknown Artist";
+    const colorBg = document.getElementById('upColorBg').value;
+    const colorAccent = document.getElementById('upColorAccent').value;
+    const coverUrlInput = document.getElementById('upCoverUrl').value.trim();
+    const coverFileInput = document.getElementById('upCoverFile').files[0];
+
+    let coverFinal = 'picture/default_cover.jpg';
+
+    if (coverFileInput) {
+        coverFinal = URL.createObjectURL(coverFileInput);
+    } else if (coverUrlInput) {
+        coverFinal = coverUrlInput;
+    }
+
+    const objectUrl = URL.createObjectURL(file);
+
+    const newTrack = {
+        name: title,
+        artist: artist,
+        path: objectUrl,
+        cover: coverFinal,
+        colors: { primary: '#000', secondary: colorBg, accent: colorAccent },
+        neonColor: colorAccent,
+        visualizer: [colorAccent, '#ffffff', colorBg]
+    };
+
+    state.uploadedTracks.push(newTrack);
+
+    // Если мы сейчас смотрим "Мои загрузки" или кастомный плейлист, добавляем туда
+    const currentName = state.currentPlaylistName;
+    const isSystem = ["Все треки", "Энергичные", "Chill & Retro"].includes(currentName);
+    
+    if (currentName === "Мои загрузки" || (!isSystem && state.userPlaylists[currentName])) {
+        if (state.userPlaylists[currentName]) {
+            state.userPlaylists[currentName].push(newTrack);
+            saveUserPlaylists();
+        }
+        state.viewedTracks = getAllPlaylists(state.userPlaylists, state.uploadedTracks)[currentName];
+        UI.renderTrackList(state.viewedTracks);
+    }
+
+    document.getElementById('uploadModal').classList.remove('active');
+    UI.showNotification(`Трек "${title}" добавлен!`, 'success');
+}
+
+function hslToHex(h, s, l) {
+    l /= 100;
+    const a = s * Math.min(l, 1 - l) / 100;
+    const f = n => {
+        const k = (n + h / 30) % 12;
+        const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+        return Math.round(255 * color).toString(16).padStart(2, '0');
+    };
+    return `#${f(0)}${f(8)}${f(4)}`;
+}
+
+// --- Контекстное меню ---
 function showAddToPlaylistModal() {
     const list = document.getElementById('addToPlaylistOptions');
     list.innerHTML = '';
@@ -156,35 +245,39 @@ function showAddToPlaylistModal() {
 }
 
 function addTrackToPlaylist(playlistName) {
-    const track = state.currentTracks[state.contextTrackIndex];
+    const track = state.viewedTracks[state.contextTrackIndex];
     if (!state.userPlaylists[playlistName]) return;
     
     const exists = state.userPlaylists[playlistName].find(t => t.path === track.path);
     if (exists) {
-        alert(`Трек уже есть в плейлисте "${playlistName}"`);
+        UI.showNotification('Трек уже есть в этом плейлисте', 'error');
         return;
     }
     
     state.userPlaylists[playlistName].push(track);
     saveUserPlaylists();
-    alert(`Трек добавлен в "${playlistName}"`);
-}
-
-function downloadCurrentContextTrack() {
-    const track = state.currentTracks[state.contextTrackIndex];
-    const a = document.createElement('a');
-    a.href = track.path;
-    a.download = `${track.artist} - ${track.name}.mp3`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    UI.showNotification(`Добавлено в "${playlistName}"`, 'success');
 }
 
 function removeTrackFromCurrentPlaylist() {
     const playlistName = state.currentPlaylistName;
     state.userPlaylists[playlistName].splice(state.contextTrackIndex, 1);
     saveUserPlaylists();
-    UI.switchPlaylist(playlistName);
+    
+    state.viewedTracks = state.userPlaylists[playlistName];
+    UI.renderTrackList(state.viewedTracks);
+    UI.showNotification('Трек удален из плейлиста', 'info');
+}
+
+function downloadCurrentContextTrack() {
+    const track = state.viewedTracks[state.contextTrackIndex];
+    const a = document.createElement('a');
+    a.href = track.path;
+    a.download = `${track.artist} - ${track.name}.mp3`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    UI.showNotification('Загрузка началась...', 'info');
 }
 
 function createNewPlaylist() {
@@ -193,7 +286,7 @@ function createNewPlaylist() {
     if (!name) return;
     const allLists = getAllPlaylists(state.userPlaylists, state.uploadedTracks);
     if (allLists[name]) {
-        alert('Плейлист с таким именем уже существует!');
+        UI.showNotification('Плейлист уже существует', 'error');
         return;
     }
     state.userPlaylists[name] = [];
@@ -201,6 +294,7 @@ function createNewPlaylist() {
     input.value = '';
     document.getElementById('modalOverlay').classList.remove('active');
     UI.switchPlaylist(name);
+    UI.showNotification(`Плейлист "${name}" создан`, 'success');
 }
 
 function deleteCurrentPlaylist() {
@@ -209,40 +303,7 @@ function deleteCurrentPlaylist() {
     delete state.userPlaylists[name];
     saveUserPlaylists();
     UI.switchPlaylist("Все треки");
-}
-
-function handleFileUpload(e) {
-    const files = Array.from(e.target.files);
-    if (!files.length) return;
-    let addedCount = 0;
-    files.forEach(file => {
-        const objectUrl = URL.createObjectURL(file);
-        const hue = Math.floor(Math.random() * 360);
-        const randomColor = `hsl(${hue}, 80%, 60%)`;
-        const randomBg = `hsl(${hue}, 60%, 10%)`;
-        const newTrack = {
-            name: file.name.replace(/\.[^/.]+$/, ""),
-            artist: 'Local Upload',
-            path: objectUrl,
-            cover: 'picture/default_cover.jpg',
-            colors: { primary: '#1a1a2e', secondary: randomBg, accent: randomColor },
-            neonColor: randomColor,
-            visualizer: [randomColor, '#ffffff', randomColor]
-        };
-        state.uploadedTracks.push(newTrack);
-        const currentName = state.currentPlaylistName;
-        const isSystem = ["Все треки", "Энергичные", "Chill & Retro", "Мои загрузки"].includes(currentName);
-        if (!isSystem && state.userPlaylists[currentName]) {
-            state.userPlaylists[currentName].push(newTrack);
-            saveUserPlaylists();
-        }
-        addedCount++;
-    });
-    e.target.value = '';
-    if (addedCount > 0) {
-        UI.renderPlaylistSelector();
-        UI.switchPlaylist(state.currentPlaylistName);
-    }
+    UI.showNotification('Плейлист удален', 'info');
 }
 
 function toggleLiteMode() {
@@ -250,4 +311,5 @@ function toggleLiteMode() {
     localStorage.setItem('isLiteMode', state.isLiteMode);
     document.body.classList.toggle('lite-mode', state.isLiteMode);
     document.getElementById('liteModeBtn').classList.toggle('active', state.isLiteMode);
+    UI.showNotification(state.isLiteMode ? 'Lite Mode вкл.' : 'Lite Mode выкл.');
 }
