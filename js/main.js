@@ -22,6 +22,10 @@ document.addEventListener('DOMContentLoaded', () => {
     
     UI.renderPlaylistSelector();
     UI.renderTrackList(state.viewedTracks);
+    
+    // Инициализация статичной фавиконки
+    UI.updateFavicon(false);
+    
     setupEventListeners();
     
     // Скрываем прелоадер
