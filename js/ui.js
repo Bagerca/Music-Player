@@ -5,6 +5,7 @@ import { escapeHtml, formatTime, adjustColorOpacity } from './utils.js';
 
 const DOM = {
     trackList: document.getElementById('trackList'),
+    contextMenu: document.getElementById('contextMenu'),
     lyricsDisplay: document.getElementById('lyricsDisplay'),
     playPauseBtn: document.getElementById('playPauseBtn'),
     progressBar: document.getElementById('progressBar'),
@@ -34,8 +35,13 @@ export function renderTrackList(tracks = state.currentTracks) {
         
         const el = document.createElement('div');
         el.className = `track-item ${isActive ? 'active' : ''}`;
+        
+        // Основной клик по треку
         el.onclick = (e) => {
-             loadTrack(originalIndex, true);
+             // Если кликнули НЕ по кнопке меню, то играем
+             if (!e.target.closest('.track-menu-btn')) {
+                 loadTrack(originalIndex, true);
+             }
         };
         
         el.innerHTML = `
@@ -45,10 +51,40 @@ export function renderTrackList(tracks = state.currentTracks) {
                 <div class="track-item-artist">${escapeHtml(track.artist)}</div>
             </div>
             ${isActive ? '<div class="now-playing-icon">▶</div>' : ''}
+            <button class="track-menu-btn" title="Опции">⋮</button>
         `;
+
+        // Клик по кнопке меню (три точки)
+        const menuBtn = el.querySelector('.track-menu-btn');
+        menuBtn.onclick = (e) => {
+            e.stopPropagation(); // Чтобы трек не начал играть
+            openContextMenu(e, originalIndex);
+        };
         
         DOM.trackList.appendChild(el);
     });
+}
+
+function openContextMenu(e, index) {
+    state.contextTrackIndex = index;
+    const menu = document.getElementById('contextMenu');
+    const removeBtn = document.getElementById('ctxRemoveFromPlaylist');
+
+    // Позиционирование меню
+    const rect = e.target.getBoundingClientRect();
+    let top = rect.bottom + window.scrollY;
+    let left = rect.left + window.scrollX - 180; // Сдвиг влево
+
+    if (left < 10) left = 10;
+    
+    menu.style.top = `${top}px`;
+    menu.style.left = `${left}px`;
+    menu.classList.add('active');
+
+    // Логика кнопки "Удалить": только для пользовательских плейлистов
+    const currentPlaylist = state.currentPlaylistName;
+    const isSystem = ["Все треки", "Энергичные", "Chill & Retro", "Мои загрузки"].includes(currentPlaylist);
+    removeBtn.style.display = isSystem ? 'none' : 'flex';
 }
 
 // --- УПРАВЛЕНИЕ ПЛЕЙЛИСТАМИ ---
