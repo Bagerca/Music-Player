@@ -1,5 +1,6 @@
-import { state } from './state.js';
+import { state, saveUserPlaylists } from './state.js';
 import { audio, loadTrack } from './audio.js';
+import { getAllPlaylists } from './data.js';
 import { escapeHtml, formatTime, adjustColorOpacity } from './utils.js';
 
 const DOM = {
@@ -18,12 +19,12 @@ const DOM = {
 
 let currentLyricsData = [];
 let nextLyricIndex = 0;
-let trackBaseStyle = 'default'; // Базовый стиль трека
+let trackBaseStyle = 'default'; 
 
 export function renderTrackList(tracks = state.currentTracks) {
     DOM.trackList.innerHTML = '';
     if (!tracks.length) {
-        DOM.trackList.innerHTML = '<div class="track-item-title" style="text-align:center; padding:20px;">Плейлист пуст</div>';
+        DOM.trackList.innerHTML = '<div class="track-item-title" style="text-align:center; padding:20px; opacity: 0.5;">Здесь пока пусто...</div>';
         return;
     }
 
@@ -34,7 +35,7 @@ export function renderTrackList(tracks = state.currentTracks) {
         const el = document.createElement('div');
         el.className = `track-item ${isActive ? 'active' : ''}`;
         el.onclick = (e) => {
-             if (!e.target.closest('.track-menu-btn')) loadTrack(originalIndex, true);
+             loadTrack(originalIndex, true);
         };
         
         el.innerHTML = `
@@ -49,6 +50,67 @@ export function renderTrackList(tracks = state.currentTracks) {
         DOM.trackList.appendChild(el);
     });
 }
+
+// --- УПРАВЛЕНИЕ ПЛЕЙЛИСТАМИ ---
+
+export function renderPlaylistSelector() {
+    const optionsContainer = document.getElementById('playlistOptions');
+    const currentText = document.getElementById('currentPlaylistText');
+    const deleteBtn = document.getElementById('deletePlaylistBtn');
+    
+    optionsContainer.innerHTML = '';
+    
+    const playlists = getAllPlaylists(state.userPlaylists, state.uploadedTracks);
+    const playlistNames = Object.keys(playlists);
+
+    currentText.textContent = state.currentPlaylistName;
+
+    // Кнопка удаления видна только для своих плейлистов
+    const isSystemPlaylist = ["Все треки", "Энергичные", "Chill & Retro", "Мои загрузки"].includes(state.currentPlaylistName);
+    deleteBtn.style.display = isSystemPlaylist ? 'none' : 'flex';
+
+    playlistNames.forEach(name => {
+        const option = document.createElement('div');
+        option.className = `custom-option ${name === state.currentPlaylistName ? 'selected' : ''}`;
+        option.textContent = name;
+        option.onclick = () => switchPlaylist(name);
+        optionsContainer.appendChild(option);
+    });
+}
+
+export function switchPlaylist(name) {
+    const playlistSelect = document.getElementById('playlistSelect');
+    state.currentPlaylistName = name;
+    state.currentTracks = getAllPlaylists(state.userPlaylists, state.uploadedTracks)[name];
+    state.currentTrackIndex = 0; 
+    
+    renderPlaylistSelector();
+    renderTrackList(state.currentTracks);
+    
+    if (state.currentTracks.length > 0) {
+        loadTrack(0, false);
+    } else {
+        // Сброс инфо если плейлист пуст
+        DOM.currentTrack.textContent = "Плейлист пуст";
+        DOM.currentArtist.textContent = "";
+    }
+
+    playlistSelect.classList.remove('open');
+}
+
+export function togglePlaylistSelect() {
+    const select = document.getElementById('playlistSelect');
+    select.classList.toggle('open');
+}
+
+// Закрытие селекта при клике вне
+document.addEventListener('click', (e) => {
+    const select = document.getElementById('playlistSelect');
+    const trigger = document.getElementById('playlistTrigger');
+    if (select.classList.contains('open') && !select.contains(e.target) && !trigger.contains(e.target)) {
+        select.classList.remove('open');
+    }
+});
 
 export function updatePlayPauseIcon(isPlaying) {
     const path = isPlaying 
@@ -75,20 +137,14 @@ export function updateTheme(track) {
     
     DOM.playPauseBtn.style.background = `linear-gradient(135deg, ${colors.accent}, ${colors.primary})`;
     DOM.progress.style.background = `linear-gradient(90deg, ${colors.accent}, ${colors.primary})`;
-    
-    // createParticles удалено по запросу
 }
-
-// --- СУБТИТРЫ (ОБНОВЛЕННАЯ ЛОГИКА СТИЛЕЙ) ---
 
 export function loadLyrics(track) {
     DOM.lyricsDisplay.textContent = '';
-    DOM.lyricsDisplay.className = 'lyrics-container'; // Сброс классов анимации
+    DOM.lyricsDisplay.className = 'lyrics-container'; 
     
     currentLyricsData = [];
     nextLyricIndex = 0;
-    
-    // Запоминаем стиль всего трека (если есть), иначе default
     trackBaseStyle = track.lyricsStyle || 'default';
 
     if (track.lyrics) {
@@ -108,44 +164,28 @@ export function loadLyrics(track) {
 
 export function checkLyrics(time) {
     if (!currentLyricsData.length) return;
-
-    // Смотрим чуть вперед (0.2с) для синхронности
     const lookAheadTime = time + 0.2;
-
-    // Если перемотали назад
     if (nextLyricIndex > 0 && currentLyricsData[nextLyricIndex - 1].time > lookAheadTime) {
         nextLyricIndex = 0;
         DOM.lyricsDisplay.textContent = '';
         DOM.lyricsDisplay.classList.remove('visible');
     }
-
-    // Ищем строки
     while (currentLyricsData[nextLyricIndex] && currentLyricsData[nextLyricIndex].time <= lookAheadTime) {
         const line = currentLyricsData[nextLyricIndex];
-        
         if (line.text) {
             DOM.lyricsDisplay.textContent = line.text;
-            
-            // 1. Определяем стиль: Специфичный для строки -> Или базовый для трека -> Или default
             const currentStyle = line.style || trackBaseStyle || 'default';
-            
-            // 2. Полный сброс анимации для перезапуска
             DOM.lyricsDisplay.className = 'lyrics-container';
-            void DOM.lyricsDisplay.offsetWidth; // Trigger reflow (перезапуск CSS анимации)
-            
-            // 3. Добавляем нужные классы
+            void DOM.lyricsDisplay.offsetWidth; 
             DOM.lyricsDisplay.classList.add('visible');
-            DOM.lyricsDisplay.classList.add(`lyrics-anim-${currentStyle}`); // напр. lyrics-anim-rage
-            
+            DOM.lyricsDisplay.classList.add(`lyrics-anim-${currentStyle}`);
         } else {
-            // Если текст пустой - скрываем
             DOM.lyricsDisplay.classList.remove('visible');
         }
         nextLyricIndex++;
     }
 }
 
-// --- Прогресс бар ---
 export function updateProgress() {
     const percent = (audio.currentTime / audio.duration) * 100 || 0;
     DOM.progress.style.width = `${percent}%`;
