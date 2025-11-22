@@ -8,7 +8,6 @@ export const library = [
         colors: { primary: '#000000', secondary: '#1a0000', accent: '#ff0000' }, 
         visualizer: ['#ff0000', '#ff4d4d', '#ffffff', '#800000', '#000000'], 
         neonColor: '#ff0000', 
-        // Путь к файлу субтитров
         lyricsSource: 'lyrics/katana.json' 
     },
     { 
@@ -429,24 +428,36 @@ export const library = [
     }
 ];
 
+/* --- ВНУТРЕННИЕ ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ --- */
 const getTrack = (namePart) => {
     return library.find(t => t.name.toLowerCase().includes(namePart.toLowerCase()));
 };
 
+/* --- ОПРЕДЕЛЕНИЕ СТАНДАРТНЫХ ПЛЕЙЛИСТОВ --- */
 const defaultPlaylists = {
     "Все треки": library,
     "Энергичные": [
         getTrack("Katana"), 
-        getTrack("Tangled Up") // Пример заполнения
+        getTrack("Valhalla"), 
+        getTrack("Песня смертника"), 
+        getTrack("IRIS OUT"), 
+        getTrack("2 Phút Hơn"), 
+        getTrack("Enemy"), 
+        getTrack("Soldat"), 
+        getTrack("Rapture Rising")
     ].filter(Boolean),
     "Chill & Retro": [
-        getTrack("Tangled Up")
+        getTrack("Tangled Up"), 
+        getTrack("Puttin On The Ritz"), 
+        getTrack("Man Without Love"), 
+        getTrack("Cigarette Duet"), 
+        getTrack("God Rest Ye Merry Gentlemen"), 
+        getTrack("Feeling Good")
     ].filter(Boolean)
 };
 
 /* --- ГЛАВНАЯ ФУНКЦИЯ ЭКСПОРТА --- */
 export function getAllPlaylists(userPlaylists = {}, uploadedTracks = []) {
-    // Копируем дефолтные плейлисты
     const combined = { ...defaultPlaylists, ...userPlaylists };
     
     // Добавляем "Мои загрузки", если есть
@@ -454,11 +465,13 @@ export function getAllPlaylists(userPlaylists = {}, uploadedTracks = []) {
         combined["Мои загрузки"] = uploadedTracks;
     }
 
-    // Обновляем плейлист "Все треки", добавляя туда загрузки, чтобы они были в общем списке
-    // Используем Set или проверку пути, чтобы не дублировать
-    const allTracks = [...combined["Все треки"]];
+    // Автоматически добавляем новые загруженные треки в плейлист "Все треки",
+    // чтобы они отображались в главном списке без переключения плейлиста
     if (uploadedTracks.length > 0) {
+        // Создаем копию массива треков
+        const allTracks = [...combined["Все треки"]]; 
         uploadedTracks.forEach(t => {
+             // Простая проверка на дубликаты по пути
              if(!allTracks.find(x => x.path === t.path)) {
                  allTracks.push(t);
              }
@@ -467,3 +480,4 @@ export function getAllPlaylists(userPlaylists = {}, uploadedTracks = []) {
     }
 
     return combined;
+}
