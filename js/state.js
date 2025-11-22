@@ -11,7 +11,8 @@ export const state = {
 
     // НАСТРОЙКИ
     isLiteMode: localStorage.getItem('isLiteMode') === 'true',
-    playbackMode: 0, // 0: PLAYLIST, 1: SINGLE, 2: ONCE
+    // 0: LOOP_PLAYLIST, 1: LOOP_ONE, 2: SHUFFLE
+    playbackMode: 0, 
     
     // ДАННЫЕ
     userPlaylists: JSON.parse(localStorage.getItem('myUserPlaylists')) || {},
@@ -23,7 +24,11 @@ export const state = {
     pendingAction: null, // Функция для модалки подтверждения
 };
 
-export const PLAYBACK_MODES = { PLAYLIST: 0, SINGLE: 1, ONCE: 2 };
+export const PLAYBACK_MODES = { 
+    LOOP_PLAYLIST: 0, 
+    LOOP_ONE: 1, 
+    SHUFFLE: 2 
+};
 
 export function saveUserPlaylists() {
     localStorage.setItem('myUserPlaylists', JSON.stringify(state.userPlaylists));
