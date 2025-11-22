@@ -427,3 +427,15 @@ body.lite-mode .player-container { box-shadow: 0 0 25px var(--accent-color), 0 2
     background: rgba(255, 255, 255, 0.1);
     margin: 5px 0;
 }
+
+/* --- DRAG & DROP СОРТИРОВКА --- */
+.drag-handle {
+    width: 24px; height: 100%; display: flex; justify-content: center; align-items: center; margin-right: 8px; cursor: grab; color: rgba(255, 255, 255, 0.3); opacity: 0; visibility: hidden; transition: all 0.2s; flex-shrink: 0;
+}
+.track-list.sortable .track-item:hover .drag-handle, .track-list.sortable .track-item.dragging .drag-handle { opacity: 1; visibility: visible; }
+.drag-handle svg { width: 18px; height: 18px; }
+.drag-handle:hover { color: var(--accent-color); }
+.drag-handle:active { cursor: grabbing; }
+.track-item.dragging { opacity: 0.5; background: rgba(255, 255, 255, 0.05); border: 1px dashed var(--accent-color); transform: scale(0.98); }
+.track-item.drag-over { border-bottom: 2px solid var(--accent-color); padding-bottom: 8px; }
+.track-list.sortable .track-item { padding-left: 5px; }
