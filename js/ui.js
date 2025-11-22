@@ -196,8 +196,8 @@ export function checkLyrics(time) {
     }
 }
 
-// --- НОВАЯ ФУНКЦИЯ ФАВИКОНКИ (FIXED NOTE) ---
-function updateFavicon(accentColor) {
+// --- ФАВИКОНКА (FIX: ДОБАВИЛ EXPORT) ---
+export function updateFavicon(accentColor) {
     const oldLink = document.getElementById('dynamic-favicon');
     const newLink = document.createElement('link');
     newLink.id = 'dynamic-favicon';
