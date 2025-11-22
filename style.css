@@ -212,9 +212,29 @@ body.lite-mode .player-container { box-shadow: 0 0 25px var(--accent-color), 0 2
 .control-btn svg { width: 24px; height: 24px; fill: currentColor; }
 
 /* --- ИЗМЕНЕНИЯ: УВЕЛИЧЕННАЯ КНОПКА PLAY/PAUSE --- */
-.play-pause-btn { width: 85px; height: 85px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4); }
-.play-pause-btn svg { width: 32px; height: 32px; }
-.play-pause-btn:hover { transform: scale(1.1); box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5); }
+.play-pause-btn { 
+    width: 85px; 
+    height: 85px; 
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+    /* Убедимся, что иконка точно по центру */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* ВАЖНО: Делаем саму иконку (треугольник/палочки) КРУПНЕЕ */
+.play-pause-btn svg { 
+    width: 44px;   /* Было 32px -> Ставим 44px или 48px */
+    height: 44px; 
+    /* Иногда иконка Play кажется смещенной влево из-за своей формы. 
+       Этот хак немного сдвигает её, чтобы визуально было ровно по центру */
+    transform: translateX(2px); 
+}
+
+/* При наведении увеличиваем всё вместе */
+.play-pause-btn:hover { 
+    transform: scale(1.08); 
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5); 
 /* ------------------------------------------------ */
 
 .volume-container { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
