@@ -55,7 +55,7 @@ function loop() {
     checkLyrics(audio.currentTime);
     drawBars(features);
     
-    // Обновление линий (теперь от громкости)
+    // Обновление линий (с новой формулой)
     updateGlow(features);
     
     if (!state.isLiteMode) {
@@ -74,7 +74,6 @@ function analyzeAudioFeatures() {
         if (i < 10) bassSum += dataArray[i];
     }
     
-    // RMS - это средняя громкость всех частот (от 0.0 до ~0.5 для обычной музыки)
     const rms = sum / bufferLength / 255;
     const bassEnergy = bassSum / 10 / 255;
     
@@ -113,7 +112,7 @@ function drawBars(features) {
     }
 }
 
-// --- ОБНОВЛЕННАЯ ФУНКЦИЯ ЛИНИЙ (ОТ ГРОМКОСТИ) ---
+// --- ОБНОВЛЕННАЯ ФУНКЦИЯ ЛИНИЙ (МЕНЕЕ ЧУВСТВИТЕЛЬНАЯ) ---
 function updateGlow(features) {
     if (state.isLiteMode) {
         if (leftGlow) leftGlow.style.height = '10%';
@@ -121,22 +120,28 @@ function updateGlow(features) {
         return;
     }
 
-    // features.rms - это средняя громкость трека.
-    // Обычно в тихих местах она 0.05-0.1, в громких 0.3-0.5.
+    // НОВАЯ ФОРМУЛА:
+    // Math.pow(x, 1.5) - это делает реакцию нелинейной. 
+    // Тихие звуки гасятся сильнее, громкие остаются громкими.
+    // Множитель снижен до 200.
     
-    // Умножаем на 250. 
-    // 0.1 (тихо) * 250 = 25% высоты.
-    // 0.4 (громко) * 250 = 100% высоты.
-    let h = features.rms * 250;
+    // Пример расчетов:
+    // Тихая музыка (rms 0.2) -> 0.09 * 200 = 18%
+    // Средняя музыка (rms 0.4) -> 0.25 * 200 = 50% (Идеальная середина!)
+    // Громкий пик (rms 0.6) -> 0.46 * 200 = 92%
+    
+    let h = Math.pow(features.rms, 1.5) * 200;
 
-    // Ограничиваем, чтобы не улетало за пределы
+    // Базовый минимум 5%, максимум 100%
     if (h > 100) h = 100;
-    if (h < 5) h = 5; // Минимальная высота 5%
+    if (h < 5) h = 5;
 
     if (leftGlow && rightGlow) {
         const heightStr = `${h}%`;
-        // Прозрачность тоже зависит от громкости (ярче = громче)
-        const opacityVal = 0.3 + (features.rms * 1.5);
+        
+        // Прозрачность тоже делаем чуть мягче, чтобы не мигало
+        // База 0.2 + динамика
+        const opacityVal = 0.2 + (features.rms * 1.2);
 
         leftGlow.style.height = heightStr;
         leftGlow.style.opacity = opacityVal;
