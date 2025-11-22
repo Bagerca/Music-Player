@@ -11,7 +11,7 @@ const visualizerContainer = document.getElementById('visualizer');
 const leftGlow = document.getElementById('leftGlow');
 const rightGlow = document.getElementById('rightGlow');
 
-// Частицы (контейнер остался для эффектов краев)
+// Частицы (оставляем пустым)
 let particlesData = [];
 
 // Переменные анализа бита
@@ -51,19 +51,11 @@ function loop() {
     
     analyser.getByteFrequencyData(dataArray);
     
-    // 1. Анализ звука
     const features = analyzeAudioFeatures();
-    
-    // 2. Проверка субтитров
     checkLyrics(audio.currentTime);
-
-    // 3. Отрисовка баров
     drawBars(features);
+    updateGlow(features); // Обновление линий
     
-    // 4. Оживление неоновых линий (ИСПРАВЛЕНО)
-    updateGlow(features);
-    
-    // 5. Эффекты краев
     if (!state.isLiteMode) {
         updateEnergySurge();
     }
@@ -83,7 +75,6 @@ function analyzeAudioFeatures() {
     const rms = sum / bufferLength / 255;
     const bassEnergy = bassSum / 10 / 255;
     
-    // Детектор бита
     let isBeat = false;
     energyHistory.push(rms);
     if (energyHistory.length > 30) energyHistory.shift();
@@ -119,28 +110,29 @@ function drawBars(features) {
     }
 }
 
-// --- ОБНОВЛЕННАЯ ФУНКЦИЯ ДЛЯ ЛИНИЙ ---
+// --- ИСПРАВЛЕННАЯ ФУНКЦИЯ ЛИНИЙ ---
 function updateGlow(features) {
     if (state.isLiteMode) {
-        if (leftGlow) leftGlow.style.height = '15%';
-        if (rightGlow) rightGlow.style.height = '15%';
+        if (leftGlow) leftGlow.style.height = '10%';
+        if (rightGlow) rightGlow.style.height = '10%';
         return;
     }
 
-    // 1. Расчет высоты (ЕДИНЫЙ для обеих линий)
-    // Мы берем энергию баса и умножаем на 180 (было 400).
-    // Это значит, чтобы линия достигла 100% высоты, бас должен быть очень мощным.
-    // Math.max(5, ...) гарантирует, что линия никогда не исчезнет полностью (минимум 5%).
-    let h = Math.max(5, features.bassEnergy * 180);
+    // ФОРМУЛА: 5% (минимум) + (Энергия * Энергия * 100)
+    // Возведение в квадрат делает движение более резким на ударах, 
+    // но держит линию низкой, когда просто идет мелодия.
+    // Пример: 
+    // Если бас 0.3 (тихо) -> 0.09 * 100 = 9% (+5% база) = 14% (низко)
+    // Если бас 0.9 (громко) -> 0.81 * 100 = 81% (+5% база) = 86% (высоко)
+    let h = 5 + (features.bassEnergy * features.bassEnergy * 100);
 
-    // Ограничиваем высоту, чтобы не вылезало за пределы
+    // Жесткое ограничение, чтобы точно не улетало
     if (h > 100) h = 100;
 
-    // 2. Применяем одинаковые значения к левой и правой линии
     if (leftGlow && rightGlow) {
         const heightStr = `${h}%`;
-        // Прозрачность тоже делаем помягче
-        const opacityVal = 0.5 + (features.bassEnergy * 0.5);
+        // Прозрачность тоже делаем более динамичной
+        const opacityVal = 0.3 + (features.bassEnergy * 0.7);
 
         leftGlow.style.height = heightStr;
         leftGlow.style.opacity = opacityVal;
@@ -150,7 +142,6 @@ function updateGlow(features) {
     }
 }
 
-// --- ЭФФЕКТЫ КРАЕВ ---
 function activateEnergySurge(intensity) {
     energySurgeActive = true;
     energySurgeIntensity = intensity;
@@ -169,6 +160,4 @@ function updateEnergySurge() {
     });
 }
 
-export function createParticles() {
-    // Частицы отключены
-}
+export function createParticles() {}
