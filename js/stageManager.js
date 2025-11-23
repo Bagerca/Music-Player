@@ -37,7 +37,7 @@ export function checkStageEvents(trackName, currentTime, features) {
                 mountEvent(eventId, effectDef);
             }
             const instance = activeEvents.get(eventId);
-            // Если событие уже в процессе исчезновения, не обновляем его
+            // Если событие существует и НЕ находится в процессе исчезновения, обновляем его
             if (effectDef.update && instance && !instance.isFadingOut) {
                 effectDef.update(instance.data, features);
             }
@@ -69,7 +69,6 @@ function mountEvent(id, def) {
 
     const instanceData = {};
     if (def.init) {
-        // requestAnimationFrame гарантирует, что DOM уже отрисован перед init
         requestAnimationFrame(() => def.init(instanceData));
     }
 
@@ -85,15 +84,19 @@ function unmountEvent(id) {
     const instance = activeEvents.get(id);
     if (!instance) return;
 
-    // Плавное удаление:
+    // === ВАЖНОЕ ИСПРАВЛЕНИЕ ===
+    // Если мы уже запустили процесс исчезновения (isFadingOut = true),
+    // то просто выходим. Не нужно пытаться удалить его снова или прерывать анимацию.
+    // Таймер (setTimeout), запущенный в первый раз, сам удалит элемент.
+    if (instance.isFadingOut) return;
+
     // Если элемент существует и еще не начал исчезать
-    if (instance.wrapper && !instance.isFadingOut) {
-        // Проверяем, поддерживает ли эффект плавный выход
-        // (Ищем контейнер специфичного эффекта Радио)
+    if (instance.wrapper) {
+        // Проверяем, поддерживает ли эффект плавный выход (ищем класс контейнера радио)
         const alastorContainer = instance.wrapper.querySelector('.alastor-overlay-container');
         
         if (alastorContainer) {
-            instance.isFadingOut = true; // Блокируем обновления
+            instance.isFadingOut = true; // Ставим флаг "Не трогать, идет анимация!"
             alastorContainer.classList.add('fade-out-event'); // Запускаем CSS анимацию
             
             // Ждем окончания анимации (1.4 сек), потом удаляем физически
@@ -101,16 +104,17 @@ function unmountEvent(id) {
                 removeInstanceComplete(id, instance);
             }, 1400);
             
-            return; // Прерываем немедленное удаление
+            return; // Прерываем функцию, чтобы не удалить элемент прямо сейчас
         }
     }
 
-    // Если плавный выход не нужен или не поддерживается — удаляем сразу
+    // Для всех остальных эффектов (или если что-то пошло не так) - удаляем сразу
     removeInstanceComplete(id, instance);
 }
 
-// Вспомогательная функция окончательного удаления
+// Вспомогательная функция окончательного удаления из DOM и памяти
 function removeInstanceComplete(id, instance) {
+    // Проверка на случай, если трек переключили во время анимации
     if (instance.wrapper) instance.wrapper.remove();
     if (instance.styleEl) instance.styleEl.remove();
     activeEvents.delete(id);
