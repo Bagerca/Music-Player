@@ -211,7 +211,7 @@ export const library = [
         artist: 'JT Music', 
         path: 'audio/JT_Music_Rest_in_Ink.mp3', 
         cover: 'picture/JT_Music_Rest_in_Ink.jpg', 
-        effect: 'bendyInk',
+        effect: 'inkBrush',
         colors: { primary: '#120e1a', secondary: '#3a2e2c', accent: '#e8a848' }, 
         visualizer: ['#e8a848', '#b57d38', '#8a5c29', '#5c3d1a', '#3a2e2c'], 
         neonColor: '#e8a848' 
