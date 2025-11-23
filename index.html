@@ -8,7 +8,8 @@
     <!-- ДИНАМИЧЕСКАЯ ФАВИКОНКА -->
     <link id="dynamic-favicon" rel="icon" type="image/svg+xml" href="favicon.svg">
 
-    <!-- БИБЛИОТЕКИ ДЛЯ ШЕЙДЕРОВ (WebGL) -->
+    <!-- БИБЛИОТЕКИ -->
+    <!-- Three.js загружается внутри JS-модулей, здесь подключаем только GSAP -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.7.1/gsap.min.js"></script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -17,6 +18,18 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <!-- ФОНОВЫЕ ЭФФЕКТЫ (СЦЕНАРИИ / ALASTOR RADIO) -->
+    <div id="bg-effects-layer">
+        <div class="radio-meter-container" id="alastorMeter">
+            <div class="meter-scale">
+                <!-- Насечки шкалы -->
+                <span></span><span></span><span></span><span></span><span></span>
+            </div>
+            <div class="meter-needle" id="alastorNeedle"></div>
+            <div class="meter-glow"></div>
+        </div>
+    </div>
+
     <!-- ПРЕЛОАДЕР -->
     <div id="preloader">
         <div class="loader-content">
@@ -31,9 +44,8 @@
     <div class="player-container" id="playerContainer">
         <audio id="audioPlayer" crossorigin="anonymous"></audio>
         
-        <!-- ОБНОВЛЕННЫЙ БЛОК ОБЛОЖКИ (ДЛЯ WEBGL) -->
+        <!-- БЛОК ОБЛОЖКИ (WEBGL) -->
         <div class="album-art" id="albumArt">
-            <!-- Контейнер для Canvas (Three.js) -->
             <div id="canvas-container" style="width: 100%; height: 100%; border-radius: 20px; overflow: hidden;"></div>
             
             <button id="liteModeBtn" class="album-overlay-btn" title="Облегченный режим (L)">
@@ -181,6 +193,7 @@
             </div>
 
             <div class="upload-grid">
+                <!-- ЛЕВАЯ КОЛОНКА: ЖИВОЙ ПРЕДПРОСМОТР -->
                 <div class="preview-column">
                     <div class="preview-label">Предпросмотр в списке</div>
                     <div class="live-track-card" id="livePreviewCard">
@@ -204,6 +217,8 @@
                         <small>или перетащите сюда</small>
                     </div>
                 </div>
+
+                <!-- ПРАВАЯ КОЛОНКА: ДАННЫЕ -->
                 <div class="inputs-column">
                     <div class="audio-file-badge">
                         <div class="file-icon">🎵</div>
@@ -213,11 +228,13 @@
                         </div>
                         <button class="change-file-btn" id="triggerFileChangeBtn">Change</button>
                     </div>
+
                     <div class="input-group">
                         <label>Основная информация</label>
                         <input type="text" id="upTitle" class="pro-input" placeholder="Название трека">
                         <input type="text" id="upArtist" class="pro-input" placeholder="Исполнитель">
                     </div>
+
                     <div class="input-group">
                         <div class="label-row">
                             <label>Цветовая схема</label>
@@ -240,6 +257,7 @@
                     <input type="text" id="upCoverUrl" class="pro-input small" placeholder="Или ссылка на обложку (URL)">
                 </div>
             </div>
+
             <div class="modal-footer">
                 <button id="cancelUploadBtn" class="footer-btn secondary">Отмена</button>
                 <button id="saveUploadBtn" class="footer-btn primary">Добавить в библиотеку</button>
