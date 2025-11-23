@@ -270,6 +270,57 @@ export const transitions = {
             }
         `
     },
+
+    // 8. HYPNOTIC VORTEX (Вальс безумия)
+    hypnoticVortex: {
+        uniforms: { intensity: 1.0 }, // Сила закручивания
+        config: { duration: 1.8, ease: "slow(0.7, 0.7, false)" }, // Медленный старт, быстрый рывок, медленный финиш
+        shader: `
+            varying vec2 vUv;
+            uniform sampler2D texture1;
+            uniform sampler2D texture2;
+            uniform float dispFactor;
+            uniform float intensity;
+
+            void main() {
+                vec2 uv = vUv;
+                vec2 center = vec2(0.5);
+                vec2 rel = uv - center;
+                float dist = length(rel);
+
+                // 1. Эффект скручивания (Twist)
+                // Чем ближе к центру, тем сильнее крутит
+                // intensity * sin(...) делает скручивание "пружинистым"
+                float twistAmount = (1.0 - dist) * intensity * sin(dispFactor * 3.14);
+                
+                float angle = atan(rel.y, rel.x) + twistAmount * 4.0;
+                vec2 twistedUV = center + vec2(cos(angle), sin(angle)) * dist;
+
+                // 2. Зум в бездну (Scale)
+                // Картинка отдаляется или приближается в процессе
+                float scale = 1.0 - (sin(dispFactor * 3.14) * 0.5);
+                vec2 scaledUV = center + (twistedUV - center) * scale;
+
+                vec4 t1 = texture2D(texture1, scaledUV);
+                vec4 t2 = texture2D(texture2, scaledUV);
+
+                // 3. Виньетка тьмы (The Abyss)
+                // В момент смены картинки края темнеют, создавая эффект туннеля
+                float darkness = smoothstep(0.8, 0.2, dist * scale + abs(dispFactor - 0.5));
+                
+                vec4 color = mix(t1, t2, dispFactor);
+                
+                // Применяем тьму
+                color.rgb *= darkness;
+
+                // 4. Ghosting (Призрачный шлейф)
+                // Слегка смещаем RGB каналы по спирали для психоделики
+                color.r = mix(texture2D(texture1, scaledUV + vec2(0.01)).r, texture2D(texture2, scaledUV + vec2(0.01)).r, dispFactor);
+
+                gl_FragColor = color;
+            }
+        `
+    },
     
     // 2. GLITCH
     glitch: {
