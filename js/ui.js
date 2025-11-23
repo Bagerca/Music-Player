@@ -2,6 +2,8 @@ import { state, saveUserPlaylists } from './state.js';
 import { audio, loadTrack } from './audio.js';
 import { getAllPlaylists } from './data.js';
 import { escapeHtml, formatTime, adjustColorOpacity } from './utils.js';
+// ИМПОРТ ФУНКЦИИ СМЕНЫ ОБЛОЖКИ (ШЕЙДЕРЫ)
+import { changeCover } from './coverLoader.js';
 
 const DOM = {
     trackList: document.getElementById('trackList'),
@@ -13,7 +15,7 @@ const DOM = {
     duration: document.getElementById('duration'),
     currentTrack: document.getElementById('currentTrack'),
     currentArtist: document.getElementById('currentArtist'),
-    albumImage: document.getElementById('albumImage'),
+    // albumImage удален, так как он больше не нужен напрямую (управляется через coverLoader)
     notificationContainer: document.getElementById('notificationContainer')
 };
 
@@ -99,8 +101,7 @@ export function renderTrackList(tracks = state.viewedTracks) {
     });
 }
 
-// --- DRAG & DROP ---
-
+// --- DRAG & DROP (Функции те же, что и были) ---
 const placeholder = document.createElement('div');
 placeholder.className = 'track-placeholder';
 
@@ -173,35 +174,23 @@ function getDragAfterElement(container, y) {
     }, { offset: Number.NEGATIVE_INFINITY }).element;
 }
 
-// === ИСПРАВЛЕННАЯ ФУНКЦИЯ REORDER ===
 function reorderTracks(fromIndex, toIndex) {
     const playlistName = state.currentPlaylistName;
     const playlist = state.userPlaylists[playlistName];
     if (!playlist) return;
 
-    // 1. Запоминаем текущий играющий трек ДО изменений
-    // (берем из playbackList, чтобы получить именно играющий объект)
     const playingTrack = state.playbackList[state.playbackIndex];
-    
-    // Проверяем, совпадает ли сейчас плейлист с очередью воспроизведения (чтобы знать, надо ли синхронизировать)
-    // Проверка по длине и путям достаточно надежна
     const needSyncPlayback = state.playbackList.length === playlist.length && 
                              state.playbackList.every((t, i) => t.path === state.viewedTracks[i].path);
 
-    // 2. Меняем порядок в массиве плейлиста
     const [movedTrack] = playlist.splice(fromIndex, 1);
     playlist.splice(toIndex, 0, movedTrack);
 
-    // 3. Сохраняем изменения
     saveUserPlaylists();
     state.viewedTracks = playlist;
 
-    // 4. Если плейлист был активен, обновляем и очередь воспроизведения
     if (needSyncPlayback) {
         state.playbackList = [...playlist];
-        
-        // 5. ИЩЕМ, КУДА УЕХАЛ ИГРАЮЩИЙ ТРЕК
-        // Это чинит баг с переключением цветов и активного класса
         if (playingTrack) {
             const newPlayingIndex = state.playbackList.findIndex(t => t.path === playingTrack.path);
             if (newPlayingIndex !== -1) {
@@ -209,10 +198,8 @@ function reorderTracks(fromIndex, toIndex) {
             }
         }
     }
-
     renderTrackList(state.viewedTracks);
 }
-// =====================================
 
 // --- МЕНЮ И ПЛЕЙЛИСТЫ ---
 export function switchPlaylist(name) {
@@ -261,7 +248,10 @@ document.addEventListener('click', (e) => {
 export function updateTrackInfo(track) {
     DOM.currentTrack.textContent = track.name;
     DOM.currentArtist.textContent = track.artist;
-    DOM.albumImage.style.backgroundImage = `url('${track.cover}')`;
+    
+    // ВМЕСТО СТАРОЙ ЗАМЕНЫ ФОНА - ВЫЗОВ ШЕЙДЕРОВ
+    changeCover(track.cover, track.effect);
+    
     document.title = `${track.name} - ${track.artist}`;
     renderTrackList(state.viewedTracks);
 }
@@ -272,8 +262,6 @@ export function updatePlayPauseIcon(isPlaying) {
         : '<path d="M8 5v14l11-7z"/>';
     
     DOM.playPauseBtn.querySelector('svg').innerHTML = path;
-
-    // ВАЖНО: Добавляем/убираем класс для CSS коррекции центрирования
     if (isPlaying) {
         DOM.playPauseBtn.classList.add('playing');
     } else {
