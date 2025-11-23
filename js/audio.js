@@ -73,7 +73,7 @@ export function loadTrack(index, autoPlay = false) {
     audio.src = track.path;
     audio.load();
     
-    // Здесь внутри updateTheme вызовется updateFavicon и покрасит ноту
+    // UI.updateTrackInfo внутри себя теперь сбрасывает анимацию субтитров
     UI.updateTrackInfo(track);
     UI.loadLyrics(track);
     UI.updateTheme(track); 
