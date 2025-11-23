@@ -2,8 +2,8 @@ import { state } from './state.js';
 import { analyser, dataArray, bufferLength } from './audio.js';
 import { audio } from './audio.js';
 import { checkLyrics } from './ui.js';
-// ИМПОРТИРУЕМ МЕНЕДЖЕР СОБЫТИЙ
-import { checkStageEvents, cleanupAllEvents } from './stageEvents.js';
+// ВАЖНОЕ ИСПРАВЛЕНИЕ ИМПОРТА:
+import { checkStageEvents, cleanupAllEvents } from './stageManager.js';
 
 let animationId = null;
 let visualizerBars = [];
@@ -22,7 +22,7 @@ let energyHistory = [];
 let beatCooldown = 0;
 let lastBeatTime = 0;
 let currentPulseIntensity = 0;
-let lastTrackIndex = -1; // Чтобы отслеживать смену трека
+let lastTrackIndex = -1; 
 
 export function initVisualizerDOM() {
     if (!visualizerContainer) return;
@@ -46,9 +46,7 @@ export function stopVisualizer() {
     if (animationId) {
         cancelAnimationFrame(animationId);
         animationId = null;
-        // При остановке (паузе) можно не чистить события, 
-        // чтобы стрелка не исчезала, пока трек стоит на паузе.
-        // Но если нужно - вызывай cleanupAllEvents();
+        cleanupAllEvents(); // Чистим сцену при остановке
     }
 }
 
@@ -59,26 +57,21 @@ function loop() {
         analyser.getByteFrequencyData(dataArray);
         const features = analyzeAudioFeatures();
         
-        // Синхронизация текста
         checkLyrics(audio.currentTime);
-        
-        // Отрисовка бара
         drawBars(features);
         updateGlow(features);
         
-        // --- ПРОВЕРКА СЦЕНАРНЫХ СОБЫТИЙ ---
+        // --- СЦЕНАРИИ ---
         const track = state.playbackList[state.playbackIndex];
         if (track) {
-            // Если трек сменился с момента последнего кадра -> чистим старые эффекты
             if (state.playbackIndex !== lastTrackIndex) {
                 cleanupAllEvents();
                 lastTrackIndex = state.playbackIndex;
             }
-
-            // Проверяем таймлайн: нужно ли что-то показать сейчас?
+            // Проверяем, есть ли события для текущего времени
             checkStageEvents(track.name, audio.currentTime, features);
         }
-        // ----------------------------------
+        // ----------------
         
         if (currentPulseIntensity > 0) {
             currentPulseIntensity -= 0.08;
@@ -96,9 +89,7 @@ function getFrequencyEnergy(range) {
     let sum = 0;
     const count = range.end - range.start;
     for (let i = range.start; i < range.end; i++) {
-        if (dataArray[i] !== undefined) {
-            sum += dataArray[i];
-        }
+        if (dataArray[i] !== undefined) sum += dataArray[i];
     }
     return sum / count / 255;
 }
@@ -108,10 +99,9 @@ function analyzeAudioFeatures() {
     const midEnergy = getFrequencyEnergy(FREQ_RANGES.MID);
     const highEnergy = getFrequencyEnergy(FREQ_RANGES.HIGH);
     let sum = 0;
-    for (let i = 0; i < bufferLength; i++) {
-        sum += dataArray[i] * dataArray[i];
-    }
+    for (let i = 0; i < bufferLength; i++) sum += dataArray[i] * dataArray[i];
     const rms = Math.sqrt(sum / bufferLength) / 255;
+    
     let isBeat = false;
     energyHistory.push(rms);
     if (energyHistory.length > 30) energyHistory.shift();
