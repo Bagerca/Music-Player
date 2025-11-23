@@ -144,6 +144,70 @@ export const transitions = {
         `
     },
 
+    // 5. BENDY INK (Viscous Fluid & Sepia)
+    bendyInk: {
+        uniforms: { intensity: 0.4 },
+        config: { duration: 1.4, ease: "power2.inOut" }, // Вязкий, плавный переход
+        shader: `
+            varying vec2 vUv;
+            uniform sampler2D texture1;
+            uniform sampler2D texture2;
+            uniform sampler2D disp; // Карта шума для неравномерности стекания
+            uniform float dispFactor;
+            uniform float intensity;
+
+            void main() {
+                vec2 uv = vUv;
+                
+                // 1. Эффект стекания чернил (Melt)
+                // Используем карту дисплейсмента (шум), чтобы чернила текли неравномерно
+                float noiseVal = texture2D(disp, uv).r;
+                
+                // Рассчитываем сдвиг по Y (вниз)
+                // Чернила текут вниз, поэтому искажаем координаты Y
+                float flow = sin(dispFactor * 3.14) * (intensity * 1.5);
+                float drip = flow * noiseVal; 
+                
+                vec2 uv1 = vec2(uv.x, uv.y + drip); // Старая картинка стекает
+                vec2 uv2 = vec2(uv.x, uv.y - drip); // Новая стекает сверху
+
+                vec4 t1 = texture2D(texture1, uv1);
+                vec4 t2 = texture2D(texture2, uv2);
+
+                // 2. Смешивание (через "порог" чернил)
+                // Создаем эффект, будто чернила разъедают изображение
+                vec4 color = mix(t1, t2, dispFactor);
+                
+                // 3. Фильтр "Старый мультфильм" (Sepia + High Contrast)
+                // Работает максимально сильно в середине перехода
+                float effectStrength = sin(dispFactor * 3.14);
+                
+                // Перевод в ЧБ
+                float gray = dot(color.rgb, vec3(0.299, 0.587, 0.114));
+                
+                // Применяем сепию (желтоватый оттенок)
+                vec3 sepia = vec3(gray * 1.2, gray * 1.0, gray * 0.8);
+                
+                // Усиливаем контраст черного (чернильные пятна)
+                if (gray < 0.3) {
+                    sepia *= 0.5; // Делаем тени глубокими и черными
+                }
+
+                // Смешиваем оригинальный цвет с сепией
+                color.rgb = mix(color.rgb, sepia, effectStrength * 0.9);
+                
+                // 4. Дрожание пленки (Old Film Shake)
+                // Слегка сдвигаем кадр в момент перехода
+                if (effectStrength > 0.1) {
+                    float shake = (fract(sin(dot(uv, vec2(12.9898,78.233))) * 43758.5453) - 0.5) * 0.005;
+                    color.rgb += shake;
+                }
+
+                gl_FragColor = color;
+            }
+        `
+    },
+
     // 2. GLITCH
     glitch: {
         uniforms: { intensity: 0.05 },
