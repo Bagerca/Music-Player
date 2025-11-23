@@ -2,7 +2,7 @@ import { state, saveUserPlaylists } from './state.js';
 import { audio, loadTrack } from './audio.js';
 import { getAllPlaylists } from './data.js';
 import { escapeHtml, formatTime, adjustColorOpacity } from './utils.js';
-// ИМПОРТ ФУНКЦИИ СМЕНЫ ОБЛОЖКИ (ШЕЙДЕРЫ)
+// Импорт функции смены обложки (WebGL)
 import { changeCover } from './coverLoader.js';
 
 const DOM = {
@@ -15,7 +15,6 @@ const DOM = {
     duration: document.getElementById('duration'),
     currentTrack: document.getElementById('currentTrack'),
     currentArtist: document.getElementById('currentArtist'),
-    // albumImage удален, так как он больше не нужен напрямую (управляется через coverLoader)
     notificationContainer: document.getElementById('notificationContainer')
 };
 
@@ -81,7 +80,10 @@ export function renderTrackList(tracks = state.viewedTracks) {
         
         el.onclick = (e) => {
              if (!e.target.closest('.track-menu-btn') && !e.target.closest('.drag-handle')) {
-                 state.playbackList = [...state.viewedTracks]; 
+                 // Если кликнули в другом плейлисте, загружаем этот плейлист в playback
+                 if(state.viewedTracks !== state.playbackList) {
+                     state.playbackList = [...state.viewedTracks];
+                 }
                  state.playbackIndex = index;
                  loadTrack(index, true);
                  renderTrackList(state.viewedTracks);
@@ -101,7 +103,7 @@ export function renderTrackList(tracks = state.viewedTracks) {
     });
 }
 
-// --- DRAG & DROP (Функции те же, что и были) ---
+// --- DRAG & DROP ---
 const placeholder = document.createElement('div');
 placeholder.className = 'track-placeholder';
 
@@ -249,7 +251,14 @@ export function updateTrackInfo(track) {
     DOM.currentTrack.textContent = track.name;
     DOM.currentArtist.textContent = track.artist;
     
-    // ВМЕСТО СТАРОЙ ЗАМЕНЫ ФОНА - ВЫЗОВ ШЕЙДЕРОВ
+    // Сброс анимаций и прозрачности (Важно при смене трека!)
+    DOM.currentArtist.style.opacity = '1'; 
+    if (window.gsap) {
+        gsap.killTweensOf(DOM.lyricsDisplay);
+        gsap.set(DOM.lyricsDisplay, { clearProps: "all" });
+    }
+
+    // Вызов WebGL шейдера для обложки
     changeCover(track.cover, track.effect);
     
     document.title = `${track.name} - ${track.artist}`;
@@ -308,22 +317,93 @@ export function loadLyrics(track) {
 export function checkLyrics(time) {
     if (!currentLyricsData.length) return;
     const lookAheadTime = time + 0.2;
+
+    // Очистка предыдущей строки
     if (nextLyricIndex > 0 && currentLyricsData[nextLyricIndex - 1].time > lookAheadTime) {
+        // Если это был спец-эффект перемещения, мы не очищаем текст сразу
+        if (currentLyricsData[nextLyricIndex - 1].style !== 'move-to-artist') {
+            DOM.lyricsDisplay.textContent = '';
+            DOM.lyricsDisplay.classList.remove('visible');
+        }
         nextLyricIndex = 0;
-        DOM.lyricsDisplay.textContent = '';
-        DOM.lyricsDisplay.classList.remove('visible');
     }
+
+    // Поиск текущей строки
     while (currentLyricsData[nextLyricIndex] && currentLyricsData[nextLyricIndex].time <= lookAheadTime) {
         const line = currentLyricsData[nextLyricIndex];
+        
+        // --- СПЕЦИАЛЬНАЯ АНИМАЦИЯ ПЕРЕМЕЩЕНИЯ ---
+        if (line.style === 'move-to-artist') {
+            animateArtistNameTransition(line.text);
+            nextLyricIndex++;
+            continue; 
+        }
+        // -----------------------------------------
+
         if (line.text) {
+            // Сброс стилей (на случай если была анимация)
+            if (window.gsap) gsap.set(DOM.lyricsDisplay, { clearProps: "all" });
+            DOM.currentArtist.style.opacity = '1';
+
             DOM.lyricsDisplay.textContent = line.text;
             const currentStyle = line.style || trackBaseStyle || 'default';
             DOM.lyricsDisplay.className = 'lyrics-container';
             void DOM.lyricsDisplay.offsetWidth; 
             DOM.lyricsDisplay.classList.add('visible');
             DOM.lyricsDisplay.classList.add(`lyrics-anim-${currentStyle}`);
-        } else { DOM.lyricsDisplay.classList.remove('visible'); }
+        } else { 
+            DOM.lyricsDisplay.classList.remove('visible'); 
+        }
         nextLyricIndex++;
+    }
+}
+
+// Функция анимации названия группы (GSAP)
+function animateArtistNameTransition(text) {
+    const lyricsEl = DOM.lyricsDisplay;
+    const artistEl = DOM.currentArtist;
+
+    // 1. Подготовка
+    artistEl.style.opacity = '0'; // Скрываем реальное имя
+    
+    lyricsEl.textContent = text;
+    lyricsEl.className = 'lyrics-container visible';
+    lyricsEl.style.opacity = '1';
+    lyricsEl.style.transform = 'none';
+
+    // 2. Координаты
+    const startRect = lyricsEl.getBoundingClientRect();
+    const endRect = artistEl.getBoundingClientRect();
+
+    const deltaX = endRect.left + (endRect.width / 2) - (startRect.left + (startRect.width / 2));
+    const deltaY = endRect.top + (endRect.height / 2) - (startRect.top + (startRect.height / 2));
+
+    const startSize = parseFloat(window.getComputedStyle(lyricsEl).fontSize);
+    const endSize = parseFloat(window.getComputedStyle(artistEl).fontSize);
+    const scale = endSize / startSize;
+
+    // 3. Анимация
+    if (window.gsap) {
+        gsap.fromTo(lyricsEl, 
+            { 
+                x: 0, y: 0, scale: 1, 
+                color: '#ffffff',
+                textShadow: '0 0 15px var(--accent-color)'
+            },
+            {
+                duration: 2.0, 
+                x: deltaX, y: deltaY, scale: scale,
+                color: 'rgba(255, 255, 255, 0.7)',
+                textShadow: 'none',
+                ease: "power2.inOut",
+                onComplete: () => {
+                    // 4. Финал: подмена
+                    artistEl.style.opacity = '1'; 
+                    lyricsEl.style.opacity = '0';
+                    gsap.set(lyricsEl, { clearProps: "all" });
+                }
+            }
+        );
     }
 }
 
