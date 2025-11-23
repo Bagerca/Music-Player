@@ -2,16 +2,16 @@ import { state } from './state.js';
 import { analyser, dataArray, bufferLength } from './audio.js';
 import { audio } from './audio.js';
 import { checkLyrics } from './ui.js';
+// ИМПОРТИРУЕМ МЕНЕДЖЕР СОБЫТИЙ
+import { checkStageEvents, cleanupAllEvents } from './stageEvents.js';
 
 let animationId = null;
 let visualizerBars = [];
 const visualizerContainer = document.getElementById('visualizer');
 
-// Кэшируем элементы неоновых линий
 const leftGlow = document.getElementById('leftGlow');
 const rightGlow = document.getElementById('rightGlow');
 
-// Переменные анализа
 const FREQ_RANGES = { 
     BASS: { start: 0, end: 10 }, 
     MID: { start: 10, end: 20 }, 
@@ -22,6 +22,7 @@ let energyHistory = [];
 let beatCooldown = 0;
 let lastBeatTime = 0;
 let currentPulseIntensity = 0;
+let lastTrackIndex = -1; // Чтобы отслеживать смену трека
 
 export function initVisualizerDOM() {
     if (!visualizerContainer) return;
@@ -45,6 +46,9 @@ export function stopVisualizer() {
     if (animationId) {
         cancelAnimationFrame(animationId);
         animationId = null;
+        // При остановке (паузе) можно не чистить события, 
+        // чтобы стрелка не исчезала, пока трек стоит на паузе.
+        // Но если нужно - вызывай cleanupAllEvents();
     }
 }
 
@@ -53,16 +57,29 @@ function loop() {
     
     try {
         analyser.getByteFrequencyData(dataArray);
-        
         const features = analyzeAudioFeatures();
         
-        // Проверка субтитров (синхронизируем с текущим временем)
+        // Синхронизация текста
         checkLyrics(audio.currentTime);
         
+        // Отрисовка бара
         drawBars(features);
         updateGlow(features);
         
-        // Затухание пульсации бита
+        // --- ПРОВЕРКА СЦЕНАРНЫХ СОБЫТИЙ ---
+        const track = state.playbackList[state.playbackIndex];
+        if (track) {
+            // Если трек сменился с момента последнего кадра -> чистим старые эффекты
+            if (state.playbackIndex !== lastTrackIndex) {
+                cleanupAllEvents();
+                lastTrackIndex = state.playbackIndex;
+            }
+
+            // Проверяем таймлайн: нужно ли что-то показать сейчас?
+            checkStageEvents(track.name, audio.currentTime, features);
+        }
+        // ----------------------------------
+        
         if (currentPulseIntensity > 0) {
             currentPulseIntensity -= 0.08;
             if (currentPulseIntensity < 0) currentPulseIntensity = 0;
@@ -90,20 +107,15 @@ function analyzeAudioFeatures() {
     const bassEnergy = getFrequencyEnergy(FREQ_RANGES.BASS);
     const midEnergy = getFrequencyEnergy(FREQ_RANGES.MID);
     const highEnergy = getFrequencyEnergy(FREQ_RANGES.HIGH);
-    
-    // RMS (Общая энергия)
     let sum = 0;
     for (let i = 0; i < bufferLength; i++) {
         sum += dataArray[i] * dataArray[i];
     }
     const rms = Math.sqrt(sum / bufferLength) / 255;
-    
-    // Детектор бита
     let isBeat = false;
     energyHistory.push(rms);
     if (energyHistory.length > 30) energyHistory.shift();
     const energyAverage = energyHistory.reduce((a, b) => a + b, 0) / energyHistory.length;
-    
     const currentTime = Date.now();
     if (beatCooldown <= 0) {
         if (bassEnergy > energyAverage * 1.4 + 0.15 && (currentTime - lastBeatTime) > 200) {
@@ -115,23 +127,16 @@ function analyzeAudioFeatures() {
     } else {
         beatCooldown--;
     }
-
     return { rms, bassEnergy, midEnergy, highEnergy, isBeat };
 }
 
 function drawBars(features) {
-    // ИСПРАВЛЕНИЕ ЗДЕСЬ: Берем трек из playbackList
     const track = state.playbackList[state.playbackIndex];
-    
-    // Защита от ошибки: если трек не найден, используем запасные цвета
     const visualizerColors = track && track.visualizer ? track.visualizer : ['#fff', '#ccc'];
-    
     for (let i = 0; i < visualizerBars.length; i++) {
         const index = Math.floor((i / visualizerBars.length) * bufferLength);
         const value = dataArray[index] / 255;
-        
         let baseHeight = Math.max(5, value * 110);
-        
         if (i < 10) {
             baseHeight += features.bassEnergy * 25;
             if (features.isBeat) baseHeight += currentPulseIntensity * 20;
@@ -140,13 +145,9 @@ function drawBars(features) {
         } else {
             baseHeight += features.highEnergy * 20;
         }
-        
         visualizerBars[i].style.height = `${baseHeight}px`;
-        
-        // Безопасное получение цветов
         const color1 = visualizerColors[0] || '#fff';
         const color2 = visualizerColors[1] || visualizerColors[0] || '#ccc';
-        
         visualizerBars[i].style.background = `linear-gradient(to top, ${color1}, ${color2})`;
     }
 }
@@ -157,22 +158,14 @@ function updateGlow(features) {
         if (rightGlow) rightGlow.style.height = '10%';
         return;
     }
-
     let h = Math.pow(features.rms, 1.5) * 200;
-    
     if (h > 100) h = 100;
     if (h < 5) h = 5;
-
     if (leftGlow && rightGlow) {
         leftGlow.style.height = `${h}%`;
         rightGlow.style.height = `${h}%`;
-        
         const opacityVal = 0.3 + (features.rms * 1.2);
         leftGlow.style.opacity = opacityVal;
         rightGlow.style.opacity = opacityVal;
     }
 }
-
-// Заглушки для старого кода, если он где-то вызывается
-export function createParticles() {} 
-export function createCornerParticles() {}
