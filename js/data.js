@@ -162,7 +162,7 @@ export const library = [
         path: 'audio/MiatriSs_Шкатулка_8D_Remix.mp3', 
         colors: { primary: '#1a1829', secondary: '#3c305c', accent: '#8a4fff' }, 
         cover: 'picture/Шкатулка_8D_Remix.jpg', 
-        effect: 'clockworkGears',
+        effect: 'hypnoticVortex',
         visualizer: ['#8a4fff', '#a782ff', '#3c305c', '#d1c4d9', '#1a1829'], 
         neonColor: '#8a4fff',
         lyricsSource: 'lyrics/shkatulka.json'
