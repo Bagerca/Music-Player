@@ -227,8 +227,10 @@ function setupEventListeners() {
         
         state.contextTrackIndex = index;
         const menu = document.getElementById('contextMenu');
-        const removeBtn = document.getElementById('ctxRemoveFromPlaylist');
+        const removeFromPlaylistBtn = document.getElementById('ctxRemoveFromPlaylist');
+        const deleteFileBtn = document.getElementById('ctxDeleteFile');
         
+        // Позиционирование
         const rect = originalEvent.target.getBoundingClientRect();
         let top = rect.bottom + window.scrollY;
         let left = rect.left + window.scrollX - 190; 
@@ -240,9 +242,17 @@ function setupEventListeners() {
         menu.style.left = `${left}px`;
         menu.classList.add('active');
         
+        // Логика отображения кнопок
         const currentPlaylist = state.currentPlaylistName;
+        const track = state.viewedTracks[index];
+
+        // 1. Кнопка "Удалить из плейлиста" (только для пользовательских плейлистов)
         const isSystem = ["Все треки", "Энергичные", "Chill & Retro", "Мои загрузки"].includes(currentPlaylist);
-        removeBtn.style.display = isSystem ? 'none' : 'flex';
+        removeFromPlaylistBtn.style.display = isSystem ? 'none' : 'flex';
+
+        // 2. Кнопка "Удалить файл" (только для загруженных треков)
+        const isUploaded = state.uploadedTracks.some(t => t.path === track.path);
+        deleteFileBtn.style.display = isUploaded ? 'flex' : 'none';
     });
 
     document.addEventListener('click', (e) => {
@@ -262,6 +272,12 @@ function setupEventListeners() {
     };
     document.getElementById('ctxRemoveFromPlaylist').onclick = () => {
         removeTrackFromCurrentPlaylist();
+        document.getElementById('contextMenu').classList.remove('active');
+    };
+    
+    // НОВЫЙ ОБРАБОТЧИК: УДАЛЕНИЕ ФАЙЛА
+    document.getElementById('ctxDeleteFile').onclick = () => {
+        deleteUploadedFile();
         document.getElementById('contextMenu').classList.remove('active');
     };
 
@@ -516,7 +532,10 @@ async function confirmUploadTrack() {
         saveUserPlaylists();
     }
 
-    // ИСПРАВЛЕНИЕ: Принудительное обновление списка независимо от плейлиста
+    // НОВОЕ: Обновляем выпадающий список (чтобы появился пункт "Мои загрузки")
+    UI.renderPlaylistSelector();
+
+    // Принудительное обновление списка независимо от плейлиста
     const allLists = getAllPlaylists(state.userPlaylists, state.uploadedTracks);
     state.viewedTracks = allLists[currentName];
     applySortToViewedTracks();
@@ -524,6 +543,44 @@ async function confirmUploadTrack() {
 
     document.getElementById('uploadModal').classList.remove('active');
     UI.showNotification(`Трек "${title}" добавлен!`, 'success');
+}
+
+function deleteUploadedFile() {
+    const trackToDelete = state.viewedTracks[state.contextTrackIndex];
+    if (!trackToDelete) return;
+
+    const msg = document.getElementById('confirmationMessage');
+    msg.textContent = `Удалить трек "${trackToDelete.name}"? Он исчезнет из всех плейлистов.`;
+
+    state.pendingAction = () => {
+        // 1. Удаляем из массива загрузок
+        state.uploadedTracks = state.uploadedTracks.filter(t => t.path !== trackToDelete.path);
+
+        // 2. Удаляем из ВСЕХ пользовательских плейлистов
+        Object.keys(state.userPlaylists).forEach(plistName => {
+            state.userPlaylists[plistName] = state.userPlaylists[plistName].filter(t => t.path !== trackToDelete.path);
+        });
+        saveUserPlaylists();
+
+        // 3. Обновляем текущий вид
+        const allLists = getAllPlaylists(state.userPlaylists, state.uploadedTracks);
+        
+        // Если мы были в "Мои загрузки" и удалили последний трек -> переключаем на "Все треки"
+        // или если текущий плейлист пуст - просто обновляем
+        state.viewedTracks = allLists[state.currentPlaylistName] || [];
+        
+        if (!state.viewedTracks.length && state.currentPlaylistName === "Мои загрузки") {
+            UI.switchPlaylist("Все треки");
+        } else {
+            applySortToViewedTracks();
+            UI.renderTrackList(state.viewedTracks);
+        }
+
+        UI.renderPlaylistSelector();
+        UI.showNotification('Трек удален', 'info');
+    };
+
+    document.getElementById('confirmationModal').classList.add('active');
 }
 
 function hslToHex(h, s, l) {
