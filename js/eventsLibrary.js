@@ -307,7 +307,7 @@ export const stageEffects = {
     overlayEyes: {
         html: `
             <div class="horror-img-container">
-                <img src="picture/Eyes_no i'm not a human.webp" class="horror-img zoom-anim" alt="eyes">
+                <img src="picture/Eyes_no i'm not a human.gif" class="horror-img zoom-anim" alt="eyes">
                 <div class="vignette-overlay"></div>
             </div>
         `,
