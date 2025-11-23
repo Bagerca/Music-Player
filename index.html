@@ -8,6 +8,10 @@
     <!-- ДИНАМИЧЕСКАЯ ФАВИКОНКА -->
     <link id="dynamic-favicon" rel="icon" type="image/svg+xml" href="favicon.svg">
 
+    <!-- БИБЛИОТЕКИ ДЛЯ ШЕЙДЕРОВ (WebGL) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.7.1/gsap.min.js"></script>
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;900&family=Open+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -28,8 +32,11 @@
     <div class="player-container" id="playerContainer">
         <audio id="audioPlayer" crossorigin="anonymous"></audio>
         
+        <!-- ОБНОВЛЕННЫЙ БЛОК ОБЛОЖКИ (ДЛЯ WEBGL) -->
         <div class="album-art" id="albumArt">
-            <div class="album-image" id="albumImage"></div>
+            <!-- Контейнер для Canvas (Three.js) -->
+            <div id="canvas-container" style="width: 100%; height: 100%; border-radius: 20px; overflow: hidden;"></div>
+            
             <button id="liteModeBtn" class="album-overlay-btn" title="Облегченный режим (L)">
                 <svg viewBox="0 0 24 24"><path fill="currentColor" d="M17,8C8,10,5.9,16.17,3.82,21.34L5.71,22l1.62-2.9c2,3.12,6.03,5.9,11.67,5.9c.33,0,1,0,1-1C20,16,17,8,17,8z M14.33,19.97C11.93,19.17,9.3,17.21,7.5,14.66c3.2-3.8,6.44-6.3,9.58-7.5c-1.4,3.3-2.88,6.84-4.83,10.81H14.33z M19.93,4.07C19.5,4.5,19,5,18.43,5.57L17,7l-1.43-1.43c-3.14,2.23-5.5,5.1-7.24,8.15C7.5,12.33,7,10.67,6,9c-1-1.67-2.67-3-5-3v-2c3.33,0,5.67,2.33,7,5c1.33-2.67,3.67-4.33,6-5c.67,1,1.33,2.33,2,4l2-2C21.67,6.33,22,4.67,22,3v-2C21.33,1,20.67,2.33,19.93,4.07z"/></svg>
             </button>
@@ -122,16 +129,6 @@
         <div class="track-list" id="trackList"></div>
     </div>
 
-    <!-- ЭФФЕКТЫ -->
-    <div class="edge-effects">
-        <div class="energy-surges">
-            <div class="energy-wave top" id="energyTop"></div>
-            <div class="energy-wave right" id="energyRight"></div>
-            <div class="energy-wave bottom" id="energyBottom"></div>
-            <div class="energy-wave left" id="energyLeft"></div>
-        </div>
-    </div>
-
     <!-- КОНТЕЙНЕР УВЕДОМЛЕНИЙ -->
     <div id="notificationContainer" class="notification-container"></div>
 
@@ -170,7 +167,6 @@
             <svg viewBox="0 0 24 24"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
             Удалить из плейлиста
         </div>
-        <!-- НОВАЯ КНОПКА УДАЛЕНИЯ ФАЙЛА -->
         <div class="ctx-item delete" id="ctxDeleteFile" style="display: none;">
             <svg viewBox="0 0 24 24"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
             Удалить файл
@@ -186,14 +182,10 @@
             </div>
 
             <div class="upload-grid">
-                <!-- ЛЕВАЯ КОЛОНКА: ЖИВОЙ ПРЕДПРОСМОТР -->
                 <div class="preview-column">
                     <div class="preview-label">Предпросмотр в списке</div>
-                    
-                    <!-- Карточка-превью -->
                     <div class="live-track-card" id="livePreviewCard">
                         <div class="live-cover" id="livePreviewCover">
-                            <!-- Заглушка иконки -->
                             <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
                         </div>
                         <div class="live-info">
@@ -204,8 +196,6 @@
                             <span></span><span></span><span></span>
                         </div>
                     </div>
-
-                    <!-- Блок загрузки обложки -->
                     <div class="cover-upload-area" id="coverUploadArea">
                         <input type="file" id="upCoverFile" accept="image/*" hidden>
                         <div class="upload-icon">
@@ -215,11 +205,7 @@
                         <small>или перетащите сюда</small>
                     </div>
                 </div>
-
-                <!-- ПРАВАЯ КОЛОНКА: ДАННЫЕ И НАСТРОЙКИ -->
                 <div class="inputs-column">
-                    
-                    <!-- Зона файла -->
                     <div class="audio-file-badge">
                         <div class="file-icon">🎵</div>
                         <div class="file-info-text">
@@ -228,19 +214,16 @@
                         </div>
                         <button class="change-file-btn" id="triggerFileChangeBtn">Change</button>
                     </div>
-
                     <div class="input-group">
                         <label>Основная информация</label>
                         <input type="text" id="upTitle" class="pro-input" placeholder="Название трека">
                         <input type="text" id="upArtist" class="pro-input" placeholder="Исполнитель">
                     </div>
-
                     <div class="input-group">
                         <div class="label-row">
                             <label>Цветовая схема</label>
                             <span class="auto-tag" id="autoColorBadge" style="display:none">✨ Auto-detected</span>
                         </div>
-                        
                         <div class="color-pickers-row">
                             <div class="color-control">
                                 <input type="color" id="upColorBg" value="#1a1a2e">
@@ -255,11 +238,9 @@
                             <button id="randomColorsBtn" class="dice-btn" title="Случайные цвета">🎲</button>
                         </div>
                     </div>
-                    
                     <input type="text" id="upCoverUrl" class="pro-input small" placeholder="Или ссылка на обложку (URL)">
                 </div>
             </div>
-
             <div class="modal-footer">
                 <button id="cancelUploadBtn" class="footer-btn secondary">Отмена</button>
                 <button id="saveUploadBtn" class="footer-btn primary">Добавить в библиотеку</button>
