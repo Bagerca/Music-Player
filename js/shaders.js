@@ -211,12 +211,12 @@ export const transitions = {
         `
     },
 
-/* --- ВСТАВИТЬ В js/shaders.js --- */
-
-    // 8. HYPNOTIC VORTEX (Вальс безумия — Исправленный)
+// 8. CLOCKWORK WALTZ (Механический Вальс — Исправленный)
     hypnoticVortex: {
-        uniforms: { intensity: 5.0 }, // Сила искажения внутри вихря
-        config: { duration: 1.8, ease: "slow(0.7, 0.7, false)" }, 
+        // intensity: Сколько ПОЛНЫХ оборотов сделают кольца.
+        // 1.0 = 1 оборот (360 градусов). 2.0 = 2 оборота (720 градусов).
+        uniforms: { intensity: 1.0 }, 
+        config: { duration: 2.0, ease: "power2.inOut" },
         shader: `
             varying vec2 vUv;
             uniform sampler2D texture1;
@@ -224,54 +224,79 @@ export const transitions = {
             uniform float dispFactor;
             uniform float intensity;
 
+            #define PI 3.14159265359
+
             void main() {
                 vec2 uv = vUv;
                 vec2 center = vec2(0.5);
                 vec2 rel = uv - center;
+                
+                // Переходим в полярные координаты
+                float angle = atan(rel.y, rel.x);
                 float dist = length(rel);
 
-                // Получаем исходный угол пикселя
-                float originalAngle = atan(rel.y, rel.x);
+                // --- 1. ГЕОМЕТРИЯ КОЛЕЦ ---
+                // Разбиваем радиус на 10 четких колец
+                float ringID = floor(dist * 10.0);
 
-                // 1. ГЛОБАЛЬНЫЙ ВАЛЬС (Full Spin)
-                // Картинка делает полный оборот (2 * PI = 6.28)
-                // В конце (dispFactor = 1.0) угол равен 360, то есть 0. Картинка стоит ровно.
-                float globalRotation = dispFactor * 6.28318;
+                // --- 2. НАПРАВЛЕНИЕ ВРАЩЕНИЯ ---
+                // Четные кольца = 1, Нечетные = -1
+                // Это заставляет их крутиться в разные стороны
+                float dir = mod(ringID, 2.0) * 2.0 - 1.0;
 
-                // 2. БЕЗУМНЫЙ ВИХРЬ (Vortex Twist)
-                // Это то искажение, которое тебе понравилось.
-                // (1.0 - dist) крутит центр сильнее, чем края.
-                // sin(dispFactor * 3.14) гарантирует, что искажение исчезнет в конце.
-                float madnessTwist = (1.0 - dist) * intensity * sin(dispFactor * 3.14);
+                // --- 3. ПОЛНЫЙ ОБОРОТ (ВАЖНО!) ---
+                // Мы умножаем прогресс (0..1) на 2*PI (360 градусов).
+                // В конце анимации dispFactor = 1.0, значит угол будет ровно 360 (или -360).
+                // Это гарантирует, что картинка встанет ИДЕАЛЬНО ровно.
+                float rotation = dispFactor * (2.0 * PI) * intensity * dir;
+                
+                // Добавляем небольшое "отставание" внешних колец для динамики,
+                // но кратное PI, чтобы тоже сошлось (опционально, сейчас убрал для точности)
+                
+                float finalAngle = angle + rotation;
 
-                // Складываем всё вместе: Исходный угол + Оборот Вальса - Искажение
-                float finalAngle = originalAngle + globalRotation - madnessTwist;
-
-                // Рассчитываем новые координаты
+                // Возвращаемся в обычные координаты
                 vec2 twistedUV = center + vec2(cos(finalAngle), sin(finalAngle)) * dist;
 
-                // 3. Зум в бездну (The Abyss)
-                // Немного отдаляем картинку в пике, чтобы скрыть края при вращении
-                float scale = 1.0 - (sin(dispFactor * 3.14) * 0.4);
-                vec2 scaledUV = center + (twistedUV - center) * scale;
+                // --- 4. ЗУМ И БЕЗУМИЕ ---
+                // Добавляем тот самый зум в бездну, чтобы скрыть края при вращении
+                float zoom = 1.0 - (sin(dispFactor * PI) * 0.3);
+                vec2 scaledUV = center + (twistedUV - center) * zoom;
 
-                // Сэмплим текстуры
-                vec4 t1 = texture2D(texture1, scaledUV);
-                vec4 t2 = texture2D(texture2, scaledUV);
-
-                // 4. Ghosting (Призрачный шлейф)
-                // Сдвигаем красный канал чуть-чуть назад по вращению для эффекта глюка
-                float ghostAngle = finalAngle - 0.05 * sin(dispFactor * 3.14);
-                vec2 ghostUV = center + vec2(cos(ghostAngle), sin(ghostAngle)) * dist * scale;
-                t1.r = texture2D(texture1, ghostUV).r;
-                t2.r = texture2D(texture2, ghostUV).r;
-
-                // 5. Виньетка тьмы
-                // Скрываем углы, которые могли вылезти при вращении
-                float darkness = smoothstep(0.75, 0.2, dist * scale + abs(dispFactor - 0.5) * 0.5);
+                // --- 5. RGB СДВИГ (Эффект сломанного механизма) ---
+                // Сдвигаем цвета по кругу
+                float rgbSplit = 0.02 * sin(dispFactor * PI);
                 
+                vec4 t1, t2;
+                
+                // R канал крутим чуть быстрее
+                vec2 uvR = center + (vec2(cos(finalAngle + rgbSplit), sin(finalAngle + rgbSplit)) * dist - center) * zoom;
+                t1.r = texture2D(texture1, uvR).r;
+                t2.r = texture2D(texture2, uvR).r;
+
+                // G канал как есть
+                t1.g = texture2D(texture1, scaledUV).g;
+                t2.g = texture2D(texture2, scaledUV).g;
+
+                // B канал крутим чуть медленнее
+                vec2 uvB = center + (vec2(cos(finalAngle - rgbSplit), sin(finalAngle - rgbSplit)) * dist - center) * zoom;
+                t1.b = texture2D(texture1, uvB).b;
+                t2.b = texture2D(texture2, uvB).b;
+                
+                t1.a = 1.0; t2.a = 1.0;
+
+                // --- 6. ВИНЬЕТКА И БЛЕСК ---
+                // Металлический блеск на стыках колец
+                float ringEdge = smoothstep(0.4, 0.5, abs(fract(dist * 10.0) - 0.5));
+                float shine = ringEdge * sin(dispFactor * PI) * 0.3;
+
+                // Виньетка
+                float darkness = smoothstep(0.7, 0.2, dist * zoom);
+
                 vec4 color = mix(t1, t2, dispFactor);
-                color.rgb *= darkness;
+                
+                color.rgb += shine;    // Добавляем блеск колец
+                color.rgb *= darkness; // Затеняем края
 
                 gl_FragColor = color;
             }
