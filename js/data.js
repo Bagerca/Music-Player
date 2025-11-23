@@ -172,7 +172,7 @@ export const library = [
         path: 'audio/Callie_Mae_and_longestsoloever_Spend_The_Night_Alone.mp3', 
         colors: { primary: '#050608', secondary: '#1a1d2b', accent: '#a8b4c7' }, 
         cover: 'picture/Spend_The_Night_Alone.jpg', 
-        effect: 'wind',
+        effect: 'notHuman',
         visualizer: ['#a8b4c7', '#8e9aaf', '#748097', '#5a667f', '#3e4a61'], 
         neonColor: '#a8b4c7' 
     },
