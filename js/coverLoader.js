@@ -1,9 +1,7 @@
 import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js';
-// Используем глобальный GSAP
 import { vertexShader, transitions } from './shaders.js';
 
 let scene, camera, renderer, material, mesh;
-// Храним текущую анимацию, чтобы можно было её убить при быстром переключении
 let currentTween = null; 
 
 // Генератор шума
@@ -26,9 +24,7 @@ export function initCoverLoader(containerId, startImageUrl) {
     const container = document.getElementById(containerId);
     if (!container) return;
 
-    // Очищаем контейнер на случай повторной инициализации
     container.innerHTML = '';
-
     const w = container.offsetWidth;
     const h = container.offsetHeight;
 
@@ -43,22 +39,19 @@ export function initCoverLoader(containerId, startImageUrl) {
 
     const loader = new THREE.TextureLoader();
     
-    // Загрузка стартовой картинки с фоллбеком
+    // Фолбэк для стартовой картинки
     const validUrl = startImageUrl || 'picture/default_cover.jpg';
     
     loader.load(
         validUrl, 
         (tex) => setupMaterial(tex),
         undefined,
-        () => {
-            // Если стартовая картинка не грузится, грузим дефолтную
-            loader.load('picture/default_cover.jpg', (tex) => setupMaterial(tex));
-        }
+        () => loader.load('picture/default_cover.jpg', (tex) => setupMaterial(tex))
     );
 
     function setupMaterial(tex1) {
         const dispTex = createNoiseTexture();
-        const def = transitions.liquid; // Дефолтный эффект
+        const def = transitions.liquid; 
         
         material = new THREE.ShaderMaterial({
             uniforms: {
@@ -101,68 +94,62 @@ function animate() {
     }
 }
 
-// ГЛАВНАЯ ФУНКЦИЯ СМЕНЫ ОБЛОЖКИ (ИСПРАВЛЕННАЯ)
+// === ИСПРАВЛЕННАЯ ФУНКЦИЯ ПЕРЕХОДА ===
 export function changeCover(newImageUrl, effectName = 'liquid') {
-    // 1. Проверка на существование сцены
     if (!material) return;
 
-    // 2. Фолбэк, если URL пустой
     const targetUrl = newImageUrl || 'picture/default_cover.jpg';
-
-    // 3. Получаем данные эффекта
     const effectData = transitions[effectName] || transitions.liquid;
 
     const loader = new THREE.TextureLoader();
 
-    // 4. Загружаем новую текстуру
     loader.load(
         targetUrl, 
         (newTex) => {
-            // ЕСЛИ ПРЕДЫДУЩАЯ АНИМАЦИЯ ЕЩЕ ИДЕТ:
+            // ЛОГИКА ПРЕРЫВАНИЯ:
             if (currentTween) {
-                // Убиваем её
                 currentTween.kill();
-                // Мгновенно завершаем состояние: то, что было texture2 (цель), становится texture1 (старт)
-                // Но так как мы не знаем, насколько далеко зашла анимация, 
-                // безопаснее просто оставить texture1 как есть, если dispFactor был мал,
-                // или переключить, если велик. 
-                // УПРОЩЕНИЕ: Мы просто сбрасываем фактор.
+                
+                // КЛЮЧЕВОЙ МОМЕНТ:
+                // Если мы прерываем анимацию, мы берем то изображение, на которое 
+                // мы ПЫТАЛИСЬ перейти (texture2), и делаем его БАЗОВЫМ (texture1).
+                // Это предотвращает "отскок" к старой картинке.
+                material.uniforms.texture1.value = material.uniforms.texture2.value;
+                
+                // Сбрасываем прогресс, так как теперь texture1 == то, что мы хотели видеть
+                material.uniforms.dispFactor.value = 0;
             }
 
-            // 5. Обновляем шейдер под новый эффект (если он сменился)
+            // Обновляем шейдер (если сменился стиль)
             material.fragmentShader = effectData.shader;
             if (effectData.uniforms.intensity !== undefined) {
                 material.uniforms.intensity.value = effectData.uniforms.intensity;
             }
             material.needsUpdate = true;
 
-            // 6. Подготовка к переходу
-            // Текущая видимая картинка (texture1) остается на месте.
-            // Новую картинку кладем в texture2.
+            // Готовим новый переход
             material.uniforms.texture2.value = newTex;
             
-            // Сбрасываем прогресс искажения в 0 (видна texture1)
+            // На всякий случай убеждаемся, что мы в нуле
+            // (видна texture1, которая теперь является актуальной предыдущей картинкой)
             material.uniforms.dispFactor.value = 0;
 
-            // 7. Запуск анимации (сохраняем ссылку в currentTween)
+            // Запускаем GSAP
             currentTween = gsap.to(material.uniforms.dispFactor, {
-                value: 1, // Анимируем к 1 (будет видна texture2)
+                value: 1, // Едем к texture2
                 duration: effectData.config.duration,
                 ease: effectData.config.ease,
                 onComplete: () => {
-                    // КОГДА ВСЕ ЗАКОНЧИЛОСЬ:
-                    // Новая картинка становится "основной" (texture1)
+                    // Фиксация: новая картинка становится базовой
                     material.uniforms.texture1.value = newTex;
-                    // Сбрасываем фактор в 0, но визуально ничего не меняется, т.к. texture1 == texture2
                     material.uniforms.dispFactor.value = 0;
                     currentTween = null;
                 }
             });
         },
-        undefined, // onProgress
+        undefined, 
         (err) => {
             console.warn('Ошибка загрузки обложки:', targetUrl);
-            // Если ошибка, пробуем загрузить дефолт, чтобы не было черного экрана
             if (targetUrl !== 'picture/default_cover.jpg') {
                 changeCover('picture/default_cover.jpg', effectName);
             }
