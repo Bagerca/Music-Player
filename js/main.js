@@ -345,10 +345,47 @@ function setupEventListeners() {
         UI.renderTrackList(filtered);
     };
 
+    // --- КЛАВИАТУРНЫЕ СОКРАЩЕНИЯ ---
     document.addEventListener('keydown', (e) => {
+        // Не срабатываем, если фокус в поле ввода
         if (e.target.tagName === 'INPUT') return;
-        if (e.code === 'Space') { e.preventDefault(); AudioCore.togglePlay(); }
-        if (e.code === 'KeyL') toggleLiteMode();
+
+        switch (e.code) {
+            case 'Space':
+                e.preventDefault();
+                AudioCore.togglePlay();
+                break;
+            
+            case 'KeyL':
+                toggleLiteMode();
+                break;
+            
+            case 'ArrowLeft':
+                AudioCore.audio.currentTime -= 5;
+                break;
+
+            case 'ArrowRight':
+                AudioCore.audio.currentTime += 5;
+                break;
+
+            case 'ArrowUp':
+                e.preventDefault(); // Блокируем скролл страницы
+                let newVolUp = parseInt(volSlider.value) + 5;
+                if (newVolUp > 100) newVolUp = 100;
+                
+                volSlider.value = newVolUp;
+                updateVolume(newVolUp);
+                break;
+
+            case 'ArrowDown':
+                e.preventDefault(); // Блокируем скролл страницы
+                let newVolDown = parseInt(volSlider.value) - 5;
+                if (newVolDown < 0) newVolDown = 0;
+                
+                volSlider.value = newVolDown;
+                updateVolume(newVolDown);
+                break;
+        }
     });
 }
 
