@@ -152,7 +152,7 @@ export const library = [
         path: 'audio/Bruno_Coulais_Exploration.mp3', 
         colors: { primary: '#0f0f2d', secondary: '#3c2a4d', accent: '#8978d6' }, 
         cover: 'picture/Exploration.jpg', 
-        effect: 'hypnoticVortex',
+        effect: 'liquid',
         visualizer: ['#8978d6', '#a99de0', '#695aab', '#3c2a4d', '#281c34'], 
         neonColor: '#8978d6' 
     },
