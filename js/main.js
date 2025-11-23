@@ -112,68 +112,144 @@ function setupEventListeners() {
     });
 
 
-    // --- ЗАГРУЗКА ТРЕКОВ (ОБНОВЛЕННАЯ ЛОГИКА) ---
+    // --- ЗАГРУЗКА ТРЕКОВ (PRO ЛОГИКА) ---
+    
+    // Элементы UI
+    const upTitleInput = document.getElementById('upTitle');
+    const upArtistInput = document.getElementById('upArtist');
+    const liveTitle = document.getElementById('livePreviewTitle');
+    const liveArtist = document.getElementById('livePreviewArtist');
+    const liveCard = document.getElementById('livePreviewCard');
+    const liveCover = document.getElementById('livePreviewCover');
+    
+    // Элементы цвета
+    const colorBgInput = document.getElementById('upColorBg');
+    const colorAccentInput = document.getElementById('upColorAccent');
+    const swatchBg = document.getElementById('swatchBg');
+    const swatchAccent = document.getElementById('swatchAccent');
+
+    // 1. ЖИВОЕ ОБНОВЛЕНИЕ ТЕКСТА
+    upTitleInput.oninput = (e) => {
+        liveTitle.textContent = e.target.value || "Название трека";
+    };
+    upArtistInput.oninput = (e) => {
+        liveArtist.textContent = e.target.value || "Исполнитель";
+    };
+
+    // 2. ЖИВОЕ ОБНОВЛЕНИЕ ЦВЕТОВ
+    function updateLiveColors(bg, accent) {
+        swatchBg.style.background = bg;
+        swatchAccent.style.background = accent;
+        swatchAccent.style.boxShadow = `0 0 10px ${accent}`;
+        
+        // Обновляем CSS-переменную для живой карточки
+        liveCard.style.setProperty('--live-accent', accent);
+        liveTitle.style.color = accent;
+    }
+
+    colorBgInput.oninput = (e) => updateLiveColors(e.target.value, colorAccentInput.value);
+    colorAccentInput.oninput = (e) => updateLiveColors(colorBgInput.value, e.target.value);
+
+
+    // 3. ОТКРЫТИЕ МОДАЛКИ ПРИ ВЫБОРЕ АУДИО
     document.getElementById('uploadTrackBtn').onclick = () => document.getElementById('fileInput').click();
     
-    // Обработка выбора аудиофайла
     document.getElementById('fileInput').onchange = (e) => {
         const file = e.target.files[0];
         if (!file) return;
         
         state.pendingUploadFile = file;
         
+        // Заполняем данные
+        const fileName = file.name.replace(/\.[^/.]+$/, "");
         document.getElementById('uploadFileName').textContent = file.name;
-        document.getElementById('upTitle').value = file.name.replace(/\.[^/.]+$/, ""); 
-        document.getElementById('upArtist').value = "Unknown Artist";
+        upTitleInput.value = fileName;
+        upArtistInput.value = "Unknown Artist";
         
-        // Сброс полей обложки и цветов
+        // Обновляем Live Preview
+        liveTitle.textContent = fileName;
+        liveArtist.textContent = "Unknown Artist";
+        
+        // Сброс обложки
         document.getElementById('upCoverUrl').value = "";
         document.getElementById('upCoverFile').value = "";
-        resetCoverPreview();
-        document.getElementById('autoColorBadge').style.display = 'none';
+        liveCover.style.backgroundImage = 'none';
+        liveCover.innerHTML = '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>';
         
+        // Сброс цветов
+        document.getElementById('autoColorBadge').style.display = 'none';
+        updateLiveColors('#1a1a2e', '#00d1ff');
+        colorBgInput.value = '#1a1a2e';
+        colorAccentInput.value = '#00d1ff';
+
         document.getElementById('uploadModal').classList.add('active');
         e.target.value = '';
     };
 
-    // --- ЛОГИКА ОБЛОЖКИ ---
+    // 4. ЗАГРУЗКА ОБЛОЖКИ (Drap & Drop зона)
+    const coverUploadArea = document.getElementById('coverUploadArea');
     const coverInput = document.getElementById('upCoverFile');
-    const coverPreviewBox = document.getElementById('coverPreviewBox');
-    const uploadCoverBtn = document.getElementById('uploadCoverBtn');
 
-    const triggerCoverUpload = () => coverInput.click();
-    coverPreviewBox.onclick = triggerCoverUpload;
-    uploadCoverBtn.onclick = triggerCoverUpload;
+    coverUploadArea.onclick = () => coverInput.click();
 
-    // Обработка выбора файла обложки
     coverInput.onchange = (e) => {
         const file = e.target.files[0];
-        if (file) {
-            const url = URL.createObjectURL(file);
-            updateCoverPreview(url);
-            analyzeImageColor(url);
-        }
+        if (file) processCoverImage(URL.createObjectURL(file));
+    };
+    
+    // URL обложки
+    document.getElementById('upCoverUrl').oninput = (e) => {
+        if(e.target.value) processCoverImage(e.target.value);
     };
 
-    // Обработка URL обложки
-    document.getElementById('upCoverUrl').oninput = (e) => {
-        const url = e.target.value;
-        if (url) {
-            updateCoverPreview(url);
-            analyzeImageColor(url);
-        } else {
-            resetCoverPreview();
-        }
-    };
+    function processCoverImage(src) {
+        // Ставим в превью
+        liveCover.style.backgroundImage = `url('${src}')`;
+        liveCover.innerHTML = ''; // Убираем иконку ноты
+        
+        // Анализируем цвет
+        analyzeImageColor(src);
+    }
 
     // Случайные цвета
     document.getElementById('randomColorsBtn').onclick = () => {
         const hue = Math.floor(Math.random() * 360);
-        document.getElementById('upColorBg').value = hslToHex(hue, 60, 10);
-        document.getElementById('upColorAccent').value = hslToHex(hue, 80, 60);
+        const bg = hslToHex(hue, 60, 10);
+        const accent = hslToHex(hue, 80, 60);
+        
+        colorBgInput.value = bg;
+        colorAccentInput.value = accent;
+        updateLiveColors(bg, accent);
         document.getElementById('autoColorBadge').style.display = 'none';
     };
 
+    // ФУНКЦИЯ АНАЛИЗА ЦВЕТА
+    function analyzeImageColor(imageSrc) {
+        const img = new Image();
+        img.crossOrigin = "Anonymous";
+        img.src = imageSrc;
+        
+        img.onload = function() {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 1; canvas.height = 1;
+            ctx.drawImage(img, 0, 0, 1, 1);
+            
+            const p = ctx.getImageData(0, 0, 1, 1).data;
+            const hex = rgbToHex(p[0], p[1], p[2]);
+            
+            const bg = adjustBrightness(hex, -40);
+            const accent = boostSaturation(hex);
+            
+            colorBgInput.value = bg;
+            colorAccentInput.value = accent;
+            
+            updateLiveColors(bg, accent);
+            document.getElementById('autoColorBadge').style.display = 'inline-block';
+        };
+    }
+
+    // Сохранение
     document.getElementById('saveUploadBtn').onclick = confirmUploadTrack;
     document.getElementById('cancelUploadBtn').onclick = () => document.getElementById('uploadModal').classList.remove('active');
 
@@ -285,22 +361,6 @@ function setupEventListeners() {
 
 /* --- ФУНКЦИИ ЛОГИКИ --- */
 
-// Хелперы для превью обложки
-function resetCoverPreview() {
-    const img = document.getElementById('coverPreviewImg');
-    img.src = '';
-    img.style.display = 'none';
-    document.querySelector('.cover-placeholder').style.display = 'flex';
-}
-
-function updateCoverPreview(src) {
-    const img = document.getElementById('coverPreviewImg');
-    img.src = src;
-    img.style.display = 'block';
-    document.querySelector('.cover-placeholder').style.display = 'none';
-}
-
-// --- ФУНКЦИИ СОРТИРОВКИ ---
 function handleSort(type, domItem) {
     if (state.sort.type === type && type !== 'shuffle' && type !== 'default') {
         state.sort.direction = state.sort.direction === 'asc' ? 'desc' : 'asc';
@@ -401,7 +461,6 @@ async function confirmUploadTrack() {
     const colorBg = document.getElementById('upColorBg').value;
     const colorAccent = document.getElementById('upColorAccent').value;
     
-    // Получаем обложку: либо файл, либо URL
     const coverUrlInput = document.getElementById('upCoverUrl').value.trim();
     const coverFileInput = document.getElementById('upCoverFile').files[0];
     
@@ -452,40 +511,6 @@ function hslToHex(h, s, l) {
         return Math.round(255 * color).toString(16).padStart(2, '0');
     };
     return `#${f(0)}${f(8)}${f(4)}`;
-}
-
-// --- ЛОГИКА АНАЛИЗА ЦВЕТА ---
-function analyzeImageColor(imageSrc) {
-    const img = new Image();
-    img.crossOrigin = "Anonymous";
-    img.src = imageSrc;
-    
-    img.onload = function() {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        canvas.width = 1;
-        canvas.height = 1;
-        ctx.drawImage(img, 0, 0, 1, 1);
-        
-        const pixelData = ctx.getImageData(0, 0, 1, 1).data;
-        const r = pixelData[0];
-        const g = pixelData[1];
-        const b = pixelData[2];
-        
-        const hex = rgbToHex(r, g, b);
-        
-        const bgHex = adjustBrightness(hex, -40); 
-        const accentHex = boostSaturation(hex);
-        
-        document.getElementById('upColorBg').value = bgHex;
-        document.getElementById('upColorAccent').value = accentHex;
-        document.getElementById('autoColorBadge').style.display = 'inline-block';
-    };
-    
-    img.onerror = function() {
-        console.log("Не удалось извлечь цвет");
-        document.getElementById('autoColorBadge').style.display = 'none';
-    };
 }
 
 function rgbToHex(r, g, b) {
