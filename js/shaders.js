@@ -211,10 +211,12 @@ export const transitions = {
         `
     },
 
-// 8. HYPNOTIC VORTEX (Вальс Безумия — Финальная версия)
+/* --- ВСТАВИТЬ В js/shaders.js --- */
+
+    // 8. HYPNOTIC VORTEX (Вальс безумия — Исправленный)
     hypnoticVortex: {
-        uniforms: { intensity: 12.0 }, // Сила вращения (чем больше, тем больше оборотов)
-        config: { duration: 2.0, ease: "power2.inOut" }, // Плавный разгон и торможение
+        uniforms: { intensity: 5.0 }, // Сила искажения внутри вихря
+        config: { duration: 1.8, ease: "slow(0.7, 0.7, false)" }, 
         shader: `
             varying vec2 vUv;
             uniform sampler2D texture1;
@@ -222,64 +224,54 @@ export const transitions = {
             uniform float dispFactor;
             uniform float intensity;
 
-            // Функция вращения UV координат вокруг центра
-            vec2 rotate(vec2 v, float a) {
-                float s = sin(a);
-                float c = cos(a);
-                mat2 m = mat2(c, -s, s, c);
-                return m * v;
-            }
-
             void main() {
                 vec2 uv = vUv;
                 vec2 center = vec2(0.5);
                 vec2 rel = uv - center;
                 float dist = length(rel);
 
-                // --- 1. АНИМАЦИОННАЯ КРИВАЯ ---
-                // sin(dispFactor * 3.14) дает 0 в начале, 1 в центре, 0 в конце.
-                // Это гарантирует, что картинка вернется в исходное положение.
-                float progress = sin(dispFactor * 3.14);
+                // Получаем исходный угол пикселя
+                float originalAngle = atan(rel.y, rel.x);
 
-                // --- 2. ВРАЩЕНИЕ (VORTEX) ---
-                // Вращаем сильнее в центре, слабее по краям (эффект водоворота)
-                float angle = progress * intensity * (1.0 - dist * 0.5);
-                vec2 rotatedRel = rotate(rel, angle);
+                // 1. ГЛОБАЛЬНЫЙ ВАЛЬС (Full Spin)
+                // Картинка делает полный оборот (2 * PI = 6.28)
+                // В конце (dispFactor = 1.0) угол равен 360, то есть 0. Картинка стоит ровно.
+                float globalRotation = dispFactor * 6.28318;
 
-                // --- 3. ЗУМ В БЕЗДНУ ---
-                // Картинка отдаляется в пике вращения, чтобы скрыть края
-                float zoom = 1.0 - (progress * 0.6); // Уменьшаем до 40%
-                vec2 finalUV = center + rotatedRel * zoom;
+                // 2. БЕЗУМНЫЙ ВИХРЬ (Vortex Twist)
+                // Это то искажение, которое тебе понравилось.
+                // (1.0 - dist) крутит центр сильнее, чем края.
+                // sin(dispFactor * 3.14) гарантирует, что искажение исчезнет в конце.
+                float madnessTwist = (1.0 - dist) * intensity * sin(dispFactor * 3.14);
 
-                // --- 4. RGB РАССЛОЕНИЕ (БЕЗУМИЕ) ---
-                // Смещаем красный и синий канал при вращении
-                float rgbSplit = progress * 0.03;
+                // Складываем всё вместе: Исходный угол + Оборот Вальса - Искажение
+                float finalAngle = originalAngle + globalRotation - madnessTwist;
+
+                // Рассчитываем новые координаты
+                vec2 twistedUV = center + vec2(cos(finalAngle), sin(finalAngle)) * dist;
+
+                // 3. Зум в бездну (The Abyss)
+                // Немного отдаляем картинку в пике, чтобы скрыть края при вращении
+                float scale = 1.0 - (sin(dispFactor * 3.14) * 0.4);
+                vec2 scaledUV = center + (twistedUV - center) * scale;
+
+                // Сэмплим текстуры
+                vec4 t1 = texture2D(texture1, scaledUV);
+                vec4 t2 = texture2D(texture2, scaledUV);
+
+                // 4. Ghosting (Призрачный шлейф)
+                // Сдвигаем красный канал чуть-чуть назад по вращению для эффекта глюка
+                float ghostAngle = finalAngle - 0.05 * sin(dispFactor * 3.14);
+                vec2 ghostUV = center + vec2(cos(ghostAngle), sin(ghostAngle)) * dist * scale;
+                t1.r = texture2D(texture1, ghostUV).r;
+                t2.r = texture2D(texture2, ghostUV).r;
+
+                // 5. Виньетка тьмы
+                // Скрываем углы, которые могли вылезти при вращении
+                float darkness = smoothstep(0.75, 0.2, dist * scale + abs(dispFactor - 0.5) * 0.5);
                 
-                vec4 t1, t2;
-                
-                // Сэмплим текстуры с учетом сдвига цветов
-                // Если UV выходит за 0-1, текстура будет повторяться или тянуться,
-                // но мы скроем это виньеткой ниже.
-                t1.r = texture2D(texture1, finalUV + vec2(rgbSplit)).r;
-                t1.g = texture2D(texture1, finalUV).g;
-                t1.b = texture2D(texture1, finalUV - vec2(rgbSplit)).b;
-                t1.a = 1.0;
-
-                t2.r = texture2D(texture2, finalUV + vec2(rgbSplit)).r;
-                t2.g = texture2D(texture2, finalUV).g;
-                t2.b = texture2D(texture2, finalUV - vec2(rgbSplit)).b;
-                t2.a = 1.0;
-
-                // --- 5. ВИНЬЕТКА ТЬМЫ ---
-                // Скрываем края, которые оголились при вращении и зуме
-                // Делаем круглую маску, которая сужается к центру в пике анимации
-                float vignette = smoothstep(0.5 * zoom, 0.2 * zoom, dist);
-
-                // Смешиваем текстуры
                 vec4 color = mix(t1, t2, dispFactor);
-                
-                // Применяем темноту
-                color.rgb *= vignette;
+                color.rgb *= darkness;
 
                 gl_FragColor = color;
             }
