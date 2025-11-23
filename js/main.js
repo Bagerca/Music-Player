@@ -125,9 +125,7 @@ function setupEventListeners() {
     // Элементы цвета
     const colorBgInput = document.getElementById('upColorBg');
     const colorAccentInput = document.getElementById('upColorAccent');
-    const swatchBg = document.getElementById('swatchBg');
-    const swatchAccent = document.getElementById('swatchAccent');
-
+    
     // 1. ЖИВОЕ ОБНОВЛЕНИЕ ТЕКСТА
     upTitleInput.oninput = (e) => {
         liveTitle.textContent = e.target.value || "Название трека";
@@ -137,16 +135,6 @@ function setupEventListeners() {
     };
 
     // 2. ЖИВОЕ ОБНОВЛЕНИЕ ЦВЕТОВ
-    function updateLiveColors(bg, accent) {
-        swatchBg.style.background = bg;
-        swatchAccent.style.background = accent;
-        swatchAccent.style.boxShadow = `0 0 10px ${accent}`;
-        
-        // Обновляем CSS-переменную для живой карточки
-        liveCard.style.setProperty('--live-accent', accent);
-        liveTitle.style.color = accent;
-    }
-
     colorBgInput.oninput = (e) => updateLiveColors(e.target.value, colorAccentInput.value);
     colorAccentInput.oninput = (e) => updateLiveColors(colorBgInput.value, e.target.value);
 
@@ -186,6 +174,11 @@ function setupEventListeners() {
         e.target.value = '';
     };
 
+    // Кнопка смены файла внутри модалки
+    document.getElementById('triggerFileChangeBtn').onclick = () => {
+        document.getElementById('fileInput').click();
+    };
+
     // 4. ЗАГРУЗКА ОБЛОЖКИ (Drap & Drop зона)
     const coverUploadArea = document.getElementById('coverUploadArea');
     const coverInput = document.getElementById('upCoverFile');
@@ -205,7 +198,7 @@ function setupEventListeners() {
     function processCoverImage(src) {
         // Ставим в превью
         liveCover.style.backgroundImage = `url('${src}')`;
-        liveCover.innerHTML = ''; // Убираем иконку ноты
+        liveCover.innerHTML = ''; 
         
         // Анализируем цвет
         analyzeImageColor(src);
@@ -222,32 +215,6 @@ function setupEventListeners() {
         updateLiveColors(bg, accent);
         document.getElementById('autoColorBadge').style.display = 'none';
     };
-
-    // ФУНКЦИЯ АНАЛИЗА ЦВЕТА
-    function analyzeImageColor(imageSrc) {
-        const img = new Image();
-        img.crossOrigin = "Anonymous";
-        img.src = imageSrc;
-        
-        img.onload = function() {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            canvas.width = 1; canvas.height = 1;
-            ctx.drawImage(img, 0, 0, 1, 1);
-            
-            const p = ctx.getImageData(0, 0, 1, 1).data;
-            const hex = rgbToHex(p[0], p[1], p[2]);
-            
-            const bg = adjustBrightness(hex, -40);
-            const accent = boostSaturation(hex);
-            
-            colorBgInput.value = bg;
-            colorAccentInput.value = accent;
-            
-            updateLiveColors(bg, accent);
-            document.getElementById('autoColorBadge').style.display = 'inline-block';
-        };
-    }
 
     // Сохранение
     document.getElementById('saveUploadBtn').onclick = confirmUploadTrack;
@@ -452,6 +419,61 @@ function changePlaybackTrack(direction) {
     UI.renderTrackList(state.viewedTracks);
 }
 
+// 2. ЖИВОЕ ОБНОВЛЕНИЕ ЦВЕТОВ (Хелпер)
+function updateLiveColors(bg, accent) {
+    const swatchBg = document.getElementById('swatchBg');
+    const swatchAccent = document.getElementById('swatchAccent');
+    const liveCard = document.getElementById('livePreviewCard');
+    const liveTitle = document.getElementById('livePreviewTitle');
+
+    if(swatchBg) swatchBg.style.background = bg;
+    if(swatchAccent) {
+        swatchAccent.style.background = accent;
+        swatchAccent.style.boxShadow = `0 0 10px ${accent}`;
+    }
+    
+    // Обновляем CSS-переменную для живой карточки
+    if(liveCard) liveCard.style.setProperty('--live-accent', accent);
+    if(liveTitle) liveTitle.style.color = accent;
+}
+
+// ФУНКЦИЯ АНАЛИЗА ЦВЕТА (С ЗАЩИТОЙ ОТ CORS)
+function analyzeImageColor(imageSrc) {
+    const img = new Image();
+    img.crossOrigin = "Anonymous";
+    img.src = imageSrc;
+    
+    img.onload = function() {
+        try {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 1; canvas.height = 1;
+            
+            ctx.drawImage(img, 0, 0, 1, 1);
+            
+            const p = ctx.getImageData(0, 0, 1, 1).data;
+            const hex = rgbToHex(p[0], p[1], p[2]);
+            
+            const bg = adjustBrightness(hex, -40);
+            const accent = boostSaturation(hex);
+            
+            document.getElementById('upColorBg').value = bg;
+            document.getElementById('upColorAccent').value = accent;
+            
+            updateLiveColors(bg, accent);
+            document.getElementById('autoColorBadge').style.display = 'inline-block';
+        } catch (e) {
+            console.warn("CORS Protected Image. Auto-color disabled.", e);
+            document.getElementById('autoColorBadge').style.display = 'none';
+        }
+    };
+
+    img.onerror = function() {
+        console.warn("Image load error");
+        document.getElementById('autoColorBadge').style.display = 'none';
+    };
+}
+
 async function confirmUploadTrack() {
     const file = state.pendingUploadFile;
     if (!file) return;
@@ -484,19 +506,21 @@ async function confirmUploadTrack() {
         visualizer: [colorAccent, '#ffffff', colorBg]
     };
 
+    // Добавляем в массив загрузок
     state.uploadedTracks.push(newTrack);
 
+    // Если текущий плейлист пользовательский, добавляем и туда
     const currentName = state.currentPlaylistName;
-    const isSystem = ["Все треки", "Энергичные", "Chill & Retro"].includes(currentName);
-    
-    if (currentName === "Мои загрузки" || (!isSystem && state.userPlaylists[currentName])) {
-        if (state.userPlaylists[currentName]) {
-            state.userPlaylists[currentName].push(newTrack);
-            saveUserPlaylists();
-        }
-        applySortToViewedTracks();
-        UI.renderTrackList(state.viewedTracks);
+    if (state.userPlaylists[currentName]) {
+        state.userPlaylists[currentName].push(newTrack);
+        saveUserPlaylists();
     }
+
+    // ИСПРАВЛЕНИЕ: Принудительное обновление списка независимо от плейлиста
+    const allLists = getAllPlaylists(state.userPlaylists, state.uploadedTracks);
+    state.viewedTracks = allLists[currentName];
+    applySortToViewedTracks();
+    UI.renderTrackList(state.viewedTracks);
 
     document.getElementById('uploadModal').classList.remove('active');
     UI.showNotification(`Трек "${title}" добавлен!`, 'success');
