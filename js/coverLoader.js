@@ -1,14 +1,12 @@
-// --- js/coverLoader.js ---
-
-// Мы используем глобальный THREE и GSAP из index.html, но для модульности
-// можно объявить фиктивные импорты, если линтер ругается. 
-// Здесь мы полагаемся на window.THREE
+import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js';
+// Используем глобальный GSAP
 import { vertexShader, transitions } from './shaders.js';
 
 let scene, camera, renderer, material, mesh;
-let isAnimating = false;
+// Храним текущую анимацию, чтобы можно было её убить при быстром переключении
+let currentTween = null; 
 
-// Генератор шума для Liquid эффекта (чтобы не грузить картинку)
+// Генератор шума
 function createNoiseTexture() {
     const canvas = document.createElement('canvas');
     canvas.width = 128; canvas.height = 128;
@@ -28,6 +26,9 @@ export function initCoverLoader(containerId, startImageUrl) {
     const container = document.getElementById(containerId);
     if (!container) return;
 
+    // Очищаем контейнер на случай повторной инициализации
+    container.innerHTML = '';
+
     const w = container.offsetWidth;
     const h = container.offsetHeight;
 
@@ -42,89 +43,129 @@ export function initCoverLoader(containerId, startImageUrl) {
 
     const loader = new THREE.TextureLoader();
     
-    // Начальная текстура
-    const tex1 = loader.load(startImageUrl || 'picture/default_cover.jpg');
-    const dispTex = createNoiseTexture();
-
-    // Дефолтный материал (Liquid)
-    const def = transitions.liquid;
+    // Загрузка стартовой картинки с фоллбеком
+    const validUrl = startImageUrl || 'picture/default_cover.jpg';
     
-    material = new THREE.ShaderMaterial({
-        uniforms: {
-            dispFactor: { value: 0.0 },
-            intensity: { value: def.uniforms.intensity },
-            texture1: { value: tex1 },
-            texture2: { value: tex1 }, 
-            disp: { value: dispTex }
-        },
-        vertexShader: vertexShader,
-        fragmentShader: def.shader,
-        transparent: true
-    });
+    loader.load(
+        validUrl, 
+        (tex) => setupMaterial(tex),
+        undefined,
+        () => {
+            // Если стартовая картинка не грузится, грузим дефолтную
+            loader.load('picture/default_cover.jpg', (tex) => setupMaterial(tex));
+        }
+    );
 
-    const geo = new THREE.PlaneBufferGeometry(w, h, 1);
-    mesh = new THREE.Mesh(geo, material);
-    scene.add(mesh);
+    function setupMaterial(tex1) {
+        const dispTex = createNoiseTexture();
+        const def = transitions.liquid; // Дефолтный эффект
+        
+        material = new THREE.ShaderMaterial({
+            uniforms: {
+                dispFactor: { value: 0.0 },
+                intensity: { value: def.uniforms.intensity },
+                texture1: { value: tex1 },
+                texture2: { value: tex1 }, 
+                disp: { value: dispTex }
+            },
+            vertexShader: vertexShader,
+            fragmentShader: def.shader,
+            transparent: true
+        });
 
-    animate();
+        const geo = new THREE.PlaneBufferGeometry(w, h, 1);
+        mesh = new THREE.Mesh(geo, material);
+        scene.add(mesh);
+        
+        animate();
+    }
     
-    // Адаптив
     window.addEventListener('resize', () => {
+        if (!container || !renderer || !camera) return;
         const nw = container.offsetWidth;
         const nh = container.offsetHeight;
         renderer.setSize(nw, nh);
         camera.left = nw/-2; camera.right = nw/2; camera.top = nh/2; camera.bottom = nh/-2;
         camera.updateProjectionMatrix();
-        mesh.geometry.dispose();
-        mesh.geometry = new THREE.PlaneBufferGeometry(nw, nh, 1);
+        if (mesh) {
+            mesh.geometry.dispose();
+            mesh.geometry = new THREE.PlaneBufferGeometry(nw, nh, 1);
+        }
     });
 }
 
 function animate() {
     requestAnimationFrame(animate);
-    renderer.render(scene, camera);
+    if (renderer && scene && camera) {
+        renderer.render(scene, camera);
+    }
 }
 
-// ГЛАВНАЯ ФУНКЦИЯ СМЕНЫ ОБЛОЖКИ
+// ГЛАВНАЯ ФУНКЦИЯ СМЕНЫ ОБЛОЖКИ (ИСПРАВЛЕННАЯ)
 export function changeCover(newImageUrl, effectName = 'liquid') {
-    if (isAnimating) return;
-    
-    // Если переданного эффекта нет, берем liquid
+    // 1. Проверка на существование сцены
+    if (!material) return;
+
+    // 2. Фолбэк, если URL пустой
+    const targetUrl = newImageUrl || 'picture/default_cover.jpg';
+
+    // 3. Получаем данные эффекта
     const effectData = transitions[effectName] || transitions.liquid;
-    
+
     const loader = new THREE.TextureLoader();
-    
-    // Загружаем новую картинку
-    loader.load(newImageUrl, (newTex) => {
-        isAnimating = true;
-        
-        // 1. Подставляем новую текстуру во второй слот
-        material.uniforms.texture2.value = newTex;
-        
-        // 2. Меняем шейдер и параметры "на лету"
-        material.fragmentShader = effectData.shader;
-        if (effectData.uniforms.intensity !== undefined) {
-            material.uniforms.intensity.value = effectData.uniforms.intensity;
-        }
-        material.needsUpdate = true;
-        
-        // 3. Анимируем переход
-        gsap.to(material.uniforms.dispFactor, {
-            value: 1,
-            duration: effectData.config.duration,
-            ease: effectData.config.ease,
-            onComplete: () => {
-                // Фиксируем результат
-                material.uniforms.texture1.value = newTex;
-                material.uniforms.dispFactor.value = 0;
-                isAnimating = false;
+
+    // 4. Загружаем новую текстуру
+    loader.load(
+        targetUrl, 
+        (newTex) => {
+            // ЕСЛИ ПРЕДЫДУЩАЯ АНИМАЦИЯ ЕЩЕ ИДЕТ:
+            if (currentTween) {
+                // Убиваем её
+                currentTween.kill();
+                // Мгновенно завершаем состояние: то, что было texture2 (цель), становится texture1 (старт)
+                // Но так как мы не знаем, насколько далеко зашла анимация, 
+                // безопаснее просто оставить texture1 как есть, если dispFactor был мал,
+                // или переключить, если велик. 
+                // УПРОЩЕНИЕ: Мы просто сбрасываем фактор.
             }
-        });
-    }, 
-    // Если ошибка загрузки (например, битая ссылка), ничего не делаем или логируем
-    undefined, 
-    (err) => {
-        console.warn('Texture load error', err);
-        isAnimating = false;
-    });
+
+            // 5. Обновляем шейдер под новый эффект (если он сменился)
+            material.fragmentShader = effectData.shader;
+            if (effectData.uniforms.intensity !== undefined) {
+                material.uniforms.intensity.value = effectData.uniforms.intensity;
+            }
+            material.needsUpdate = true;
+
+            // 6. Подготовка к переходу
+            // Текущая видимая картинка (texture1) остается на месте.
+            // Новую картинку кладем в texture2.
+            material.uniforms.texture2.value = newTex;
+            
+            // Сбрасываем прогресс искажения в 0 (видна texture1)
+            material.uniforms.dispFactor.value = 0;
+
+            // 7. Запуск анимации (сохраняем ссылку в currentTween)
+            currentTween = gsap.to(material.uniforms.dispFactor, {
+                value: 1, // Анимируем к 1 (будет видна texture2)
+                duration: effectData.config.duration,
+                ease: effectData.config.ease,
+                onComplete: () => {
+                    // КОГДА ВСЕ ЗАКОНЧИЛОСЬ:
+                    // Новая картинка становится "основной" (texture1)
+                    material.uniforms.texture1.value = newTex;
+                    // Сбрасываем фактор в 0, но визуально ничего не меняется, т.к. texture1 == texture2
+                    material.uniforms.dispFactor.value = 0;
+                    currentTween = null;
+                }
+            });
+        },
+        undefined, // onProgress
+        (err) => {
+            console.warn('Ошибка загрузки обложки:', targetUrl);
+            // Если ошибка, пробуем загрузить дефолт, чтобы не было черного экрана
+            if (targetUrl !== 'picture/default_cover.jpg') {
+                changeCover('picture/default_cover.jpg', effectName);
+            }
+        }
+    );
 }
