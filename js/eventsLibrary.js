@@ -1,6 +1,6 @@
 export const stageEffects = {
     
-    // === ЭФФЕКТ: ALASTOR RADIO (FINAL BLURRED VERSION) ===
+    // === ЭФФЕКТ: ALASTOR RADIO (NERVOUS NEEDLE VERSION) ===
     radioDial: {
         // 1. HTML
         html: `
@@ -73,8 +73,8 @@ export const stageEffects = {
             /* ВИНЬЕТКА (Затемнение краев) */
             .alastor-vignette {
                 position: absolute; inset: 0;
-                background: radial-gradient(circle, transparent 40%, #000 95%);
-                z-index: 10; /* Поверх радио, но под плеером (плеер имеет свой z-index) */
+                background: radial-gradient(circle, transparent 30%, #000 90%);
+                z-index: 10; 
             }
 
             .radio-noise {
@@ -98,7 +98,7 @@ export const stageEffects = {
                 box-shadow: 0 0 100px rgba(0,0,0,0.9);
                 display: flex; justify-content: center;
                 
-                /* ГЛАВНОЕ: Размываем радио, чтобы оно было фоном */
+                /* Размытие */
                 filter: blur(5px) brightness(0.6); 
                 transition: transform 0.2s cubic-bezier(0.1, 0.9, 0.2, 1), filter 0.5s;
             }
@@ -126,7 +126,6 @@ export const stageEffects = {
                 width: 350px; height: 180px;
                 opacity: 0;
                 transition: opacity 0.2s;
-                /* Улыбка светится сквозь блюр */
                 filter: drop-shadow(0 0 15px #ff0000);
             }
             .smile-svg { width: 100%; height: 100%; overflow: visible; }
@@ -146,7 +145,6 @@ export const stageEffects = {
                 width: 6px;
             }
 
-            /* СТРЕЛКА - Убраны лишние элементы */
             .vu-needle-pivot {
                 position: absolute; bottom: 30px; left: 50%;
                 width: 0; height: 0;
@@ -155,9 +153,9 @@ export const stageEffects = {
             }
             .vu-needle {
                 position: absolute; bottom: 0; left: -3px;
-                width: 6px; height: 330px; /* Толще и заметнее сквозь блюр */
+                width: 6px; height: 330px;
                 background: #ff0000;
-                box-shadow: 0 0 20px #ff0000; /* Сильное свечение для пробития блюра */
+                box-shadow: 0 0 20px #ff0000;
                 border-radius: 4px;
             }
 
@@ -197,36 +195,30 @@ export const stageEffects = {
             
             instance.angle = -45; 
             instance.velocity = 0;
-            // Переменная для сглаживания входящего сигнала
             instance.smoothedSignal = 0; 
         },
 
-        // 4. UPDATE (SMOOTHER PHYSICS)
+        // 4. UPDATE (TWEAKED PHYSICS)
         update: (instance, features) => {
             if (!instance.pivot) return;
 
-            // --- 1. СГЛАЖИВАНИЕ СИГНАЛА ---
-            // Вместо raw-данных берем усредненные.
-            // (features.rms * 1.5) - уменьшил множитель с 2.0 до 1.5
-            let rawInput = (features.rms * 1.5) + (features.bassEnergy * 0.4);
+            // --- 1. ЧУВСТВИТЕЛЬНОСТЬ (SENSITIVITY) ---
+            // СНИЗИЛИ множители: RMS 0.8 (было 1.5), Bass 0.2 (было 0.4)
+            // Теперь стрелка в среднем будет держаться в середине, а не справа
+            let rawInput = (features.rms * 0.8) + (features.bassEnergy * 0.2);
             
-            // "Ленивое" следование: signal стремится к rawInput медленно (0.1)
-            instance.smoothedSignal += (rawInput - instance.smoothedSignal) * 0.1;
+            // Сглаживание входящего сигнала
+            instance.smoothedSignal += (rawInput - instance.smoothedSignal) * 0.08;
 
-            // --- 2. РАСЧЕТ ЦЕЛИ ---
-            // Маленький джиттер (дрожание) для винтажности
-            const jitter = (Math.random() - 0.5) * 1.5; 
+            // --- 2. РАСЧЕТ БАЗОВОГО УГЛА ---
+            let targetAngle = -45 + (instance.smoothedSignal * 90);
             
-            let targetAngle = -45 + (instance.smoothedSignal * 90) + jitter;
-            
-            // Ограничиваем
+            // Лимиты
             if (targetAngle < -46) targetAngle = -46;
             if (targetAngle > 50) targetAngle = 50;
 
-            // --- 3. ФИЗИКА (HEAVY NEEDLE) ---
-            // Уменьшил силу пружины (0.05 вместо 0.15) -> стрелка стала тяжелее
+            // --- 3. ФИЗИКА ПРУЖИНЫ ---
             const springForce = 0.05; 
-            // Увеличил затухание (0.85 вместо 0.75) -> меньше болтанки
             const damping = 0.85; 
 
             const acceleration = (targetAngle - instance.angle) * springForce;
@@ -234,19 +226,24 @@ export const stageEffects = {
             instance.velocity *= damping;
             instance.angle += instance.velocity;
 
-            instance.pivot.style.transform = `rotate(${instance.angle}deg)`;
+            // --- 4. ТРЯСКА (VIBRATION/SHIVER) ---
+            // Добавляем случайное дрожание поверх основной физики.
+            // Чем громче звук (rms), тем сильнее тряска.
+            // (Math.random() - 0.5) * 3 дает дрожание в пределах 3 градусов
+            const shiver = (Math.random() - 0.5) * (1 + features.rms * 4);
 
-            // --- 4. РЕАКЦИЯ НА БИТ (Сквозь блюр) ---
-            if (features.bassEnergy > 0.65) { // Порог повыше, чтобы не мигало постоянно
+            // Итоговый угол = Физика + Тряска
+            const finalAngle = instance.angle + shiver;
+
+            instance.pivot.style.transform = `rotate(${finalAngle}deg)`;
+
+            // --- 5. ЛОГИКА ЛАМПЫ И КОРПУСА ---
+            if (features.bassEnergy > 0.65) { 
                 const shakeX = (Math.random() - 0.5) * 4;
                 const shakeY = (Math.random() - 0.5) * 4;
                 
-                // Трясем корпус
                 instance.container.style.transform = `scale(1.41) translate3d(${shakeX}px, ${80 + shakeY}px, 0)`;
-                
                 instance.light.classList.add('lit');
-                
-                // Улыбка проявляется плавно
                 instance.smile.style.opacity = (features.bassEnergy - 0.4) * 1.5;
                 
             } else {
@@ -254,7 +251,7 @@ export const stageEffects = {
                 instance.light.classList.remove('lit');
                 
                 let op = parseFloat(instance.smile.style.opacity) || 0;
-                instance.smile.style.opacity = Math.max(0, op - 0.05); // Медленное затухание
+                instance.smile.style.opacity = Math.max(0, op - 0.05);
             }
         }
     }
