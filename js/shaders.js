@@ -1,21 +1,23 @@
 // --- js/shaders.js ---
 
-// Общий Vertex Shader (стандартный для всех эффектов)
-export const vertexShader = 
+// ВАЖНО: Код внутри `...` должен быть в обратных кавычках!
+
+// Общий Vertex Shader
+export const vertexShader = `
     varying vec2 vUv;
     void main() {
         vUv = uv;
         gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
     }
-;
+`;
 
-// Коллекция эффектов с настройками
+// Коллекция эффектов
 export const transitions = {
-    // 1. LIQUID - Мягкое, дорогое перетекание
+    // 1. LIQUID
     liquid: {
         uniforms: { intensity: 0.3 },
         config: { duration: 1.4, ease: "power2.inOut" },
-        shader: 
+        shader: `
             varying vec2 vUv;
             uniform sampler2D texture1;
             uniform sampler2D texture2;
@@ -31,15 +33,14 @@ export const transitions = {
                 vec4 _texture2 = texture2D(texture2, distortedPosition2);
                 gl_FragColor = mix(_texture1, _texture2, dispFactor);
             }
-        
+        `
     },
 
-    // 2. GLITCH - Агрессивный сдвиг каналов (для Phonk/Rock)
+    // 2. GLITCH
     glitch: {
         uniforms: { intensity: 0.05 },
-        // Используем elastic для дерганности, так как rough плагин платный в GSAP
         config: { duration: 0.8, ease: "elastic.inOut(1, 0.5)" }, 
-        shader: 
+        shader: `
             varying vec2 vUv;
             uniform sampler2D texture1;
             uniform sampler2D texture2;
@@ -47,7 +48,7 @@ export const transitions = {
             uniform float intensity;
             void main() {
                 vec2 uv = vUv;
-                // Сдвиг RGB каналов на основе синуса
+                // Сдвиг RGB каналов
                 float split = (sin(dispFactor * 3.14) * intensity); 
                 
                 vec4 t1;
@@ -62,18 +63,17 @@ export const transitions = {
                 t2.b = texture2D(texture2, vec2(uv.x + split, uv.y)).b;
                 t2.a = 1.0;
                 
-                // Резкий переход (шторка)
                 float mixVal = step(0.5, dispFactor);
                 gl_FragColor = mix(t1, t2, mixVal);
             }
-        
+        `
     },
 
-    // 3. WIND - Эффект сдувания ветром
+    // 3. WIND
     wind: {
-        uniforms: { intensity: 0.0 }, // Не используется в шейдере напрямую, но нужен для структуры
+        uniforms: { intensity: 0.0 },
         config: { duration: 1.0, ease: "power1.inOut" },
-        shader: 
+        shader: `
             varying vec2 vUv;
             uniform sampler2D texture1;
             uniform sampler2D texture2;
@@ -81,7 +81,6 @@ export const transitions = {
             
             void main() {
                 vec2 uv = vUv;
-                // Искривление координат волной
                 float distortion = sin(uv.y * 10.0 + dispFactor * 10.0) * 0.05 * sin(dispFactor * 3.14);
                 
                 vec2 uv1 = vec2(uv.x + dispFactor + distortion, uv.y);
@@ -90,10 +89,9 @@ export const transitions = {
                 vec4 t1 = texture2D(texture1, uv1);
                 vec4 t2 = texture2D(texture2, uv2);
                 
-                // Плавное исчезновение краев
                 float fade = smoothstep(0.0, 1.0, dispFactor);
                 gl_FragColor = mix(t1, t2, fade);
             }
-        
+        `
     }
 };
