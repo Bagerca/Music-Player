@@ -257,75 +257,88 @@ export const stageEffects = {
         }
     },
 
-    // === ЭФФЕКТ 2: REALITY BREAK (СИСТЕМНЫЙ СБОЙ - 1 СЕКУНДА) ===
-    realityBreak: {
+    // === ЭФФЕКТ 2: ANALOG BURN (СГОРЕВШАЯ ПЛЕНКА - 1 СЕКУНДА) ===
+    analogBurn: {
         html: `
-            <div class="glitch-overlay">
-                <div class="glitch-flash"></div>
-                <div class="glitch-scanlines"></div>
+            <div class="analog-overlay">
+                <!-- Слой зерна и царапин -->
+                <div class="film-scratches"></div>
+                <!-- Эффект плавления пленки (дыра) -->
+                <div class="burn-hole"></div>
+                <!-- Вспышка проектора -->
+                <div class="projector-flash"></div>
             </div>
         `,
         css: `
-            /* Контейнер перекрывает всё */
-            .glitch-overlay {
+            .analog-overlay {
                 position: absolute; inset: 0;
                 z-index: 9999;
                 pointer-events: none;
                 overflow: hidden;
-                mix-blend-mode: exclusion; /* Агрессивный режим смешивания цветов */
+                /* Принудительная сепия и контраст для всего, что под низом */
+                backdrop-filter: sepia(100%) contrast(150%) blur(1px);
+                mix-blend-mode: hard-light;
+                animation: reelJump 0.8s steps(5) forwards;
             }
 
-            /* Белая вспышка -> Инверсия */
-            .glitch-flash {
+            /* Эмуляция срыва пленки (кадр прыгает) */
+            @keyframes reelJump {
+                0% { transform: translateY(0); }
+                20% { transform: translateY(-50px) scale(1.05); }
+                40% { transform: translateY(30px) translateX(10px); }
+                60% { transform: translateY(-20px) rotate(2deg); }
+                80% { transform: translateY(0) scale(1.1); }
+                100% { transform: scale(1); opacity: 0; }
+            }
+
+            /* Царапины и грязь */
+            .film-scratches {
+                position: absolute; inset: -50%; width: 200%; height: 200%;
+                background-image: repeating-linear-gradient(90deg, 
+                    transparent 0px, 
+                    transparent 200px, 
+                    rgba(0,0,0,0.8) 201px, 
+                    transparent 202px
+                );
+                opacity: 0.7;
+                animation: scratchMove 0.1s infinite;
+            }
+            @keyframes scratchMove {
+                0% { transform: translateX(0); }
+                100% { transform: translateX(100px); }
+            }
+
+            /* Эффект прожженной дыры */
+            .burn-hole {
+                position: absolute; inset: 0;
+                background: radial-gradient(circle, transparent 20%, #8b0000 40%, #000 90%);
+                opacity: 0;
+                mix-blend-mode: multiply;
+                animation: burnExpand 0.6s cubic-bezier(0.1, 0.9, 0.2, 1) forwards;
+            }
+            
+            @keyframes burnExpand {
+                0% { opacity: 0; transform: scale(0.5); }
+                10% { opacity: 1; transform: scale(0.8); }
+                50% { opacity: 0.8; transform: scale(1.5); background: radial-gradient(circle, transparent 10%, #ff0000 30%, #000 90%); }
+                100% { opacity: 0; transform: scale(2); }
+            }
+
+            /* Моргание лампы проектора */
+            .projector-flash {
                 position: absolute; inset: 0;
                 background: #fff;
                 opacity: 0;
-                animation: flashBang 0.6s cubic-bezier(0.1, 0.9, 0.2, 1) forwards;
+                mix-blend-mode: overlay;
+                animation: strobe 0.1s infinite;
             }
-
-            @keyframes flashBang {
-                0% { opacity: 1; background: #ff0000; } /* Красная вспышка */
-                10% { opacity: 1; background: #fff; filter: invert(1); } /* Инверсия */
-                20% { opacity: 0.5; transform: scale(1.1) translateX(-10px); }
-                40% { opacity: 0.2; background: #00ff00; mix-blend-mode: color-dodge; }
-                100% { opacity: 0; }
-            }
-
-            /* Полосы сканирования */
-            .glitch-scanlines {
-                position: absolute; inset: 0;
-                background: repeating-linear-gradient(
-                    0deg,
-                    transparent 0px,
-                    transparent 2px,
-                    rgba(255, 0, 0, 0.5) 3px,
-                    rgba(0, 0, 255, 0.5) 4px
-                );
-                background-size: 100% 4px;
-                animation: scanTrash 0.4s steps(5) infinite;
-                opacity: 0.8;
-            }
-
-            @keyframes scanTrash {
-                0% { transform: translateY(0); }
-                100% { transform: translateY(100px); }
-            }
-
-            /* Искажение цветов на фоне */
-            .glitch-overlay::before {
-                content: '';
-                position: absolute; inset: 0;
-                backdrop-filter: hue-rotate(90deg) blur(2px) contrast(200%);
-                animation: hueSnap 0.6s forwards;
-            }
-
-            @keyframes hueSnap {
-                0% { opacity: 1; backdrop-filter: hue-rotate(0deg) invert(1); }
-                20% { opacity: 1; backdrop-filter: hue-rotate(180deg) blur(4px); }
+            @keyframes strobe {
+                0% { opacity: 0; }
+                50% { opacity: 0.4; }
                 100% { opacity: 0; }
             }
         `,
-        init: () => {}, // Логика JS не нужна, все делает CSS
+        init: () => {},
         update: () => {}
     }
 };
