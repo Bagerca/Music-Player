@@ -152,7 +152,7 @@ export const library = [
         path: 'audio/Bruno_Coulais_Exploration.mp3', 
         colors: { primary: '#0f0f2d', secondary: '#3c2a4d', accent: '#8978d6' }, 
         cover: 'picture/Exploration.jpg', 
-        effect: 'liquid',
+        effect: 'hypnoticVortex',
         visualizer: ['#8978d6', '#a99de0', '#695aab', '#3c2a4d', '#281c34'], 
         neonColor: '#8978d6' 
     },
@@ -162,7 +162,7 @@ export const library = [
         path: 'audio/MiatriSs_Шкатулка_8D_Remix.mp3', 
         colors: { primary: '#1a1829', secondary: '#3c305c', accent: '#8a4fff' }, 
         cover: 'picture/Шкатулка_8D_Remix.jpg', 
-        effect: 'shatteredGlass',
+        effect: 'clockworkGears',
         visualizer: ['#8a4fff', '#a782ff', '#3c305c', '#d1c4d9', '#1a1829'], 
         neonColor: '#8a4fff',
         lyricsSource: 'lyrics/shkatulka.json'
