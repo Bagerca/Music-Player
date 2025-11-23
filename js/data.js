@@ -504,7 +504,15 @@ const defaultPlaylists = {
         getTrack("Cigarette Duet"), 
         getTrack("God Rest Ye Merry Gentlemen"), 
         getTrack("Feeling Good")
-    ].filter(Boolean)
+    ].filter(Boolean),
+    "Для Ксю": [
+        getTrack("Spend The Night Alone"), 
+        getTrack("Rest in Ink"), 
+        getTrack("Katana"), 
+        getTrack("Alastor's Game")
+    ].filter(Boolean),
+    "От Кирика": [
+    ].filter(Boolean),
 };
 
 /* --- ГЛАВНАЯ ФУНКЦИЯ ЭКСПОРТА --- */
