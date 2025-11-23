@@ -87,6 +87,63 @@ export const transitions = {
         `
     },
 
+    // 4. NOT HUMAN (Analog Horror / CCTV Style)
+    notHuman: {
+        uniforms: { intensity: 0.3 },
+        config: { duration: 1.6, ease: "power2.inOut" }, // Медленный, тягучий переход
+        shader: `
+            varying vec2 vUv;
+            uniform sampler2D texture1;
+            uniform sampler2D texture2;
+            uniform float dispFactor;
+            uniform float intensity;
+
+            float random(vec2 st) {
+                return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
+            }
+
+            void main() {
+                vec2 uv = vUv;
+                
+                // 1. Эффект "Зловещей долины" (Искажение/Bulge в центре)
+                // Картинка будет "дышать" и искажаться в центре
+                vec2 center = vec2(0.5);
+                float dist = distance(uv, center);
+                float bulge = sin(dispFactor * 3.14) * intensity * (1.0 - dist);
+                vec2 dUV = uv - (uv - center) * bulge;
+
+                // 2. Хроматическая аберрация (RGB Split)
+                // Сильный сдвиг каналов, имитирующий сбой камеры
+                float shift = intensity * 0.05 * sin(dispFactor * 10.0);
+                
+                // 3. VHS Сканлайны (Дрожание по Y)
+                float vhsWobble = sin(uv.y * 200.0 + dispFactor * 20.0) * 0.005;
+                dUV.x += vhsWobble;
+
+                // Сэмплируем цвета со сдвигом
+                vec4 r = mix(texture2D(texture1, dUV + vec2(shift, 0.0)), texture2D(texture2, dUV + vec2(shift, 0.0)), dispFactor);
+                vec4 g = mix(texture2D(texture1, dUV), texture2D(texture2, dUV), dispFactor);
+                vec4 b = mix(texture2D(texture1, dUV - vec2(shift, 0.0)), texture2D(texture2, dUV - vec2(shift, 0.0)), dispFactor);
+                
+                vec4 color = vec4(r.r, g.g, b.b, 1.0);
+
+                // 4. Эффект камеры наблюдения (Шум + Затемнение)
+                float noise = random(uv * (dispFactor + 1.0)) * 0.3 * sin(dispFactor * 3.14);
+                color.rgb += noise;
+                
+                // Десатурация (делаем цвета более мертвыми/серыми в момент перехода)
+                float gray = dot(color.rgb, vec3(0.299, 0.587, 0.114));
+                float desatAmount = sin(dispFactor * 3.14) * 0.8; // На пике почти ЧБ
+                color.rgb = mix(color.rgb, vec3(gray), desatAmount);
+
+                // Виньетка (затемнение углов)
+                color.rgb *= 1.0 - (dist * 0.8 * sin(dispFactor * 3.14));
+
+                gl_FragColor = color;
+            }
+        `
+    },
+
     // 2. GLITCH
     glitch: {
         uniforms: { intensity: 0.05 },
