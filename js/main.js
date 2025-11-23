@@ -306,13 +306,21 @@ function setupEventListeners() {
     };
 
 
-    // --- ОСТАЛЬНОЕ ---
+    // --- ОСТАЛЬНОЕ (ГРОМКОСТЬ) ---
     const volSlider = document.getElementById('volumeSlider');
+    
+    // Обновленная функция изменения громкости
     const updateVolume = (val) => {
         volSlider.style.backgroundSize = `${val}% 100%`;
         AudioCore.audio.volume = val / 100;
+        UI.updateVolumeIcon(val); // ОБНОВЛЯЕМ ИКОНКУ ПРИ СМЕНЕ ГРОМКОСТИ
     };
+
+    // При загрузке сразу ставим правильную иконку
+    UI.updateVolumeIcon(volSlider.value);
+
     volSlider.oninput = (e) => updateVolume(e.target.value);
+    
     document.getElementById('muteBtn').onclick = () => {
         if (AudioCore.audio.volume > 0) {
             volSlider.dataset.prev = volSlider.value;
