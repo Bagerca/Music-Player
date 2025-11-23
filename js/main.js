@@ -86,7 +86,7 @@ function setupEventListeners() {
         }
     });
 
-    // --- СОРТИРОВКА (НОВОЕ) ---
+    // --- СОРТИРОВКА ---
     const sortBtn = document.getElementById('sortBtn');
     const sortMenu = document.getElementById('sortMenu');
 
@@ -112,9 +112,10 @@ function setupEventListeners() {
     });
 
 
-    // --- ЗАГРУЗКА ТРЕКОВ (ЛОГИКА МОДАЛКИ) ---
+    // --- ЗАГРУЗКА ТРЕКОВ (ОБНОВЛЕННАЯ ЛОГИКА) ---
     document.getElementById('uploadTrackBtn').onclick = () => document.getElementById('fileInput').click();
     
+    // Обработка выбора аудиофайла
     document.getElementById('fileInput').onchange = (e) => {
         const file = e.target.files[0];
         if (!file) return;
@@ -124,17 +125,53 @@ function setupEventListeners() {
         document.getElementById('uploadFileName').textContent = file.name;
         document.getElementById('upTitle').value = file.name.replace(/\.[^/.]+$/, ""); 
         document.getElementById('upArtist').value = "Unknown Artist";
+        
+        // Сброс полей обложки и цветов
         document.getElementById('upCoverUrl').value = "";
         document.getElementById('upCoverFile').value = "";
+        resetCoverPreview();
+        document.getElementById('autoColorBadge').style.display = 'none';
         
         document.getElementById('uploadModal').classList.add('active');
         e.target.value = '';
     };
 
+    // --- ЛОГИКА ОБЛОЖКИ ---
+    const coverInput = document.getElementById('upCoverFile');
+    const coverPreviewBox = document.getElementById('coverPreviewBox');
+    const uploadCoverBtn = document.getElementById('uploadCoverBtn');
+
+    const triggerCoverUpload = () => coverInput.click();
+    coverPreviewBox.onclick = triggerCoverUpload;
+    uploadCoverBtn.onclick = triggerCoverUpload;
+
+    // Обработка выбора файла обложки
+    coverInput.onchange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const url = URL.createObjectURL(file);
+            updateCoverPreview(url);
+            analyzeImageColor(url);
+        }
+    };
+
+    // Обработка URL обложки
+    document.getElementById('upCoverUrl').oninput = (e) => {
+        const url = e.target.value;
+        if (url) {
+            updateCoverPreview(url);
+            analyzeImageColor(url);
+        } else {
+            resetCoverPreview();
+        }
+    };
+
+    // Случайные цвета
     document.getElementById('randomColorsBtn').onclick = () => {
         const hue = Math.floor(Math.random() * 360);
         document.getElementById('upColorBg').value = hslToHex(hue, 60, 10);
         document.getElementById('upColorAccent').value = hslToHex(hue, 80, 60);
+        document.getElementById('autoColorBadge').style.display = 'none';
     };
 
     document.getElementById('saveUploadBtn').onclick = confirmUploadTrack;
@@ -142,7 +179,6 @@ function setupEventListeners() {
 
 
     // --- КОНТЕКСТНОЕ МЕНЮ ---
-    // Слушаем событие от UI.js
     document.addEventListener('open-track-context', (e) => {
         const { originalEvent, index } = e.detail;
         
@@ -249,6 +285,21 @@ function setupEventListeners() {
 
 /* --- ФУНКЦИИ ЛОГИКИ --- */
 
+// Хелперы для превью обложки
+function resetCoverPreview() {
+    const img = document.getElementById('coverPreviewImg');
+    img.src = '';
+    img.style.display = 'none';
+    document.querySelector('.cover-placeholder').style.display = 'flex';
+}
+
+function updateCoverPreview(src) {
+    const img = document.getElementById('coverPreviewImg');
+    img.src = src;
+    img.style.display = 'block';
+    document.querySelector('.cover-placeholder').style.display = 'none';
+}
+
 // --- ФУНКЦИИ СОРТИРОВКИ ---
 function handleSort(type, domItem) {
     if (state.sort.type === type && type !== 'shuffle' && type !== 'default') {
@@ -284,7 +335,6 @@ function updateSortMenuVisuals() {
 }
 
 function applySortToViewedTracks() {
-    // Получаем оригинальный порядок
     const allLists = getAllPlaylists(state.userPlaylists, state.uploadedTracks);
     const originalList = [...allLists[state.currentPlaylistName]];
 
@@ -319,25 +369,19 @@ function applySortToViewedTracks() {
         return 0;
     });
 }
-// ----------------------------
 
 function changePlaybackTrack(direction) {
     let newIndex;
-
-    // Рандомный выбор
     if (direction === 'random') {
         const max = state.playbackList.length;
         if (max <= 1) {
             newIndex = 0;
         } else {
-            // Защита от повтора того же трека
             do {
                 newIndex = Math.floor(Math.random() * max);
             } while (newIndex === state.playbackIndex);
         }
-    } 
-    // Стандартный выбор (+1 или -1)
-    else {
+    } else {
         newIndex = state.playbackIndex + direction;
         if (newIndex >= state.playbackList.length) newIndex = 0;
         if (newIndex < 0) newIndex = state.playbackList.length - 1;
@@ -356,9 +400,11 @@ async function confirmUploadTrack() {
     const artist = document.getElementById('upArtist').value.trim() || "Unknown Artist";
     const colorBg = document.getElementById('upColorBg').value;
     const colorAccent = document.getElementById('upColorAccent').value;
+    
+    // Получаем обложку: либо файл, либо URL
     const coverUrlInput = document.getElementById('upCoverUrl').value.trim();
     const coverFileInput = document.getElementById('upCoverFile').files[0];
-
+    
     let coverFinal = 'picture/default_cover.jpg';
 
     if (coverFileInput) {
@@ -389,7 +435,6 @@ async function confirmUploadTrack() {
             state.userPlaylists[currentName].push(newTrack);
             saveUserPlaylists();
         }
-        // Обновляем список с учетом сортировки
         applySortToViewedTracks();
         UI.renderTrackList(state.viewedTracks);
     }
@@ -407,6 +452,59 @@ function hslToHex(h, s, l) {
         return Math.round(255 * color).toString(16).padStart(2, '0');
     };
     return `#${f(0)}${f(8)}${f(4)}`;
+}
+
+// --- ЛОГИКА АНАЛИЗА ЦВЕТА ---
+function analyzeImageColor(imageSrc) {
+    const img = new Image();
+    img.crossOrigin = "Anonymous";
+    img.src = imageSrc;
+    
+    img.onload = function() {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = 1;
+        canvas.height = 1;
+        ctx.drawImage(img, 0, 0, 1, 1);
+        
+        const pixelData = ctx.getImageData(0, 0, 1, 1).data;
+        const r = pixelData[0];
+        const g = pixelData[1];
+        const b = pixelData[2];
+        
+        const hex = rgbToHex(r, g, b);
+        
+        const bgHex = adjustBrightness(hex, -40); 
+        const accentHex = boostSaturation(hex);
+        
+        document.getElementById('upColorBg').value = bgHex;
+        document.getElementById('upColorAccent').value = accentHex;
+        document.getElementById('autoColorBadge').style.display = 'inline-block';
+    };
+    
+    img.onerror = function() {
+        console.log("Не удалось извлечь цвет");
+        document.getElementById('autoColorBadge').style.display = 'none';
+    };
+}
+
+function rgbToHex(r, g, b) {
+    return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+}
+
+function adjustBrightness(hex, percent) {
+    let num = parseInt(hex.replace("#",""), 16),
+    amt = Math.round(2.55 * percent),
+    R = (num >> 16) + amt,
+    G = (num >> 8 & 0x00FF) + amt,
+    B = (num & 0x0000FF) + amt;
+    return "#" + (0x1000000 + (R<255?R<1?0:R:255)*0x10000 + (G<255?G<1?0:G:255)*0x100 + (B<255?B<1?0:B:255)).toString(16).slice(1);
+}
+
+function boostSaturation(hex) {
+    let num = parseInt(hex.replace("#",""), 16);
+    if (num < 0x222222) return "#00d1ff"; 
+    return hex; 
 }
 
 function showAddToPlaylistModal() {
@@ -451,7 +549,6 @@ function removeTrackFromCurrentPlaylist() {
     state.userPlaylists[playlistName].splice(state.contextTrackIndex, 1);
     saveUserPlaylists();
     
-    // Обновляем список
     state.viewedTracks = state.userPlaylists[playlistName];
     applySortToViewedTracks(); 
     UI.renderTrackList(state.viewedTracks);
