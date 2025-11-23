@@ -304,7 +304,7 @@ export const stageEffects = {
     },
 
     // === ЭФФЕКТ 5: WALKING (NEW) ===
-    overlayWalking: {
+    overlayWalking2: {
         html: `
             <div class="horror-img-container">
                 <img src="picture/Walking2_to I'm not a human.gif" class="horror-img walking-anim" alt="walking">
