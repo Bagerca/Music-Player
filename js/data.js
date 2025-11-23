@@ -51,7 +51,7 @@ export const library = [
         colors: { primary: '#080708', secondary: '#3c345a', accent: '#86bbd6' }, 
         cover: 'picture/Puttin_On_The_Ritz.jpg', 
         // Ретро эффект
-        effect: 'radio',
+        effect: 'liquid',
         visualizer: ['#86bbd6', '#3d82a5', '#78afbc', '#92703f', '#b0ab8e'], 
         neonColor: '#86bbd6' 
     },
@@ -61,7 +61,7 @@ export const library = [
         path: 'audio/Princess_Chelsea_Cigarette_Duet.m4a', 
         colors: { primary: '#701d1e', secondary: '#821318', accent: '#e0a494' }, 
         cover: 'picture/Cigarette_Duet.jpg', 
-        effect: 'radio',
+        effect: 'liquid',
         visualizer: ['#e0a494', '#d98c8a', '#d39ca4', '#b66b74', '#a23d3d', '#821318'], 
         neonColor: '#e0a494' 
     },
@@ -71,7 +71,7 @@ export const library = [
         path: 'audio/Engelbert_Humperdinck_Man_Without_Love.m4a', 
         colors: { primary: '#18101d', secondary: '#463138', accent: '#5fabba' }, 
         cover: 'picture/Man_Without_Love.jpg', 
-        effect: 'radio',
+        effect: 'liquid',
         visualizer: ['#5fabba', '#d1aba2', '#8a8295', '#994144'], 
         neonColor: '#5fabba' 
     },
@@ -121,7 +121,7 @@ export const library = [
         artist: 'The Cramps', 
         path: 'audio/The_Cramps_Goo_Goo_Muck.mp3', 
         cover: 'picture/Goo_Goo_Muck.jpg', 
-        effect: 'radio',
+        effect: 'liquid',
         colors: { primary: '#10100a', secondary: '#2a2a20', accent: '#f0ff00' }, 
         visualizer: ['#f0ff00', '#b8c200', '#f5f5f5', '#2a2a20'], 
         neonColor: '#f0ff00' 
@@ -131,7 +131,7 @@ export const library = [
         artist: 'Ray Parker, Jr.', 
         path: 'audio/Ray_Parker_Jr_Ghostbusters.mp3', 
         cover: 'picture/Ghostbusters.jpg', 
-        effect: 'radio',
+        effect: 'liquid',
         colors: { primary: '#080808', secondary: '#1f1f1f', accent: '#d91e2a' }, 
         visualizer: ['#d91e2a', '#ffffff', '#b0b0b0', '#7a7a7a', '#1f1f1f'], 
         neonColor: '#d91e2a' 
@@ -211,7 +211,7 @@ export const library = [
         artist: 'JT Music', 
         path: 'audio/JT_Music_Rest_in_Ink.mp3', 
         cover: 'picture/JT_Music_Rest_in_Ink.jpg', 
-        effect: 'radio',
+        effect: 'liquid',
         colors: { primary: '#120e1a', secondary: '#3a2e2c', accent: '#e8a848' }, 
         visualizer: ['#e8a848', '#b57d38', '#8a5c29', '#5c3d1a', '#3a2e2c'], 
         neonColor: '#e8a848' 
@@ -221,7 +221,7 @@ export const library = [
         artist: 'Berserk OST', 
         path: 'audio/Berserk_OST_Waiting_so_long_TV_Size.mp3', 
         cover: 'picture/Berserk_OST_Waiting_so_long.jpg', 
-        effect: 'radio',
+        effect: 'liquid',
         colors: { primary: '#100c0d', secondary: '#381a1d', accent: '#c91f28' }, 
         visualizer: ['#c91f28', '#e66b3d', '#aab2c4', '#5c3a3d', '#100c0d'], 
         neonColor: '#c91f28' 
@@ -381,7 +381,7 @@ export const library = [
         artist: 'Rockwell', 
         path: "audio/Rockwell_Somebodys_Watching_Me.mp3", 
         cover: "picture/Rockwell_Somebodys_Watching_Me.jpg", 
-        effect: 'radio',
+        effect: 'liquid',
         colors: { primary: '#080808', secondary: '#1f1f1f', accent: '#d91e2a' }, 
         visualizer: ['#d91e2a', '#ffffff', '#b0b0b0', '#7a7a7a', '#1f1f1f'], 
         neonColor: '#d91e2a' 
@@ -391,7 +391,7 @@ export const library = [
         artist: 'The Clash', 
         path: 'audio/The_Clash_Should_I_Stay_or_Should_I_Go.mp3', 
         cover: 'picture/The_Clash_Should_I_Stay_or_Should_I_Go.jpg', 
-        effect: 'radio',
+        effect: 'liquid',
         colors: { primary: '#122a34', secondary: '#1b4c4b', accent: '#44bba8' }, 
         visualizer: ['#44bba8', '#d8e2e4', '#286869', '#2a5c6c', '#1e5258'], 
         neonColor: '#44bba8' 
