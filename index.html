@@ -90,7 +90,6 @@
                         <svg viewBox="0 0 24 24"><path fill="currentColor" d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/></svg>
                     </button>
                     
-                    <!-- КНОПКА СОРТИРОВКИ -->
                     <button id="sortBtn" class="icon-btn" title="Сортировка">
                         <svg viewBox="0 0 24 24"><path fill="currentColor" d="M3 18h6v-2H3v2zM3 6v2h18V6H3zm0 7h12v-2H3v2z"/></svg>
                     </button>
@@ -98,6 +97,7 @@
                     <button id="deletePlaylistBtn" class="icon-btn delete" title="Удалить плейлист" style="display: none;">
                         <svg viewBox="0 0 24 24"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
                     </button>
+                    <!-- Основной input для загрузки аудио (скрытый) -->
                     <input type="file" id="fileInput" accept="audio/*, .mp3, .wav, .m4a, .ogg" multiple style="display: none;">
                 </div>
             </div>
@@ -172,46 +172,61 @@
         </div>
     </div>
 
-    <!-- МОДАЛКА ЗАГРУЗКИ ТРЕКА -->
+    <!-- МОДАЛКА ЗАГРУЗКИ ТРЕКА (ОБНОВЛЕННАЯ) -->
     <div id="uploadModal" class="modal-overlay">
         <div class="modal upload-modal">
             <h3>Загрузка трека</h3>
             
-            <div class="upload-form">
-                <div class="form-group">
-                    <label>Файл</label>
-                    <div class="file-name-display" id="uploadFileName">Файл не выбран</div>
+            <div class="upload-layout">
+                <!-- ЛЕВАЯ КОЛОНКА: ОБЛОЖКА -->
+                <div class="upload-left">
+                    <div class="cover-preview-container" id="coverPreviewBox">
+                        <img id="coverPreviewImg" src="" alt="" style="display: none;">
+                        <div class="cover-placeholder">
+                            <svg viewBox="0 0 24 24"><path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5.04-6.71l-2.75 3.54-1.96-2.36L6.5 17h11l-3.54-4.71z"/></svg>
+                            <span>Обложка</span>
+                        </div>
+                    </div>
+                    <!-- Скрытый инпут, кликаем по превью чтобы открыть -->
+                    <input type="file" id="upCoverFile" accept="image/*" style="display: none;">
+                    <button class="upload-cover-btn" id="uploadCoverBtn">Выбрать изображение</button>
                 </div>
 
-                <div class="form-row">
+                <!-- ПРАВАЯ КОЛОНКА: ДАННЫЕ -->
+                <div class="upload-right">
                     <div class="form-group">
-                        <label>Название</label>
-                        <input type="text" id="upTitle" class="modal-input">
+                        <label>Аудиофайл</label>
+                        <div class="file-name-display" id="uploadFileName">Файл не выбран</div>
                     </div>
-                    <div class="form-group">
-                        <label>Исполнитель</label>
-                        <input type="text" id="upArtist" class="modal-input" value="Unknown Artist">
-                    </div>
-                </div>
 
-                <div class="form-group">
-                    <label>Ссылка на обложку (URL) или оставьте пустым</label>
-                    <input type="text" id="upCoverUrl" class="modal-input" placeholder="https://...">
-                    <div class="or-divider">или файл обложки</div>
-                    <input type="file" id="upCoverFile" accept="image/*" class="modal-input-file">
-                </div>
+                    <div class="form-group stylish-input">
+                        <input type="text" id="upTitle" placeholder=" " required>
+                        <label class="floating-label">Название трека</label>
+                    </div>
 
-                <label>Оформление</label>
-                <div class="color-settings">
-                    <div class="color-input-group">
-                        <span>Фон</span>
-                        <input type="color" id="upColorBg" value="#1a1a2e">
+                    <div class="form-group stylish-input">
+                        <input type="text" id="upArtist" placeholder=" " value="Unknown Artist">
+                        <label class="floating-label">Исполнитель</label>
                     </div>
-                    <div class="color-input-group">
-                        <span>Акцент</span>
-                        <input type="color" id="upColorAccent" value="#00d1ff">
+                    
+                    <div class="form-group stylish-input small-margin">
+                        <input type="text" id="upCoverUrl" placeholder=" ">
+                        <label class="floating-label">Или ссылка на картинку (URL)</label>
                     </div>
-                    <button id="randomColorsBtn" class="modal-btn small">🎲 Random</button>
+
+                    <label style="margin-top: 10px; display:block; font-size:12px; opacity:0.7;">Оформление</label>
+                    <div class="color-settings">
+                        <div class="color-input-group">
+                            <span>Фон</span>
+                            <input type="color" id="upColorBg" value="#1a1a2e">
+                        </div>
+                        <div class="color-input-group">
+                            <span>Акцент</span>
+                            <input type="color" id="upColorAccent" value="#00d1ff">
+                        </div>
+                        <div class="auto-color-badge" id="autoColorBadge" style="display: none;">✨ Auto</div>
+                        <button id="randomColorsBtn" class="modal-btn small">🎲 Random</button>
+                    </div>
                 </div>
             </div>
 
@@ -234,7 +249,7 @@
         </div>
     </div>
 
-    <!-- МОДАЛКА ВЫБОРА ПЛЕЙЛИСТА (КУДА ДОБАВИТЬ) -->
+    <!-- МОДАЛКА ВЫБОРА ПЛЕЙЛИСТА -->
     <div id="addToPlaylistModal" class="modal-overlay">
         <div class="modal">
             <h3>Выберите плейлист</h3>
@@ -257,7 +272,6 @@
         </div>
     </div>
 
-    <!-- Подключаем главный модуль -->
     <script type="module" src="js/main.js"></script>
 </body>
 </html>
