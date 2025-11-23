@@ -488,24 +488,6 @@ const getTrack = (namePart) => {
 /* --- ОПРЕДЕЛЕНИЕ СТАНДАРТНЫХ ПЛЕЙЛИСТОВ --- */
 const defaultPlaylists = {
     "Все треки": library,
-    "Энергичные": [
-        getTrack("Katana"), 
-        getTrack("Valhalla"), 
-        getTrack("Песня смертника"), 
-        getTrack("IRIS OUT"), 
-        getTrack("2 Phút Hơn"), 
-        getTrack("Enemy"), 
-        getTrack("Soldat"), 
-        getTrack("Rapture Rising")
-    ].filter(Boolean),
-    "Chill & Retro": [
-        getTrack("Tangled Up"), 
-        getTrack("Puttin On The Ritz"), 
-        getTrack("Man Without Love"), 
-        getTrack("Cigarette Duet"), 
-        getTrack("God Rest Ye Merry Gentlemen"), 
-        getTrack("Feeling Good")
-    ].filter(Boolean),
     "Для Ксю": [
         getTrack("Шкатулка 8D Remix"), 
         getTrack("Spend The Night Alone"), 
