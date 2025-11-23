@@ -303,6 +303,53 @@ export const stageEffects = {
         }
     },
 
+    // === ЭФФЕКТ 5: WALKING (NEW) ===
+    overlayWalking: {
+        html: `
+            <div class="horror-img-container">
+                <img src="picture/Walking2_to I'm not a human.gif" class="horror-img walking-anim" alt="walking">
+                <div class="vignette-overlay"></div>
+            </div>
+        `,
+        css: `
+            .horror-img-container {
+                position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+                display: flex; justify-content: center; align-items: center;
+                pointer-events: none;
+                z-index: 5;
+                animation: fadeInHorror 1s ease-out forwards;
+            }
+            .horror-img {
+                width: 100%; height: 100%;
+                object-fit: cover;
+            }
+            .walking-anim {
+                opacity: 0.6;
+                filter: sepia(0.5) contrast(1.1); /* Эффект старой записи */
+                animation: panLeft 20s linear forwards;
+            }
+            .vignette-overlay {
+                position: absolute; inset: 0;
+                background: radial-gradient(circle, transparent 40%, #000 95%);
+            }
+            @keyframes fadeInHorror { from { opacity: 0; } to { opacity: 1; } }
+            @keyframes panLeft { 
+                from { transform: scale(1.1) translateX(10px); } 
+                to { transform: scale(1.2) translateX(-10px); } 
+            }
+        `,
+        update: (instance, features) => {
+            if(instance.img) {
+                // Мерцание на битах
+                const flicker = 0.6 + (features.bassEnergy * 0.2);
+                instance.img.style.opacity = flicker;
+            }
+        },
+        init: (instance) => {
+            instance.img = document.querySelector('.walking-anim');
+        }
+    },
+    
     // === ЭФФЕКТ 5: УЖАС (EYES) ===
     overlayEyes: {
         html: `
