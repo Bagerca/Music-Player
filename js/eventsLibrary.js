@@ -1,266 +1,278 @@
-export const stageEffects = {
-    
-    // === ЭФФЕКТ: ALASTOR RADIO (ULTIMATE VERSION) ===
+// === ЭФФЕКТ: ALASTOR RADIO (REWORKED) ===
     radioDial: {
-        // 1. HTML
-        // Используем семантическую верстку с контейнером-осью (pivot)
+        // 1. HTML: Винтажный корпус, шкала, стрелка и скрытая улыбка
         html: `
-            <!-- Глобальные эффекты экрана -->
-            <div class="crt-lines"></div>
-            <div class="vignette-overlay"></div>
-            
-            <!-- Контейнер прибора -->
-            <div class="meter-wrapper">
-                <div class="meter-housing">
+            <div class="alastor-overlay-container">
+                <!-- Фоновый шум и виньетка -->
+                <div class="radio-noise"></div>
+                <div class="screen-dirt"></div>
+
+                <!-- Основной прибор -->
+                <div class="vu-meter-casing" id="meterContainer">
                     
-                    <!-- Фон шкалы -->
-                    <div class="meter-display">
-                        <div class="grid-texture"></div>
-                        <div class="shadow-overlay"></div>
+                    <!-- Внутренняя панель -->
+                    <div class="vu-face">
+                        <!-- Тень и текстура -->
+                        <div class="vu-texture"></div>
                         
-                        <!-- Графика шкалы -->
-                        <div class="scale-graphics">
-                            <div class="red-zone"></div>
-                            <div class="ticks-container">
-                                <!-- Генерируем деления через CSS -->
-                                <i style="--a:-60"></i><i style="--a:-50"></i><i style="--a:-40"></i>
-                                <i style="--a:-30"></i><i style="--a:-20"></i><i style="--a:-10"></i>
-                                <i style="--a:0"></i>
-                                <i style="--a:10"></i><i style="--a:20"></i><i style="--a:30"></i>
-                                <i style="--a:40"></i><i style="--a:50"></i><i style="--a:60"></i>
+                        <!-- Скрытая улыбка (проявляется от громкости) -->
+                        <div class="alastor-smile" id="demonSmile">
+                            <svg viewBox="0 0 100 50">
+                                <path d="M10,10 Q50,50 90,10" fill="none" stroke="#4a0000" stroke-width="3" />
+                                <path d="M10,10 L15,25 M20,15 L23,30 M30,18 L32,35 M40,20 L41,38 M50,20 L50,38 M60,20 L59,38 M70,18 L68,35 M80,15 L77,30 M90,10 L85,25" stroke="#4a0000" stroke-width="2" />
+                            </svg>
+                        </div>
+
+                        <!-- Шкала делений -->
+                        <div class="vu-scale">
+                            <div class="vu-arc"></div>
+                            <div class="vu-ticks">
+                                <span style="--r:-45"></span><span style="--r:-30"></span>
+                                <span style="--r:-15"></span><span style="--r:0"></span>
+                                <span style="--r:15"></span><span style="--r:30"></span>
+                                <span style="--r:45" class="danger"></span>
+                            </div>
+                            <div class="vu-labels">
+                                <span class="lbl-left">-20</span>
+                                <span class="lbl-mid">VU</span>
+                                <span class="lbl-right">+3</span>
                             </div>
                         </div>
 
-                        <!-- Индикаторы -->
-                        <div class="labels">
-                            <span class="label-left">SIGNAL</span>
-                            <span class="label-right">OVERLOAD</span>
+                        <!-- Стрелка -->
+                        <div class="vu-needle-wrapper" id="eventPivot">
+                            <div class="vu-needle"></div>
+                            <div class="vu-needle-glow"></div>
                         </div>
                         
-                        <div class="overload-led" id="eventLight"></div>
+                        <!-- Основание стрелки -->
+                        <div class="vu-cap">
+                            <div class="vu-cap-screw"></div>
+                        </div>
                     </div>
 
-                    <!-- Механизм стрелки (Самое важное) -->
-                    <div class="needle-pivot-center" id="eventPivot">
-                        <div class="needle-body"></div>
-                        <div class="needle-counterweight"></div>
-                    </div>
-                    
-                    <!-- Крышка основания стрелки -->
-                    <div class="pivot-cap"></div>
+                    <!-- Лампа "ON AIR" / перегрузка -->
+                    <div class="on-air-sign" id="eventLight">ON AIR</div>
                 </div>
             </div>
         `,
 
-        // 2. CSS
+        // 2. CSS: Art Deco, неон и мрачность
         css: `
-            /* --- ЭФФЕКТЫ ЭКРАНА --- */
-            .vignette-overlay {
+            .alastor-overlay-container {
                 position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-                background: radial-gradient(circle, transparent 50%, #050000 100%);
-                pointer-events: none; z-index: 1;
-                animation: fadeIn 2s ease;
-            }
-            .crt-lines {
-                position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-                background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-                background-size: 100% 2px, 3px 100%;
-                pointer-events: none; z-index: 2;
-            }
-
-            /* --- КОНТЕЙНЕР --- */
-            .meter-wrapper {
-                position: absolute;
-                bottom: 0; left: 0; width: 100%;
-                height: 400px;
-                display: flex;
-                justify-content: center;
-                align-items: flex-end;
+                display: flex; justify-content: center; align-items: flex-end;
+                padding-bottom: 50px;
+                overflow: hidden;
                 perspective: 1000px;
-                overflow: hidden;
-                z-index: 3;
-                /* Плавное появление снизу */
-                animation: slideUp 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+                pointer-events: none;
             }
 
-            /* --- КОРПУС --- */
-            .meter-housing {
-                position: relative;
-                width: 800px; height: 350px;
-                background: #0a0000;
-                border-top: 2px solid #330000;
-                border-radius: 400px 400px 0 0; /* Идеальный полукруг */
-                box-shadow: 0 0 50px rgba(100, 0, 0, 0.2);
-                overflow: hidden;
+            /* Эффекты старой пленки */
+            .radio-noise {
+                position: absolute; inset: 0;
+                background: url('data:image/svg+xml;utf8,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23noiseFilter)" opacity="0.15"/%3E%3C/svg%3E');
+                opacity: 0.1; z-index: 1;
+                animation: noiseShift 0.2s steps(3) infinite;
+            }
+            @keyframes noiseShift { 0% { transform: translate(0,0); } 100% { transform: translate(10px, 10px); } }
+
+            .screen-dirt {
+                position: absolute; inset: 0;
+                box-shadow: inset 0 0 150px rgba(0,0,0,0.9);
+                z-index: 2;
             }
 
-            /* ДИСПЛЕЙ */
-            .meter-display {
-                position: relative; width: 100%; height: 100%;
-                background: radial-gradient(circle at 50% 100%, #2a0505 0%, #000000 80%);
-            }
-            
-            .grid-texture {
-                position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-                background-image: radial-gradient(#400 1px, transparent 1px);
-                background-size: 20px 20px;
-                opacity: 0.2;
-            }
-
-            /* ГРАФИКА ШКАЛЫ */
-            .scale-graphics {
-                position: absolute;
-                bottom: 0; left: 50%; transform: translateX(-50%);
-                width: 700px; height: 350px;
-            }
-
-            /* Красная зона (через conic gradient для точности) */
-            .red-zone {
-                position: absolute;
-                bottom: 20px; left: 20px; right: 20px; top: 20px;
-                border-radius: 50% 50% 0 0;
-                /* Градиент рисует дугу только справа */
-                background: conic-gradient(from 270deg at 50% 100%, transparent 0deg, transparent 60deg, rgba(255, 0, 0, 0.4) 120deg);
-                mask-image: radial-gradient(circle at 50% 100%, transparent 60%, black 61%);
-                -webkit-mask-image: radial-gradient(circle at 50% 100%, transparent 60%, black 61%);
-            }
-
-            /* Деления (Абсолютное позиционирование от центра низа) */
-            .ticks-container {
-                position: absolute;
-                bottom: 0; left: 50%;
-                width: 0; height: 0; /* Точка отсчета */
-            }
-            .ticks-container i {
-                position: absolute;
-                bottom: 0; left: -1px; /* Центрируем линию шириной 2px */
-                width: 2px; 
-                height: 320px; /* Радиус шкалы */
-                background: linear-gradient(to bottom, rgba(255,255,255,0.7) 10%, transparent 20%);
+            /* КОРПУС ПРИБОРА (Стиль Art Deco) */
+            .vu-meter-casing {
+                position: relative; z-index: 10;
+                width: 500px; height: 320px;
+                background: #0f0505;
+                border: 4px solid #3a1a1a;
+                border-radius: 200px 200px 20px 20px; /* Форма арки */
+                box-shadow: 0 20px 50px rgba(0,0,0,0.8), 0 0 0 10px #150505;
                 transform-origin: bottom center;
-                transform: rotate(calc(var(--a) * 1deg));
-            }
-            /* Выделяем основные деления */
-            .ticks-container i:nth-child(3n+1) { width: 4px; left: -2px; background: linear-gradient(to bottom, #ff3333 15%, transparent 25%); }
-
-            /* --- СТРЕЛКА (МЕХАНИКА) --- */
-            /* Pivot - это невидимая точка вращения в центре низа */
-            .needle-pivot-center {
-                position: absolute;
-                bottom: 10px; left: 50%;
-                width: 0; height: 0;
-                z-index: 10;
-                /* Вращаем ВЕСЬ этот контейнер. Это гарантирует, что стрелка не сместится. */
-                /* JS будет менять transform: rotate(...) здесь */
-                transform: rotate(-60deg); 
-                will-change: transform;
+                transform: translateY(100%);
+                animation: popUp 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
             }
 
-            .needle-body {
-                position: absolute;
-                bottom: 0; left: -2px; /* Центрируем ширину */
-                width: 4px; height: 310px;
-                background: #ff0000;
-                box-shadow: 0 0 15px #ff0000;
-                border-radius: 4px;
-            }
-            
-            /* Противовес стрелки (для реализма) */
-            .needle-counterweight {
-                position: absolute;
-                top: 0; left: -3px;
-                width: 6px; height: 40px;
-                background: #500;
+            @keyframes popUp { to { transform: translateY(0); } }
+
+            /* ЛИЦЕВАЯ ПАНЕЛЬ */
+            .vu-face {
+                position: relative;
+                width: 100%; height: 100%;
+                background: radial-gradient(circle at 50% 80%, #3e1e1e 0%, #000000 90%);
+                border-radius: 196px 196px 16px 16px;
+                overflow: hidden;
             }
 
-            .pivot-cap {
+            /* УЛЫБКА ДЕМОНА */
+            .alastor-smile {
+                position: absolute;
+                top: 50%; left: 50%;
+                transform: translate(-50%, -20%) scale(1.5);
+                width: 200px; height: 100px;
+                opacity: 0; /* Управляется JS */
+                filter: drop-shadow(0 0 5px #ff0000);
+                transition: opacity 0.1s;
+            }
+
+            /* ШКАЛА */
+            .vu-scale {
                 position: absolute;
                 bottom: -20px; left: 50%; transform: translateX(-50%);
-                width: 60px; height: 60px;
-                background: radial-gradient(circle, #333, #000);
-                border: 2px solid #333;
-                border-radius: 50%;
-                z-index: 20;
-                box-shadow: 0 -5px 20px rgba(0,0,0,0.8);
+                width: 400px; height: 250px;
+            }
+            .vu-ticks span {
+                position: absolute; bottom: 0; left: 50%;
+                width: 2px; height: 260px;
+                background: linear-gradient(to bottom, rgba(255,215,0,0.6) 5%, transparent 15%);
+                transform-origin: bottom center;
+                transform: rotate(calc(var(--r) * 1deg));
+            }
+            .vu-ticks span.danger {
+                background: linear-gradient(to bottom, #ff0000 15%, transparent 25%);
+                width: 4px;
+                box-shadow: 0 0 10px #ff0000;
             }
 
-            /* ТЕКСТ И ЛАМПОЧКИ */
-            .labels {
-                position: absolute; bottom: 50px; width: 100%;
+            .vu-labels {
+                position: absolute; top: 60px; width: 100%;
                 display: flex; justify-content: space-between;
-                padding: 0 150px; box-sizing: border-box;
-                font-family: monospace; color: #600;
-                font-size: 12px; letter-spacing: 2px;
-                text-shadow: 0 0 5px #300;
-            }
-            
-            .overload-led {
-                position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%);
-                width: 12px; height: 12px;
-                background: #200;
-                border-radius: 50%;
-                box-shadow: inset 0 0 5px #000;
-                transition: background 0.05s;
+                padding: 0 80px; box-sizing: border-box;
+                font-family: 'Courier New', monospace;
+                font-weight: bold; color: #bfafa6;
+                text-shadow: 0 0 2px #000;
+                opacity: 0.8;
             }
 
-            @keyframes fadeIn { from{opacity:0} to{opacity:1} }
-            @keyframes slideUp { from{transform: translateY(100%)} to{transform: translateY(0)} }
+            /* СТРЕЛКА */
+            .vu-needle-wrapper {
+                position: absolute;
+                bottom: 20px; left: 50%;
+                width: 0; height: 0;
+                transform: rotate(-45deg); /* Начало слева */
+                transition: transform 0.05s linear; /* Очень быстрый отклик */
+                z-index: 20;
+            }
+            .vu-needle {
+                position: absolute;
+                bottom: -10px; left: -1.5px;
+                width: 3px; height: 270px;
+                background: #ff0000;
+                box-shadow: 0 0 5px rgba(255,0,0,0.8);
+                border-radius: 2px;
+            }
+            /* Эффект шлейфа/размытия при движении */
+            .vu-needle-glow {
+                position: absolute;
+                bottom: -10px; left: -4px;
+                width: 8px; height: 270px;
+                background: rgba(255,0,0,0.3);
+                filter: blur(4px);
+            }
+
+            .vu-cap {
+                position: absolute;
+                bottom: -10px; left: 50%; transform: translateX(-50%);
+                width: 70px; height: 40px;
+                background: #1a0a0a;
+                border-radius: 50% 50% 0 0;
+                border-top: 1px solid #400;
+                z-index: 25;
+            }
+
+            /* ЛАМПА ON AIR */
+            .on-air-sign {
+                position: absolute;
+                bottom: 30px; left: 50%; transform: translateX(-50%);
+                font-family: 'Montserrat', sans-serif;
+                font-weight: 900; font-size: 14px; letter-spacing: 3px;
+                color: #310000;
+                background: #100000;
+                padding: 4px 12px;
+                border: 1px solid #300;
+                border-radius: 4px;
+                z-index: 5;
+                transition: all 0.1s;
+            }
+            .on-air-sign.lit {
+                color: #ffcccc;
+                background: #500;
+                border-color: #f00;
+                box-shadow: 0 0 15px #f00, inset 0 0 10px #f00;
+                text-shadow: 0 0 5px #fff;
+            }
         `,
 
         // 3. ИНИЦИАЛИЗАЦИЯ
         init: (instance) => {
             instance.pivot = document.getElementById('eventPivot');
             instance.light = document.getElementById('eventLight');
+            instance.smile = document.getElementById('demonSmile');
+            instance.container = document.getElementById('meterContainer');
             
-            // Физические параметры
-            instance.angle = -60; // Текущий угол
-            instance.velocity = 0; // Скорость
+            instance.angle = -45; 
+            instance.targetAngle = -45;
+            
+            // Для физики "дрожания"
+            instance.jitter = 0;
         },
 
-        // 4. ФИЗИЧЕСКИЙ ДВИЖОК
+        // 4. ОБНОВЛЕНИЕ (60 FPS)
         update: (instance, features) => {
             if (!instance.pivot) return;
 
-            // 1. Расчет целевого значения (Target)
-            // RMS (0..1) + Bass (0..1). Аластор любит басы.
-            // Множитель 1.3 - чтобы стрелка ходила широко, но не билась постоянно.
-            let input = (features.rms * 0.6 + features.bassEnergy * 0.4) * 1.3;
+            // --- ЛОГИКА СТРЕЛКИ ---
+            // 1. Базовый вход: Громкость + Бас
+            // Умножаем на 1.5, чтобы стрелка летала агрессивнее
+            let input = (features.rms * 0.8 + features.bassEnergy * 0.5) * 1.5;
+
+            // 2. Эффект "Радиопомех" (Jitter)
+            // Даже в тишине стрелка чуть-чуть дрожит, как старый прибор
+            instance.jitter = (Math.random() - 0.5) * 2; 
             
-            // Добавляем "шум эфира" (Jitter)
-            // Даже в тишине стрелка будет "дышать"
-            const noise = (Math.random() - 0.5) * 0.08;
-            input += noise;
+            // 3. Реакция на удар (Beat)
+            if (features.isBeat) {
+                // Резкий скачок вперед
+                input += 0.4;
+                // Тряска всего корпуса
+                instance.container.style.transform = `translate(${Math.random()*4 - 2}px, ${Math.random()*4 - 2}px)`;
+            } else {
+                instance.container.style.transform = `translate(0, 0)`;
+            }
 
-            // Ограничиваем диапазон (Clamp)
-            if (input < 0) input = 0;
-            if (input > 1.1) input = 1.1; // Разрешаем легкий перегруз
+            // Ограничение (Clamp)
+            if (input > 1.2) input = 1.2; // Небольшой зашкал допустим
 
-            // Переводим в угол (-60 ... +60)
-            // Диапазон хода = 120 градусов
-            let targetAngle = -60 + (input * 120);
+            // Перевод в градусы (-45 ... +45)
+            let target = -45 + (input * 90) + instance.jitter;
 
-            // 2. Физика пружины (Spring Physics / Smoothing)
-            // Attack (вверх) = 0.3 (Быстро)
-            // Decay (вниз) = 0.08 (Медленно, инерция)
-            let smooth = (targetAngle > instance.angle) ? 0.3 : 0.08;
-            
-            // Линейная интерполяция (Lerp)
-            instance.angle += (targetAngle - instance.angle) * smooth;
+            // 4. Физика движения (Резко вверх, медленнее вниз - баллистика VU метра)
+            if (target > instance.angle) {
+                // Attack: очень быстро
+                instance.angle += (target - instance.angle) * 0.4; 
+            } else {
+                // Decay: инерция, медленный возврат
+                instance.angle += (target - instance.angle) * 0.15; 
+            }
 
-            // 3. Отрисовка
             instance.pivot.style.transform = `rotate(${instance.angle}deg)`;
 
-            // 4. Лампочка перегрузки
-            if (instance.light) {
-                // Если угол > 40 градусов (красная зона)
-                if (instance.angle > 40) {
-                    instance.light.style.background = '#ff0000';
-                    instance.light.style.boxShadow = '0 0 15px #ff0000, 0 0 30px #ff0000';
-                } else {
-                    instance.light.style.background = '#300';
-                    instance.light.style.boxShadow = 'inset 0 0 2px #000';
-                }
+            // --- УПРАВЛЕНИЕ ЛАМПОЙ И УЛЫБКОЙ ---
+            
+            // Лампа загорается при перегрузке (угол > 25)
+            if (instance.angle > 25) {
+                instance.light.classList.add('lit');
+                // Улыбка становится видна, когда громко
+                instance.smile.style.opacity = Math.min(1, (instance.angle / 45));
+                instance.smile.style.transform = `translate(-50%, -20%) scale(${1.5 + (features.bassEnergy * 0.2)})`;
+            } else {
+                instance.light.classList.remove('lit');
+                // Плавно гасим улыбку
+                let currentOp = parseFloat(instance.smile.style.opacity) || 0;
+                instance.smile.style.opacity = Math.max(0, currentOp - 0.05);
             }
         }
-    }
-};
+    },
