@@ -164,7 +164,8 @@ export const library = [
         cover: 'picture/Шкатулка_8D_Remix.jpg', 
         effect: 'glitch',
         visualizer: ['#8a4fff', '#a782ff', '#3c305c', '#d1c4d9', '#1a1829'], 
-        neonColor: '#8a4fff' 
+        neonColor: '#8a4fff',
+        lyricsSource: 'lyrics/shkatulka.json'
     },
     { 
         name: 'Spend The Night Alone', 
