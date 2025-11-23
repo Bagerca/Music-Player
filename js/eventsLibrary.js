@@ -1,230 +1,264 @@
-// --- js/eventsLibrary.js ---
-
 export const stageEffects = {
     
-    // === ЭФФЕКТ 1: ALASTOR RADIO (REMASTERED) ===
+    // === ЭФФЕКТ: ALASTOR RADIO (ULTIMATE VERSION) ===
     radioDial: {
-        // 1. HTML (Структура)
+        // 1. HTML
+        // Используем семантическую верстку с контейнером-осью (pivot)
         html: `
-            <div class="alastor-vignette"></div>
-            <div class="radio-wrapper">
-                <div class="meter-case">
-                    <!-- Фон сетка -->
-                    <div class="meter-bg-grid"></div>
+            <!-- Глобальные эффекты экрана -->
+            <div class="crt-lines"></div>
+            <div class="vignette-overlay"></div>
+            
+            <!-- Контейнер прибора -->
+            <div class="meter-wrapper">
+                <div class="meter-housing">
                     
-                    <!-- Дуга -->
-                    <div class="meter-arc-path">
-                        <div class="meter-danger-zone"></div>
+                    <!-- Фон шкалы -->
+                    <div class="meter-display">
+                        <div class="grid-texture"></div>
+                        <div class="shadow-overlay"></div>
+                        
+                        <!-- Графика шкалы -->
+                        <div class="scale-graphics">
+                            <div class="red-zone"></div>
+                            <div class="ticks-container">
+                                <!-- Генерируем деления через CSS -->
+                                <i style="--a:-60"></i><i style="--a:-50"></i><i style="--a:-40"></i>
+                                <i style="--a:-30"></i><i style="--a:-20"></i><i style="--a:-10"></i>
+                                <i style="--a:0"></i>
+                                <i style="--a:10"></i><i style="--a:20"></i><i style="--a:30"></i>
+                                <i style="--a:40"></i><i style="--a:50"></i><i style="--a:60"></i>
+                            </div>
+                        </div>
+
+                        <!-- Индикаторы -->
+                        <div class="labels">
+                            <span class="label-left">SIGNAL</span>
+                            <span class="label-right">OVERLOAD</span>
+                        </div>
+                        
+                        <div class="overload-led" id="eventLight"></div>
                     </div>
 
-                    <!-- Деления -->
-                    <div class="meter-ticks">
-                        <i style="--i:0"></i><i style="--i:1"></i><i style="--i:2"></i>
-                        <i style="--i:3"></i><i style="--i:4"></i><i style="--i:5"></i>
-                        <i style="--i:6"></i><i style="--i:7"></i><i style="--i:8"></i>
-                        <i style="--i:9"></i><i style="--i:10"></i>
+                    <!-- Механизм стрелки (Самое важное) -->
+                    <div class="needle-pivot-center" id="eventPivot">
+                        <div class="needle-body"></div>
+                        <div class="needle-counterweight"></div>
                     </div>
-
-                    <!-- Стрелка -->
-                    <div class="needle-container">
-                        <div class="needle" id="eventNeedle"></div>
-                        <div class="needle-cap"></div>
-                    </div>
-
-                    <!-- Лампочка -->
-                    <div class="peak-led" id="eventLight"></div>
                     
-                    <!-- Текст -->
-                    <div class="meter-label">SIGNAL INPUT</div>
+                    <!-- Крышка основания стрелки -->
+                    <div class="pivot-cap"></div>
                 </div>
             </div>
         `,
 
-        // 2. CSS (Стили)
+        // 2. CSS
         css: `
-            /* Затемнение экрана */
-            .alastor-vignette {
+            /* --- ЭФФЕКТЫ ЭКРАНА --- */
+            .vignette-overlay {
                 position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-                background: radial-gradient(circle, transparent 50%, #000 100%);
-                z-index: 1;
-                animation: fadeIn 1.5s ease;
+                background: radial-gradient(circle, transparent 50%, #050000 100%);
+                pointer-events: none; z-index: 1;
+                animation: fadeIn 2s ease;
+            }
+            .crt-lines {
+                position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+                background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+                background-size: 100% 2px, 3px 100%;
+                pointer-events: none; z-index: 2;
             }
 
-            /* Главный контейнер (Позиционирование) */
-            .radio-wrapper {
+            /* --- КОНТЕЙНЕР --- */
+            .meter-wrapper {
                 position: absolute;
-                bottom: 0;
-                left: 0; 
-                width: 100%;
-                height: 450px; /* Высота панели */
+                bottom: 0; left: 0; width: 100%;
+                height: 400px;
                 display: flex;
                 justify-content: center;
                 align-items: flex-end;
-                z-index: 2;
+                perspective: 1000px;
                 overflow: hidden;
-                animation: slideUp 1s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+                z-index: 3;
+                /* Плавное появление снизу */
+                animation: slideUp 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
             }
 
-            /* Корпус прибора */
-            .meter-case {
+            /* --- КОРПУС --- */
+            .meter-housing {
                 position: relative;
-                width: 900px;
-                height: 100%;
-                background: linear-gradient(to top, #1a0505, #000);
-                border-top: 1px solid #330000;
-                border-radius: 50% 50% 0 0 / 30% 30% 0 0; /* Овал */
-                box-shadow: 0 0 100px rgba(255, 0, 0, 0.1);
+                width: 800px; height: 350px;
+                background: #0a0000;
+                border-top: 2px solid #330000;
+                border-radius: 400px 400px 0 0; /* Идеальный полукруг */
+                box-shadow: 0 0 50px rgba(100, 0, 0, 0.2);
                 overflow: hidden;
             }
 
-            /* Сетка на фоне */
-            .meter-bg-grid {
-                position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-                background-image: 
-                    linear-gradient(rgba(50, 0, 0, 0.3) 1px, transparent 1px),
-                    linear-gradient(90deg, rgba(50, 0, 0, 0.3) 1px, transparent 1px);
-                background-size: 50px 50px;
-                opacity: 0.5;
-            }
-
-            /* Дуга шкалы */
-            .meter-arc-path {
-                position: absolute;
-                bottom: -100px; left: 50%; transform: translateX(-50%);
-                width: 700px; height: 700px;
-                border-radius: 50%;
-                border: 2px solid rgba(255, 255, 255, 0.1);
-                box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+            /* ДИСПЛЕЙ */
+            .meter-display {
+                position: relative; width: 100%; height: 100%;
+                background: radial-gradient(circle at 50% 100%, #2a0505 0%, #000000 80%);
             }
             
-            /* Красная зона */
-            .meter-danger-zone {
-                position: absolute;
-                top: -2px; right: 100px; /* Подгон под угол */
-                width: 150px; height: 20px;
-                border-top: 4px solid #ff0000;
-                transform: rotate(25deg);
-                transform-origin: left bottom;
-                box-shadow: 0 0 10px #ff0000;
-            }
-
-            /* Деления */
-            .meter-ticks {
-                position: absolute;
-                bottom: -100px; left: 50%; transform: translateX(-50%);
-                width: 660px; height: 660px;
-                pointer-events: none;
-            }
-            .meter-ticks i {
-                position: absolute;
-                top: 0; left: 50%;
-                width: 2px; height: 15px;
-                background: rgba(255, 255, 255, 0.5);
-                transform-origin: 50% 330px; /* Радиус вращения */
-                transform: translateX(-50%) rotate(calc((var(--i) - 5) * 12deg)); /* -5 смещает центр */
-            }
-            .meter-ticks i:nth-child(6) { background: #ff0000; height: 25px; width: 3px; } /* Центр */
-
-            /* Стрелка */
-            .needle-container {
-                position: absolute;
-                bottom: -120px; left: 50%; transform: translateX(-50%);
-                width: 40px; height: 40px;
-                z-index: 10;
-            }
-            .needle-cap {
+            .grid-texture {
                 position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-                background: #333; border-radius: 50%;
-                box-shadow: 0 0 10px black;
-            }
-            .needle {
-                position: absolute;
-                bottom: 20px; left: 50%;
-                width: 4px; height: 340px;
-                background: #ff3333;
-                transform-origin: bottom center;
-                transform: translateX(-50%) rotate(-60deg);
-                border-radius: 2px;
-                box-shadow: 0 0 15px rgba(255, 0, 0, 0.5);
-                /* Убираем CSS transition, всё делает JS */
-                will-change: transform; 
+                background-image: radial-gradient(#400 1px, transparent 1px);
+                background-size: 20px 20px;
+                opacity: 0.2;
             }
 
-            /* Лампочка перегруза */
-            .peak-led {
+            /* ГРАФИКА ШКАЛЫ */
+            .scale-graphics {
                 position: absolute;
-                bottom: 60px; left: 50%; transform: translateX(-50%);
-                width: 10px; height: 10px;
-                background: #300;
+                bottom: 0; left: 50%; transform: translateX(-50%);
+                width: 700px; height: 350px;
+            }
+
+            /* Красная зона (через conic gradient для точности) */
+            .red-zone {
+                position: absolute;
+                bottom: 20px; left: 20px; right: 20px; top: 20px;
+                border-radius: 50% 50% 0 0;
+                /* Градиент рисует дугу только справа */
+                background: conic-gradient(from 270deg at 50% 100%, transparent 0deg, transparent 60deg, rgba(255, 0, 0, 0.4) 120deg);
+                mask-image: radial-gradient(circle at 50% 100%, transparent 60%, black 61%);
+                -webkit-mask-image: radial-gradient(circle at 50% 100%, transparent 60%, black 61%);
+            }
+
+            /* Деления (Абсолютное позиционирование от центра низа) */
+            .ticks-container {
+                position: absolute;
+                bottom: 0; left: 50%;
+                width: 0; height: 0; /* Точка отсчета */
+            }
+            .ticks-container i {
+                position: absolute;
+                bottom: 0; left: -1px; /* Центрируем линию шириной 2px */
+                width: 2px; 
+                height: 320px; /* Радиус шкалы */
+                background: linear-gradient(to bottom, rgba(255,255,255,0.7) 10%, transparent 20%);
+                transform-origin: bottom center;
+                transform: rotate(calc(var(--a) * 1deg));
+            }
+            /* Выделяем основные деления */
+            .ticks-container i:nth-child(3n+1) { width: 4px; left: -2px; background: linear-gradient(to bottom, #ff3333 15%, transparent 25%); }
+
+            /* --- СТРЕЛКА (МЕХАНИКА) --- */
+            /* Pivot - это невидимая точка вращения в центре низа */
+            .needle-pivot-center {
+                position: absolute;
+                bottom: 10px; left: 50%;
+                width: 0; height: 0;
+                z-index: 10;
+                /* Вращаем ВЕСЬ этот контейнер. Это гарантирует, что стрелка не сместится. */
+                /* JS будет менять transform: rotate(...) здесь */
+                transform: rotate(-60deg); 
+                will-change: transform;
+            }
+
+            .needle-body {
+                position: absolute;
+                bottom: 0; left: -2px; /* Центрируем ширину */
+                width: 4px; height: 310px;
+                background: #ff0000;
+                box-shadow: 0 0 15px #ff0000;
+                border-radius: 4px;
+            }
+            
+            /* Противовес стрелки (для реализма) */
+            .needle-counterweight {
+                position: absolute;
+                top: 0; left: -3px;
+                width: 6px; height: 40px;
+                background: #500;
+            }
+
+            .pivot-cap {
+                position: absolute;
+                bottom: -20px; left: 50%; transform: translateX(-50%);
+                width: 60px; height: 60px;
+                background: radial-gradient(circle, #333, #000);
+                border: 2px solid #333;
                 border-radius: 50%;
-                border: 1px solid #500;
-                box-shadow: 0 0 0 2px #100;
+                z-index: 20;
+                box-shadow: 0 -5px 20px rgba(0,0,0,0.8);
+            }
+
+            /* ТЕКСТ И ЛАМПОЧКИ */
+            .labels {
+                position: absolute; bottom: 50px; width: 100%;
+                display: flex; justify-content: space-between;
+                padding: 0 150px; box-sizing: border-box;
+                font-family: monospace; color: #600;
+                font-size: 12px; letter-spacing: 2px;
+                text-shadow: 0 0 5px #300;
+            }
+            
+            .overload-led {
+                position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%);
+                width: 12px; height: 12px;
+                background: #200;
+                border-radius: 50%;
+                box-shadow: inset 0 0 5px #000;
                 transition: background 0.05s;
             }
 
-            .meter-label {
-                position: absolute;
-                bottom: 20px; width: 100%; text-align: center;
-                font-family: monospace; color: #500;
-                font-size: 14px; letter-spacing: 4px;
-                text-shadow: 0 0 5px #f00;
-            }
-
-            /* Анимации */
-            @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
-            @keyframes slideUp { 
-                from { transform: translateY(100%); opacity: 0; } 
-                to { transform: translateY(0); opacity: 1; } 
-            }
+            @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+            @keyframes slideUp { from{transform: translateY(100%)} to{transform: translateY(0)} }
         `,
 
         // 3. ИНИЦИАЛИЗАЦИЯ
         init: (instance) => {
-            instance.needle = document.getElementById('eventNeedle');
+            instance.pivot = document.getElementById('eventPivot');
             instance.light = document.getElementById('eventLight');
-            instance.angle = -60; // Стартовый угол (лево)
-            instance.velocity = 0; // Скорость движения
+            
+            // Физические параметры
+            instance.angle = -60; // Текущий угол
+            instance.velocity = 0; // Скорость
         },
 
-        // 4. ЛОГИКА (PHYSICS UPDATE)
+        // 4. ФИЗИЧЕСКИЙ ДВИЖОК
         update: (instance, features) => {
-            if (!instance.needle) return;
+            if (!instance.pivot) return;
 
-            // --- НАСТРОЙКИ ЧУВСТВИТЕЛЬНОСТИ ---
-            // RMS (громкость) + Bass (удар). 
-            // Множитель 1.8 - оптимально, чтобы не билось постоянно в край.
-            let inputSignal = (features.rms * 0.6 + features.bassEnergy * 0.4) * 1.8;
+            // 1. Расчет целевого значения (Target)
+            // RMS (0..1) + Bass (0..1). Аластор любит басы.
+            // Множитель 1.3 - чтобы стрелка ходила широко, но не билась постоянно.
+            let input = (features.rms * 0.6 + features.bassEnergy * 0.4) * 1.3;
             
-            // Добавляем "шум эфира" (постоянное микро-дрожание)
-            // Даже в тишине стрелка чуть-чуть ходит
-            inputSignal += (Math.random() - 0.5) * 0.05;
+            // Добавляем "шум эфира" (Jitter)
+            // Даже в тишине стрелка будет "дышать"
+            const noise = (Math.random() - 0.5) * 0.08;
+            input += noise;
 
-            // Ограничиваем сигнал от 0 до 1.2
-            if (inputSignal < 0) inputSignal = 0;
-            if (inputSignal > 1.2) inputSignal = 1.2;
+            // Ограничиваем диапазон (Clamp)
+            if (input < 0) input = 0;
+            if (input > 1.1) input = 1.1; // Разрешаем легкий перегруз
 
-            // Переводим сигнал в угол (-60 град ... +60 град)
-            let targetAngle = -60 + (inputSignal * 120);
+            // Переводим в угол (-60 ... +60)
+            // Диапазон хода = 120 градусов
+            let targetAngle = -60 + (input * 120);
 
-            // --- ФИЗИКА ИНЕРЦИИ ---
-            // Если сигнал растет - стрелка летит быстро (удар)
-            // Если сигнал падает - стрелка возвращается медленно (вес)
-            const smoothing = targetAngle > instance.angle ? 0.3 : 0.05;
+            // 2. Физика пружины (Spring Physics / Smoothing)
+            // Attack (вверх) = 0.3 (Быстро)
+            // Decay (вниз) = 0.08 (Медленно, инерция)
+            let smooth = (targetAngle > instance.angle) ? 0.3 : 0.08;
             
             // Линейная интерполяция (Lerp)
-            instance.angle += (targetAngle - instance.angle) * smoothing;
+            instance.angle += (targetAngle - instance.angle) * smooth;
 
-            // Применяем поворот
-            instance.needle.style.transform = `translateX(-50%) rotate(${instance.angle}deg)`;
+            // 3. Отрисовка
+            instance.pivot.style.transform = `rotate(${instance.angle}deg)`;
 
-            // --- ЛАМПОЧКА (OVERLOAD) ---
+            // 4. Лампочка перегрузки
             if (instance.light) {
-                if (instance.angle > 45) { // Если в красной зоне
+                // Если угол > 40 градусов (красная зона)
+                if (instance.angle > 40) {
                     instance.light.style.background = '#ff0000';
-                    instance.light.style.boxShadow = '0 0 15px #ff0000';
+                    instance.light.style.boxShadow = '0 0 15px #ff0000, 0 0 30px #ff0000';
                 } else {
                     instance.light.style.background = '#300';
-                    instance.light.style.boxShadow = 'none';
+                    instance.light.style.boxShadow = 'inset 0 0 2px #000';
                 }
             }
         }
