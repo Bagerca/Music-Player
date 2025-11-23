@@ -24,6 +24,9 @@ export const trackTimeline = {
 
         // Walking 2 
         { start: 125.067, end: 146.213, effect: 'overlayWalking2' },
+
+        // Walking 3
+        { start: 176.819, end: 197.408, effect: 'overlayWalking3' },
         
         // Глаза (1:55.6 - 2:05.2)
         { start: 115.6, end: 125.2, effect: 'overlayEyes' },
