@@ -5,6 +5,8 @@ export const library = [
         artist: 'Lead Horizon', 
         path: 'audio/Lead_Horizon_Katana.mp3', 
         cover: 'picture/Lead_Horizon_Katana.jpg', 
+        // Добавлен эффект GLITCH
+        effect: 'glitch',
         colors: { primary: '#000000', secondary: '#1a0000', accent: '#ff0000' }, 
         visualizer: ['#ff0000', '#ff4d4d', '#ffffff', '#800000', '#000000'], 
         neonColor: '#ff0000', 
@@ -16,6 +18,8 @@ export const library = [
         path: 'audio/Caro_Emerald_Tangled_Up.mp3', 
         colors: { primary: '#333b25', secondary: '#745c18', accent: '#efdc31' }, 
         cover: 'picture/TangledUp.jpg', 
+        // Добавлен эффект LIQUID
+        effect: 'liquid',
         visualizer: ['#efdc31', '#ead772', '#e4c51c', '#a0951a', '#817a44'], 
         neonColor: '#efdc31' 
     },
@@ -25,6 +29,8 @@ export const library = [
         path: 'audio/VALHALLA_CALLING_Miracle_Of_Sound.mp3', 
         colors: { primary: '#122a34', secondary: '#1b4c4b', accent: '#44bba8' }, 
         cover: 'picture/ValhallaCalling.jpeg', 
+        // Добавлен эффект WIND
+        effect: 'wind',
         visualizer: ['#44bba8', '#d8e2e4', '#286869', '#2a5c6c', '#1e5258'], 
         neonColor: '#44bba8' 
     },
@@ -34,6 +40,7 @@ export const library = [
         path: 'audio/Marino_Lust.m4a', 
         colors: { primary: '#230b10', secondary: '#5c1723', accent: '#e1212c' }, 
         cover: 'picture/Lust.jpeg', 
+        effect: 'liquid',
         visualizer: ['#e1212c', '#e48494', '#ddadb0', '#7b212b', '#5c1723'], 
         neonColor: '#e1212c' 
     },
@@ -465,13 +472,10 @@ export function getAllPlaylists(userPlaylists = {}, uploadedTracks = []) {
         combined["Мои загрузки"] = uploadedTracks;
     }
 
-    // Автоматически добавляем новые загруженные треки в плейлист "Все треки",
-    // чтобы они отображались в главном списке без переключения плейлиста
+    // Автоматически добавляем новые загруженные треки в плейлист "Все треки"
     if (uploadedTracks.length > 0) {
-        // Создаем копию массива треков
         const allTracks = [...combined["Все треки"]]; 
         uploadedTracks.forEach(t => {
-             // Простая проверка на дубликаты по пути
              if(!allTracks.find(x => x.path === t.path)) {
                  allTracks.push(t);
              }
