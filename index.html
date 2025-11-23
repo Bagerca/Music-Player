@@ -185,7 +185,7 @@
                 <div class="preview-column">
                     <div class="preview-label">Предпросмотр в списке</div>
                     
-                    <!-- Карточка-превью, которая меняется в реальном времени -->
+                    <!-- Карточка-превью -->
                     <div class="live-track-card" id="livePreviewCard">
                         <div class="live-cover" id="livePreviewCover">
                             <!-- Заглушка иконки -->
@@ -214,14 +214,14 @@
                 <!-- ПРАВАЯ КОЛОНКА: ДАННЫЕ И НАСТРОЙКИ -->
                 <div class="inputs-column">
                     
-                    <!-- Зона файла (отображение выбранного) -->
+                    <!-- Зона файла -->
                     <div class="audio-file-badge">
                         <div class="file-icon">🎵</div>
                         <div class="file-info-text">
                             <span class="file-label">Аудиофайл</span>
                             <span class="file-name" id="uploadFileName">song.mp3</span>
                         </div>
-                        <button class="change-file-btn" onclick="document.getElementById('fileInput').click()">Change</button>
+                        <button class="change-file-btn" id="triggerFileChangeBtn">Change</button>
                     </div>
 
                     <div class="input-group">
