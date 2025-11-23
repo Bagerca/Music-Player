@@ -7,9 +7,9 @@ export const trackTimeline = {
         // Радио часть 1
         { start: 47.0, end: 66.0, effect: 'radioDial' },
         
-        // === REALITY BREAK (УДАР НА 1:21) ===
-        // Длится всего 0.8 секунды
-        { start: 81.0, end: 81.8, effect: 'realityBreak' },
+        // === ANALOG BURN (1 СЕКУНДА) ===
+        // Срыв пленки и сепия вместо глитча
+        { start: 81.0, end: 81.8, effect: 'analogBurn' },
         
         // Радио часть 2
         { start: 105.0, end: 162.0, effect: 'radioDial' }
@@ -110,7 +110,7 @@ function unmountEvent(id) {
         }
     }
 
-    // Для эффектов без плавного выхода (например, glitch) - удаляем сразу
+    // Для остальных эффектов - удаляем сразу
     removeInstanceComplete(id, instance);
 }
 
