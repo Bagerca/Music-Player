@@ -1,7 +1,6 @@
 import { stageEffects } from './eventsLibrary.js';
 
 // Таймлайн: Когда что включать
-// 1:21 = 81.0с
 export const trackTimeline = {
     "Alastor's Game": [
         // Радио часть 1
@@ -13,6 +12,18 @@ export const trackTimeline = {
         
         // Радио часть 2
         { start: 105.0, end: 162.0, effect: 'radioDial' }
+    ],
+
+    // НОВЫЙ ТРЕК
+    "Spend The Night Alone": [
+        // Зубы (0:44 - 0:53)
+        { start: 44.0, end: 53.0, effect: 'overlayTeeth' },
+        
+        // Глаза (1:55 - 2:04)
+        { start: 115.0, end: 124.0, effect: 'overlayEyes' },
+        
+        // Солянка (3:17 - до конца)
+        { start: 197.0, end: 300.0, effect: 'overlayCheck' }
     ]
 };
 
