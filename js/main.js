@@ -3,6 +3,8 @@ import { getAllPlaylists } from './data.js';
 import * as AudioCore from './audio.js';
 import * as UI from './ui.js';
 import * as Vis from './visualizer.js';
+// НОВЫЙ ИМПОРТ ДЛЯ 3D ОБЛОЖКИ
+import { initCoverLoader } from './coverLoader.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     // Инициализация
@@ -20,6 +22,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // Устанавливаем правильную иконку режима
     UI.updatePlaybackModeIcon(state.playbackMode);
 
+    // --- ИНИЦИАЛИЗАЦИЯ 3D ОБЛОЖКИ ---
+    // Находим контейнер и запускаем WebGL
+    const startTrack = state.playbackList[0];
+    if (startTrack) {
+        initCoverLoader('canvas-container', startTrack.cover);
+    }
+    // --------------------------------
+
     // Загрузка первого трека
     if (state.playbackList.length) {
         AudioCore.loadTrack(0);
@@ -33,8 +43,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Скрываем прелоадер
     setTimeout(() => {
         const pre = document.getElementById('preloader');
-        pre.classList.add('hide');
-        setTimeout(() => pre.remove(), 500);
+        if (pre) {
+            pre.classList.add('hide');
+            setTimeout(() => pre.remove(), 500);
+        }
     }, 500);
 });
 
@@ -251,7 +263,6 @@ function setupEventListeners() {
         removeFromPlaylistBtn.style.display = isSystem ? 'none' : 'flex';
 
         // 2. Кнопка "Удалить файл" (только для загруженных треков)
-        // Проверяем, есть ли этот трек в массиве загруженных (по пути blob:...)
         const isUploaded = state.uploadedTracks.some(t => t.path === track.path);
         deleteFileBtn.style.display = isUploaded ? 'flex' : 'none';
     });
@@ -275,7 +286,6 @@ function setupEventListeners() {
         removeTrackFromCurrentPlaylist();
         document.getElementById('contextMenu').classList.remove('active');
     };
-    // НОВЫЙ ОБРАБОТЧИК: УДАЛЕНИЕ ФАЙЛА
     document.getElementById('ctxDeleteFile').onclick = () => {
         deleteUploadedFile();
         document.getElementById('contextMenu').classList.remove('active');
@@ -453,12 +463,9 @@ function updateLiveColors(bg, accent) {
     if(liveTitle) liveTitle.style.color = accent;
 }
 
-// ФУНКЦИЯ АНАЛИЗА ЦВЕТА (С ЗАЩИТОЙ ОТ CORS ЧЕРЕЗ ПРОКСИ)
+// ФУНКЦИЯ АНАЛИЗА ЦВЕТА
 function analyzeImageColor(imageSrc) {
-    // Если это локальный файл, прокси не нужен
     const isLocal = imageSrc.startsWith('blob:');
-    
-    // Используем прокси для обхода CORS
     const proxyUrl = isLocal ? imageSrc : `https://api.allorigins.win/raw?url=${encodeURIComponent(imageSrc)}`;
 
     const img = new Image();
@@ -469,34 +476,25 @@ function analyzeImageColor(imageSrc) {
         try {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
-            // Уменьшаем размер для скорости
             canvas.width = 50; 
             canvas.height = 50;
-            
             ctx.drawImage(img, 0, 0, 50, 50);
             
-            // Берем цвет из центра
             const p = ctx.getImageData(25, 25, 1, 1).data;
             const hex = rgbToHex(p[0], p[1], p[2]);
-            
             const bg = adjustBrightness(hex, -40);
             const accent = boostSaturation(hex);
             
             document.getElementById('upColorBg').value = bg;
             document.getElementById('upColorAccent').value = accent;
-            
             updateLiveColors(bg, accent);
             document.getElementById('autoColorBadge').style.display = 'inline-block';
         } catch (e) {
-            console.warn("Не удалось извлечь цвет даже через прокси.", e);
+            console.warn("Не удалось извлечь цвет", e);
             document.getElementById('autoColorBadge').style.display = 'none';
         }
     };
-
-    img.onerror = function() {
-        console.warn("Ошибка загрузки изображения для анализа цвета");
-        document.getElementById('autoColorBadge').style.display = 'none';
-    };
+    img.onerror = () => document.getElementById('autoColorBadge').style.display = 'none';
 }
 
 async function confirmUploadTrack() {
@@ -512,12 +510,8 @@ async function confirmUploadTrack() {
     const coverFileInput = document.getElementById('upCoverFile').files[0];
     
     let coverFinal = 'picture/default_cover.jpg';
-
-    if (coverFileInput) {
-        coverFinal = URL.createObjectURL(coverFileInput);
-    } else if (coverUrlInput) {
-        coverFinal = coverUrlInput;
-    }
+    if (coverFileInput) coverFinal = URL.createObjectURL(coverFileInput);
+    else if (coverUrlInput) coverFinal = coverUrlInput;
 
     const objectUrl = URL.createObjectURL(file);
 
@@ -528,23 +522,20 @@ async function confirmUploadTrack() {
         cover: coverFinal,
         colors: { primary: '#000', secondary: colorBg, accent: colorAccent },
         neonColor: colorAccent,
-        visualizer: [colorAccent, '#ffffff', colorBg]
+        visualizer: [colorAccent, '#ffffff', colorBg],
+        // По умолчанию ставим крутой эффект для загрузок
+        effect: 'glitch' 
     };
 
-    // Добавляем в массив загрузок
     state.uploadedTracks.push(newTrack);
 
-    // Если текущий плейлист пользовательский, добавляем и туда
     const currentName = state.currentPlaylistName;
     if (state.userPlaylists[currentName]) {
         state.userPlaylists[currentName].push(newTrack);
         saveUserPlaylists();
     }
 
-    // НОВОЕ: Обновляем выпадающий список (чтобы появился пункт "Мои загрузки" сразу)
     UI.renderPlaylistSelector();
-
-    // Принудительное обновление списка независимо от плейлиста
     const allLists = getAllPlaylists(state.userPlaylists, state.uploadedTracks);
     state.viewedTracks = allLists[currentName];
     applySortToViewedTracks();
@@ -562,19 +553,13 @@ function deleteUploadedFile() {
     msg.textContent = `Удалить трек "${trackToDelete.name}"? Он исчезнет из всех плейлистов.`;
 
     state.pendingAction = () => {
-        // 1. Удаляем из массива загрузок
         state.uploadedTracks = state.uploadedTracks.filter(t => t.path !== trackToDelete.path);
-
-        // 2. Удаляем из ВСЕХ пользовательских плейлистов
         Object.keys(state.userPlaylists).forEach(plistName => {
             state.userPlaylists[plistName] = state.userPlaylists[plistName].filter(t => t.path !== trackToDelete.path);
         });
         saveUserPlaylists();
 
-        // 3. Обновляем текущий вид
         const allLists = getAllPlaylists(state.userPlaylists, state.uploadedTracks);
-        
-        // Если мы были в "Мои загрузки" и удалили последний трек -> переключаем на "Все треки"
         state.viewedTracks = allLists[state.currentPlaylistName] || [];
         
         if (!state.viewedTracks.length && state.currentPlaylistName === "Мои загрузки") {
