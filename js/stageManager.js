@@ -16,11 +16,11 @@ export const trackTimeline = {
 
     // НОВЫЙ ТРЕК
     "Spend The Night Alone": [
-        // Зубы (0:44 - 0:53)
-        { start: 44.0, end: 53.0, effect: 'overlayTeeth' },
+        // Зубы (0:43.8 - 0:53.1)
+        { start: 43.8, end: 53.1, effect: 'overlayTeeth' },
         
-        // Глаза (1:55 - 2:04)
-        { start: 115.0, end: 124.0, effect: 'overlayEyes' },
+        // Глаза (1:55.6 - 2:05.2)
+        { start: 115.6, end: 125.2, effect: 'overlayEyes' },
         
         // Солянка (3:17 - до конца)
         { start: 197.0, end: 300.0, effect: 'overlayCheck' }
