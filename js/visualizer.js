@@ -46,7 +46,6 @@ export function stopVisualizer() {
     if (animationId) {
         cancelAnimationFrame(animationId);
         animationId = null;
-        cleanupAllEvents(); // Чистим сцену при остановке
     }
 }
 
