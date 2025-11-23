@@ -251,6 +251,7 @@ function setupEventListeners() {
         removeFromPlaylistBtn.style.display = isSystem ? 'none' : 'flex';
 
         // 2. Кнопка "Удалить файл" (только для загруженных треков)
+        // Проверяем, есть ли этот трек в массиве загруженных (по пути blob:...)
         const isUploaded = state.uploadedTracks.some(t => t.path === track.path);
         deleteFileBtn.style.display = isUploaded ? 'flex' : 'none';
     });
@@ -274,7 +275,6 @@ function setupEventListeners() {
         removeTrackFromCurrentPlaylist();
         document.getElementById('contextMenu').classList.remove('active');
     };
-    
     // НОВЫЙ ОБРАБОТЧИК: УДАЛЕНИЕ ФАЙЛА
     document.getElementById('ctxDeleteFile').onclick = () => {
         deleteUploadedFile();
@@ -453,21 +453,30 @@ function updateLiveColors(bg, accent) {
     if(liveTitle) liveTitle.style.color = accent;
 }
 
-// ФУНКЦИЯ АНАЛИЗА ЦВЕТА (С ЗАЩИТОЙ ОТ CORS)
+// ФУНКЦИЯ АНАЛИЗА ЦВЕТА (С ЗАЩИТОЙ ОТ CORS ЧЕРЕЗ ПРОКСИ)
 function analyzeImageColor(imageSrc) {
+    // Если это локальный файл, прокси не нужен
+    const isLocal = imageSrc.startsWith('blob:');
+    
+    // Используем прокси для обхода CORS
+    const proxyUrl = isLocal ? imageSrc : `https://api.allorigins.win/raw?url=${encodeURIComponent(imageSrc)}`;
+
     const img = new Image();
     img.crossOrigin = "Anonymous";
-    img.src = imageSrc;
+    img.src = proxyUrl;
     
     img.onload = function() {
         try {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
-            canvas.width = 1; canvas.height = 1;
+            // Уменьшаем размер для скорости
+            canvas.width = 50; 
+            canvas.height = 50;
             
-            ctx.drawImage(img, 0, 0, 1, 1);
+            ctx.drawImage(img, 0, 0, 50, 50);
             
-            const p = ctx.getImageData(0, 0, 1, 1).data;
+            // Берем цвет из центра
+            const p = ctx.getImageData(25, 25, 1, 1).data;
             const hex = rgbToHex(p[0], p[1], p[2]);
             
             const bg = adjustBrightness(hex, -40);
@@ -479,13 +488,13 @@ function analyzeImageColor(imageSrc) {
             updateLiveColors(bg, accent);
             document.getElementById('autoColorBadge').style.display = 'inline-block';
         } catch (e) {
-            console.warn("CORS Protected Image. Auto-color disabled.", e);
+            console.warn("Не удалось извлечь цвет даже через прокси.", e);
             document.getElementById('autoColorBadge').style.display = 'none';
         }
     };
 
     img.onerror = function() {
-        console.warn("Image load error");
+        console.warn("Ошибка загрузки изображения для анализа цвета");
         document.getElementById('autoColorBadge').style.display = 'none';
     };
 }
@@ -532,7 +541,7 @@ async function confirmUploadTrack() {
         saveUserPlaylists();
     }
 
-    // НОВОЕ: Обновляем выпадающий список (чтобы появился пункт "Мои загрузки")
+    // НОВОЕ: Обновляем выпадающий список (чтобы появился пункт "Мои загрузки" сразу)
     UI.renderPlaylistSelector();
 
     // Принудительное обновление списка независимо от плейлиста
@@ -566,7 +575,6 @@ function deleteUploadedFile() {
         const allLists = getAllPlaylists(state.userPlaylists, state.uploadedTracks);
         
         // Если мы были в "Мои загрузки" и удалили последний трек -> переключаем на "Все треки"
-        // или если текущий плейлист пуст - просто обновляем
         state.viewedTracks = allLists[state.currentPlaylistName] || [];
         
         if (!state.viewedTracks.length && state.currentPlaylistName === "Мои загрузки") {
