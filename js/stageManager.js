@@ -9,7 +9,7 @@ export const trackTimeline = {
         
         // === ANALOG BURN (1 СЕКУНДА) ===
         // Срыв пленки и сепия вместо глитча
-        { start: 81.0, end: 81.8, effect: 'analogBurn' },
+        { start: 81.0, end: 81.8, effect: 'demonicGlare' },
         
         // Радио часть 2
         { start: 105.0, end: 162.0, effect: 'radioDial' }
