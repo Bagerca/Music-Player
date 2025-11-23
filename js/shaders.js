@@ -35,6 +35,58 @@ export const transitions = {
         `
     },
 
+    // 4. RADIO / CRT (Для Alastor's Game и ретро треков)
+    radio: {
+        uniforms: { intensity: 0.2 }, 
+        config: { duration: 1.2, ease: "power2.inOut" },
+        shader: `
+            varying vec2 vUv;
+            uniform sampler2D texture1;
+            uniform sampler2D texture2;
+            uniform float dispFactor;
+            uniform float intensity;
+
+            // Генератор случайного шума
+            float random(vec2 st) {
+                return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
+            }
+
+            void main() {
+                vec2 uv = vUv;
+                
+                // 1. Волны (искажение частоты)
+                float waveStrength = sin(dispFactor * 3.14) * intensity;
+                float wave = sin(uv.y * 30.0 + dispFactor * 20.0) * waveStrength;
+                vec2 distortedUV = vec2(uv.x + wave, uv.y);
+                
+                // 2. Сканлайны (полоски)
+                float scanline = sin(uv.y * 400.0) * 0.02 * sin(dispFactor * 3.14);
+                distortedUV.x -= scanline;
+
+                vec4 t1 = texture2D(texture1, distortedUV);
+                vec4 t2 = texture2D(texture2, distortedUV);
+
+                // 3. Резкий переход (Hard Cut)
+                float mixVal = step(0.5, dispFactor);
+                vec4 color = mix(t1, t2, mixVal);
+                
+                // 4. Шум (Static Noise)
+                float noise = random(uv * (dispFactor * 100.0)) * 0.4 * sin(dispFactor * 3.14);
+                
+                // Подмешиваем шум (чуть красного для стиля)
+                color.r += noise * 0.8; 
+                color.g += noise * 0.5;
+                color.b += noise * 0.5;
+                
+                // 5. Обесцвечивание в момент помех
+                float gray = dot(color.rgb, vec3(0.299, 0.587, 0.114));
+                color.rgb = mix(color.rgb, vec3(gray), sin(dispFactor * 3.14) * 0.7);
+
+                gl_FragColor = color;
+            }
+        `
+    },
+
     // 2. GLITCH
     glitch: {
         uniforms: { intensity: 0.05 },
