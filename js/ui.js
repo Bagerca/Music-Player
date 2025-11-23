@@ -267,8 +267,18 @@ export function updateTrackInfo(track) {
 }
 
 export function updatePlayPauseIcon(isPlaying) {
-    const path = isPlaying ? '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>' : '<path d="M8 5v14l11-7z"/>';
+    const path = isPlaying 
+        ? '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>' 
+        : '<path d="M8 5v14l11-7z"/>';
+    
     DOM.playPauseBtn.querySelector('svg').innerHTML = path;
+
+    // ВАЖНО: Добавляем/убираем класс для CSS коррекции центрирования
+    if (isPlaying) {
+        DOM.playPauseBtn.classList.add('playing');
+    } else {
+        DOM.playPauseBtn.classList.remove('playing');
+    }
 }
 
 export function updateTheme(track) {
