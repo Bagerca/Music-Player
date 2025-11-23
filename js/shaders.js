@@ -211,66 +211,60 @@ export const transitions = {
         `
     },
 
-    // 6. SHATTERED GLASS (Для "Шкатулки")
-    shatteredGlass: {
-        uniforms: { intensity: 0.15 }, // Сила разлета осколков
-        config: { duration: 1.5, ease: "power2.inOut" }, // Медленный, "тяжелый" переход
+    // 7. CLOCKWORK GEARS (Механизм шкатулки)
+    clockworkGears: {
+        uniforms: { intensity: 0.5 },
+        config: { duration: 1.6, ease: "power2.inOut" },
         shader: `
             varying vec2 vUv;
             uniform sampler2D texture1;
             uniform sampler2D texture2;
-            uniform sampler2D disp; // Текстура шума
             uniform float dispFactor;
             uniform float intensity;
 
             void main() {
                 vec2 uv = vUv;
+                vec2 center = vec2(0.5);
+                vec2 rel = uv - center;
                 
-                // 1. Создаем "осколки" (кристаллизация шума)
-                // floor делает плавный шум ступенчатым -> получаются острые грани
-                float noise = texture2D(disp, uv * 0.5).r;
-                float shards = floor(noise * 15.0) / 15.0; 
-
-                // 2. Расчет смещения
-                // Осколки двигаются в разные стороны в зависимости от яркости "осколка"
-                float progress = sin(dispFactor * 3.14);
-                vec2 direction = vec2(cos(shards * 10.0), sin(shards * 10.0));
-                vec2 displacement = direction * intensity * progress;
+                // Переходим в полярные координаты (угол и расстояние)
+                float angle = atan(rel.y, rel.x);
+                float dist = length(rel);
                 
-                // 3. Хроматическая аберрация (Эффект толстого стекла/призмы)
-                // Сдвигаем R, G и B каналы отдельно друг от друга
-                float rgbSplit = 0.02 * progress;
-
-                vec2 uv1 = uv + displacement;
-                vec2 uv2 = uv - displacement; // Вторая текстура едет навстречу
-
-                // Сэмплим первую текстуру (RGB сплит)
-                vec4 t1;
-                t1.r = texture2D(texture1, uv1 + vec2(rgbSplit, 0.0)).r;
-                t1.g = texture2D(texture1, uv1).g;
-                t1.b = texture2D(texture1, uv1 - vec2(rgbSplit, 0.0)).b;
-                t1.a = 1.0;
-
-                // Сэмплим вторую текстуру (RGB сплит)
-                vec4 t2;
-                t2.r = texture2D(texture2, uv2 + vec2(rgbSplit, 0.0)).r;
-                t2.g = texture2D(texture2, uv2).g;
-                t2.b = texture2D(texture2, uv2 - vec2(rgbSplit, 0.0)).b;
-                t2.a = 1.0;
-
-                // 4. Резкая граница перехода (как трещина)
-                // mixVal определяет, какую текстуру показывать в конкретном пикселе
-                // Используем "shards" для неровной границы смены кадров
-                float mixThreshold = smoothstep(dispFactor - 0.2, dispFactor + 0.2, shards);
+                // 1. Создаем кольца (Шестеренки)
+                // floor разбивает радиус на сегменты
+                float rings = floor(dist * 10.0);
                 
-                vec4 color = mix(t1, t2, 1.0 - mixThreshold);
-
-                // 5. Блик на гранях (Glitter)
-                // Добавляем яркости на краях осколков в пике перехода
-                float edge = abs(shards - noise) * 5.0; // Выделяем края
-                float shine = step(0.9, edge) * progress * 0.3; // Только самые острые края блестят
+                // 2. Вращение
+                // Четные кольца крутятся в одну сторону, нечетные — в другую
+                float direction = mod(rings, 2.0) * 2.0 - 1.0; 
                 
-                color.rgb += vec3(shine);
+                // Ускоряем вращение в пике перехода
+                float rotation = dispFactor * intensity * 3.14 * direction;
+                
+                // Добавляем "тиканье" (рывки), если хочется жесткости механизма
+                // rotation = floor(rotation * 10.0) / 10.0; 
+
+                float newAngle = angle + rotation;
+
+                // Возвращаемся в декартовы координаты
+                vec2 twistedUV = center + vec2(cos(newAngle), sin(newAngle)) * dist;
+
+                // 3. Маска перехода (Спиральное открытие)
+                // Картинка меняется не прозрачностью, а как диафрагма фотоаппарата или стрелка часов
+                float angleNorm = (angle + 3.14) / (2.0 * 3.14); // Нормализуем угол от 0 до 1
+                // Смещаем порог перехода в зависимости от угла, создавая эффект "заметания"
+                float mask = step(dist, dispFactor * 1.4); 
+
+                vec4 t1 = texture2D(texture1, twistedUV);
+                vec4 t2 = texture2D(texture2, twistedUV);
+
+                // Добавляем металлического блеска на стыках колец
+                float ringEdge = abs(fract(dist * 10.0) - 0.5);
+                float shine = smoothstep(0.45, 0.48, ringEdge) * sin(dispFactor * 3.14) * 0.5;
+
+                vec4 color = mix(t1, t2, mask);
+                color.rgb += shine;
 
                 gl_FragColor = color;
             }
