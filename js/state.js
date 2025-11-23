@@ -1,3 +1,26 @@
+// Вспомогательная функция для очистки "мертвых" ссылок при загрузке
+function loadSanitizedPlaylists() {
+    const raw = localStorage.getItem('myUserPlaylists');
+    if (!raw) return {};
+
+    try {
+        const playlists = JSON.parse(raw);
+        const sanitized = {};
+
+        // Проходим по всем плейлистам
+        Object.keys(playlists).forEach(key => {
+            // Оставляем только те треки, которые НЕ начинаются на 'blob:'
+            // blob: - это временные ссылки загруженных файлов
+            sanitized[key] = playlists[key].filter(track => !track.path.startsWith('blob:'));
+        });
+
+        return sanitized;
+    } catch (e) {
+        console.error("Ошибка чтения плейлистов", e);
+        return {};
+    }
+}
+
 // Центральное хранилище состояния
 export const state = {
     // ВОСПРОИЗВЕДЕНИЕ (То, что реально играет в наушниках)
@@ -21,7 +44,10 @@ export const state = {
     },
     
     // ДАННЫЕ
-    userPlaylists: JSON.parse(localStorage.getItem('myUserPlaylists')) || {},
+    // Теперь загружаем через функцию очистки
+    userPlaylists: loadSanitizedPlaylists(),
+    
+    // Загруженные треки всегда пустые при старте, так как файлы не сохраняются между сессиями
     uploadedTracks: [],
     
     // ВРЕМЕННЫЕ
