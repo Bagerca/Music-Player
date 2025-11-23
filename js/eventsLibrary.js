@@ -354,7 +354,7 @@ export const stageEffects = {
     overlayWalking3: {
         html: `
             <div class="horror-img-container">
-                <img src="picture/Walking2_to I'm not a human.gif" class="horror-img walking-anim" alt="walking">
+                <img src="picture/Walking3_to I'm not a human.gif" class="horror-img walking-anim" alt="walking">
                 <div class="vignette-overlay"></div>
             </div>
         `,
