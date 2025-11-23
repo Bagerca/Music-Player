@@ -1,4 +1,6 @@
-// === ЭФФЕКТ: ALASTOR RADIO (REWORKED) ===
+export const stageEffects = {
+    
+    // === ЭФФЕКТ: ALASTOR RADIO (REWORKED) ===
     radioDial: {
         // 1. HTML: Винтажный корпус, шкала, стрелка и скрытая улыбка
         html: `
@@ -275,4 +277,5 @@
                 instance.smile.style.opacity = Math.max(0, currentOp - 0.05);
             }
         }
-    },
+    }
+};
