@@ -507,6 +507,7 @@ const defaultPlaylists = {
         getTrack("Feeling Good")
     ].filter(Boolean),
     "Для Ксю": [
+        getTrack("Шкатулка 8D Remix"), 
         getTrack("Spend The Night Alone"), 
         getTrack("Rest in Ink"), 
         getTrack("Katana"), 
