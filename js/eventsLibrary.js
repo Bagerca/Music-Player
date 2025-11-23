@@ -1,6 +1,6 @@
 export const stageEffects = {
     
-    // === ЭФФЕКТ 1: ALASTOR RADIO (FINAL BLURRED & SHIVER VERSION) ===
+    // === ЭФФЕКТ 1: ALASTOR RADIO (FINAL BLURRED VERSION) ===
     radioDial: {
         // 1. HTML
         html: `
@@ -205,21 +205,21 @@ export const stageEffects = {
             instance.smoothedSignal = 0; 
         },
 
-        // 4. UPDATE (TWEAKED PHYSICS)
+        // 4. UPDATE (PHYSICS)
         update: (instance, features) => {
             if (!instance.pivot) return;
 
-            // --- 1. ЧУВСТВИТЕЛЬНОСТЬ (SENSITIVITY) ---
+            // --- 1. ЧУВСТВИТЕЛЬНОСТЬ ---
             // Множители: RMS 1.2 (для громкости) + Bass 0.35 (для ударов)
             let rawInput = (features.rms * 1.2) + (features.bassEnergy * 0.35);
             
-            // Сглаживание входящего сигнала (Инерция)
+            // Сглаживание
             instance.smoothedSignal += (rawInput - instance.smoothedSignal) * 0.1;
 
             // --- 2. РАСЧЕТ УГЛА ---
             let targetAngle = -45 + (instance.smoothedSignal * 90);
             
-            // Лимиты (Clamp)
+            // Лимиты
             if (targetAngle < -46) targetAngle = -46;
             if (targetAngle > 48) targetAngle = 48; 
 
@@ -232,8 +232,7 @@ export const stageEffects = {
             instance.velocity *= damping;
             instance.angle += instance.velocity;
 
-            // --- 4. ТРЯСКА (VIBRATION/SHIVER) ---
-            // Дрожание лево-вправо пропорционально громкости
+            // --- 4. ТРЯСКА ---
             const shiver = (Math.random() - 0.5) * (1 + features.rms * 5);
             const finalAngle = instance.angle + shiver;
 
@@ -258,82 +257,75 @@ export const stageEffects = {
         }
     },
 
-    // === ЭФФЕКТ 2: ВУДУ СКРИМЕР (1 СЕКУНДА) ===
-    voodooFlash: {
+    // === ЭФФЕКТ 2: REALITY BREAK (СИСТЕМНЫЙ СБОЙ - 1 СЕКУНДА) ===
+    realityBreak: {
         html: `
-            <div class="voodoo-overlay">
-                <!-- Фон с помехами -->
-                <div class="static-bg"></div>
-                
-                <!-- Центральный символ (Глаз-микрофон) -->
-                <div class="voodoo-symbol">
-                    <svg viewBox="0 0 100 100">
-                        <!-- Внешнее кольцо -->
-                        <circle cx="50" cy="50" r="45" fill="none" stroke="#39ff14" stroke-width="2" stroke-dasharray="5,5" />
-                        <!-- Глаз -->
-                        <path d="M10,50 Q50,10 90,50 Q50,90 10,50" fill="#000" stroke="#39ff14" stroke-width="3" />
-                        <circle cx="50" cy="50" r="15" fill="#ff0000" />
-                        <!-- Зрачок -->
-                        <rect x="48" y="35" width="4" height="30" fill="#000" />
-                        <!-- X символы -->
-                        <text x="20" y="80" fill="#ff0000" font-family="monospace" font-size="20">X</text>
-                        <text x="70" y="80" fill="#ff0000" font-family="monospace" font-size="20">X</text>
-                    </svg>
-                </div>
-                
-                <!-- Текст -->
-                <div class="glitch-text">HAHAHA</div>
+            <div class="glitch-overlay">
+                <div class="glitch-flash"></div>
+                <div class="glitch-scanlines"></div>
             </div>
         `,
         css: `
-            .voodoo-overlay {
+            /* Контейнер перекрывает всё */
+            .glitch-overlay {
                 position: absolute; inset: 0;
-                background: #000;
-                z-index: 100; /* Перекрывает всё */
-                display: flex; justify-content: center; align-items: center;
-                overflow: hidden;
-                /* Эффект инверсии цветов для жути */
-                mix-blend-mode: hard-light;
-            }
-
-            .static-bg {
-                position: absolute; inset: -50%; width: 200%; height: 200%;
-                background: url('data:image/svg+xml;utf8,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="n"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="1.5" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23n)" opacity="0.4"/%3E%3C/svg%3E');
-                animation: staticMove 0.1s steps(4) infinite;
-                opacity: 0.3;
-            }
-            @keyframes staticMove { 0% {transform:translate(0,0)} 100% {transform:translate(20px,-20px)} }
-
-            .voodoo-symbol {
-                position: relative; width: 300px; height: 300px;
-                filter: drop-shadow(0 0 20px #39ff14);
-                animation: symbolShake 0.1s infinite;
-            }
-            .voodoo-symbol svg { width: 100%; height: 100%; overflow: visible; }
-
-            @keyframes symbolShake {
-                0% { transform: scale(1) rotate(0deg); }
-                25% { transform: scale(1.1) rotate(5deg); }
-                50% { transform: scale(0.9) rotate(-5deg); }
-                75% { transform: scale(1.05) rotate(2deg); }
-                100% { transform: scale(1) rotate(0deg); }
-            }
-
-            .glitch-text {
-                position: absolute;
-                font-family: 'Courier New', monospace; font-weight: 900; font-size: 100px;
-                color: rgba(255, 0, 0, 0.2);
-                letter-spacing: 20px;
-                animation: textFlash 0.15s infinite;
+                z-index: 9999;
                 pointer-events: none;
+                overflow: hidden;
+                mix-blend-mode: exclusion; /* Агрессивный режим смешивания цветов */
             }
-            @keyframes textFlash {
-                0% { opacity: 0; transform: scale(2); }
-                50% { opacity: 1; transform: scale(1.5); }
-                100% { opacity: 0; transform: scale(2); }
+
+            /* Белая вспышка -> Инверсия */
+            .glitch-flash {
+                position: absolute; inset: 0;
+                background: #fff;
+                opacity: 0;
+                animation: flashBang 0.6s cubic-bezier(0.1, 0.9, 0.2, 1) forwards;
+            }
+
+            @keyframes flashBang {
+                0% { opacity: 1; background: #ff0000; } /* Красная вспышка */
+                10% { opacity: 1; background: #fff; filter: invert(1); } /* Инверсия */
+                20% { opacity: 0.5; transform: scale(1.1) translateX(-10px); }
+                40% { opacity: 0.2; background: #00ff00; mix-blend-mode: color-dodge; }
+                100% { opacity: 0; }
+            }
+
+            /* Полосы сканирования */
+            .glitch-scanlines {
+                position: absolute; inset: 0;
+                background: repeating-linear-gradient(
+                    0deg,
+                    transparent 0px,
+                    transparent 2px,
+                    rgba(255, 0, 0, 0.5) 3px,
+                    rgba(0, 0, 255, 0.5) 4px
+                );
+                background-size: 100% 4px;
+                animation: scanTrash 0.4s steps(5) infinite;
+                opacity: 0.8;
+            }
+
+            @keyframes scanTrash {
+                0% { transform: translateY(0); }
+                100% { transform: translateY(100px); }
+            }
+
+            /* Искажение цветов на фоне */
+            .glitch-overlay::before {
+                content: '';
+                position: absolute; inset: 0;
+                backdrop-filter: hue-rotate(90deg) blur(2px) contrast(200%);
+                animation: hueSnap 0.6s forwards;
+            }
+
+            @keyframes hueSnap {
+                0% { opacity: 1; backdrop-filter: hue-rotate(0deg) invert(1); }
+                20% { opacity: 1; backdrop-filter: hue-rotate(180deg) blur(4px); }
+                100% { opacity: 0; }
             }
         `,
-        init: () => {}, // Логика не нужна, только CSS анимация
+        init: () => {}, // Логика JS не нужна, все делает CSS
         update: () => {}
     }
 };
