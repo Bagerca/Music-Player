@@ -258,9 +258,9 @@ body.lite-mode .player-container { box-shadow: 0 0 25px var(--accent-color), 0 2
     transition: transform 0.2s ease; /* Плавный переход при смене */
 }
 
-/* Состояние: Музыка НЕ играет (треугольник Play) -> сдвиг ВЛЕВО для оптического центра */
+/* Состояние: Музыка НЕ играет (треугольник Play) */
 .play-pause-btn:not(.playing) svg {
-    transform: translateX(-1px); 
+    transform: translateX(0px); 
 }
 
 /* Состояние: Музыка играет (палочки Pause) -> строго по центру */
