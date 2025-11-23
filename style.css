@@ -107,6 +107,20 @@ body.lite-mode .player-container { box-shadow: 0 0 25px var(--accent-color), 0 2
 .icon-btn:hover svg { transform: scale(1.15); filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.5)); }
 .icon-btn.delete:hover { background: rgba(255, 50, 50, 0.2); color: #ff5555; }
 
+/* СТИЛИ ДЛЯ ВЫКЛЮЧЕННОГО ЗВУКА */
+#muteBtn.muted {
+    color: #ff5555; /* Красный оттенок */
+}
+#muteBtn.muted:hover {
+    background: rgba(255, 85, 85, 0.15); /* Красноватый фон при наведении */
+    color: #ff5555;
+}
+#muteBtn.muted:hover svg {
+    /* Красное свечение вместо белого */
+    filter: drop-shadow(0 0 8px rgba(255, 85, 85, 0.8));
+    transform: scale(1.15);
+}
+
 /* КАСТОМНЫЙ СЕЛЕКТОР */
 .custom-select-wrapper { position: relative; user-select: none; margin-bottom: 15px; z-index: 50; }
 .custom-select { position: relative; display: flex; flex-direction: column; outline: none; }
