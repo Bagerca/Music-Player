@@ -1,6 +1,7 @@
 export const stageEffects = {
     
     // === ЭФФЕКТ 1: ALASTOR RADIO (FINAL BLURRED VERSION) ===
+    // Используется для основной части трека
     radioDial: {
         // 1. HTML
         html: `
@@ -70,7 +71,7 @@ export const stageEffects = {
 
             @keyframes fadeInEvent { to { opacity: 1; } }
 
-            /* Класс для плавного исчезновения (добавляется JS-ом) */
+            /* Класс для плавного исчезновения (добавляется JS-ом в stageManager) */
             .alastor-overlay-container.fade-out-event {
                 opacity: 1;
                 animation: fadeOutEvent 1.5s ease forwards !important;
@@ -257,85 +258,104 @@ export const stageEffects = {
         }
     },
 
-    // === ЭФФЕКТ 2: ANALOG BURN (СГОРЕВШАЯ ПЛЕНКА - 1 СЕКУНДА) ===
+    // === ЭФФЕКТ 2: DEMONIC SIGNAL HIJACK (ПЕРЕГРУЗКА ЛАМП - 1 СЕКУНДА) ===
+    // Используется для момента 1:21
     analogBurn: {
         html: `
-            <div class="analog-overlay">
-                <!-- Слой зерна и царапин -->
-                <div class="film-scratches"></div>
-                <!-- Эффект плавления пленки (дыра) -->
-                <div class="burn-hole"></div>
-                <!-- Вспышка проектора -->
-                <div class="projector-flash"></div>
+            <div class="signal-hijack-overlay">
+                <!-- Красная заливка (Перегрузка) -->
+                <div class="flood-red"></div>
+                
+                <!-- Осциллограмма (Звуковая волна) -->
+                <div class="freq-line"></div>
+                <div class="freq-line-shadow"></div>
+                
+                <!-- Горизонтальные помехи -->
+                <div class="scanline-tear"></div>
             </div>
         `,
         css: `
-            .analog-overlay {
+            .signal-hijack-overlay {
                 position: absolute; inset: 0;
                 z-index: 9999;
                 pointer-events: none;
                 overflow: hidden;
-                /* Принудительная сепия и контраст для всего, что под низом */
-                backdrop-filter: sepia(100%) contrast(150%) blur(1px);
-                mix-blend-mode: hard-light;
-                animation: reelJump 0.8s steps(5) forwards;
+                /* Превращаем всё в черно-белое с жестким контрастом */
+                backdrop-filter: grayscale(100%) contrast(200%) brightness(0.8);
+                /* Анимация схлопывания экрана (CRT OFF/ON) */
+                animation: crtCollapse 0.8s cubic-bezier(0.1, 0.9, 0.2, 1) forwards;
             }
 
-            /* Эмуляция срыва пленки (кадр прыгает) */
-            @keyframes reelJump {
-                0% { transform: translateY(0); }
-                20% { transform: translateY(-50px) scale(1.05); }
-                40% { transform: translateY(30px) translateX(10px); }
-                60% { transform: translateY(-20px) rotate(2deg); }
-                80% { transform: translateY(0) scale(1.1); }
-                100% { transform: scale(1); opacity: 0; }
+            /* Анимация выключения и включения старого ТВ */
+            @keyframes crtCollapse {
+                0% { transform: scaleY(1) scaleX(1); filter: blur(0px); }
+                10% { transform: scaleY(0.02) scaleX(1.1); filter: blur(2px); background: #000; } /* Схлопнулось */
+                20% { transform: scaleY(0.02) scaleX(0); background: #fff; } /* Исчезло в точку */
+                30% { transform: scaleY(0.02) scaleX(1.2); background: #500; } /* Растянулось линией */
+                50% { transform: scaleY(1.1) scaleX(1); background: transparent; } /* Раскрылось с перехлестом */
+                100% { transform: scaleY(1) scaleX(1); }
             }
 
-            /* Царапины и грязь */
-            .film-scratches {
-                position: absolute; inset: -50%; width: 200%; height: 200%;
-                background-image: repeating-linear-gradient(90deg, 
-                    transparent 0px, 
-                    transparent 200px, 
-                    rgba(0,0,0,0.8) 201px, 
-                    transparent 202px
-                );
-                opacity: 0.7;
-                animation: scratchMove 0.1s infinite;
-            }
-            @keyframes scratchMove {
-                0% { transform: translateX(0); }
-                100% { transform: translateX(100px); }
-            }
-
-            /* Эффект прожженной дыры */
-            .burn-hole {
+            /* Кровавая заливка */
+            .flood-red {
                 position: absolute; inset: 0;
-                background: radial-gradient(circle, transparent 20%, #8b0000 40%, #000 90%);
+                background: #ff0000;
                 opacity: 0;
-                mix-blend-mode: multiply;
-                animation: burnExpand 0.6s cubic-bezier(0.1, 0.9, 0.2, 1) forwards;
-            }
-            
-            @keyframes burnExpand {
-                0% { opacity: 0; transform: scale(0.5); }
-                10% { opacity: 1; transform: scale(0.8); }
-                50% { opacity: 0.8; transform: scale(1.5); background: radial-gradient(circle, transparent 10%, #ff0000 30%, #000 90%); }
-                100% { opacity: 0; transform: scale(2); }
+                mix-blend-mode: hard-light; /* Жесткое смешивание */
+                animation: redPulse 0.8s forwards;
             }
 
-            /* Моргание лампы проектора */
-            .projector-flash {
-                position: absolute; inset: 0;
-                background: #fff;
-                opacity: 0;
-                mix-blend-mode: overlay;
-                animation: strobe 0.1s infinite;
-            }
-            @keyframes strobe {
+            @keyframes redPulse {
                 0% { opacity: 0; }
-                50% { opacity: 0.4; }
+                30% { opacity: 0.8; } /* Пик красного на раскрытии */
                 100% { opacity: 0; }
+            }
+
+            /* Линия осциллографа (Голос демона) */
+            .freq-line {
+                position: absolute; top: 50%; left: 0; width: 100%; height: 100px;
+                transform: translateY(-50%);
+                background: repeating-linear-gradient(90deg, 
+                    transparent 0%, 
+                    transparent 49%, 
+                    #fff 50%, 
+                    transparent 51%
+                );
+                background-size: 10px 100%; /* Частота полос */
+                clip-path: polygon(0% 40%, 10% 60%, 20% 10%, 30% 90%, 40% 40%, 50% 60%, 60% 20%, 70% 80%, 80% 40%, 90% 60%, 100% 50%, 100% 100%, 0% 100%);
+                opacity: 0;
+                animation: waveFlash 0.4s 0.2s linear forwards; /* Задержка 0.2с */
+                mix-blend-mode: difference;
+            }
+
+            .freq-line-shadow {
+                position: absolute; top: 50%; left: 2px; width: 100%; height: 100px;
+                transform: translateY(-50%);
+                background: #00ffff; /* Глич-тень (циан) */
+                clip-path: polygon(0% 40%, 10% 60%, 20% 10%, 30% 90%, 40% 40%, 50% 60%, 60% 20%, 70% 80%, 80% 40%, 90% 60%, 100% 50%, 100% 100%, 0% 100%);
+                opacity: 0;
+                animation: waveFlash 0.4s 0.25s linear forwards;
+                mix-blend-mode: exclusion;
+            }
+
+            @keyframes waveFlash {
+                0% { opacity: 0; transform: translateY(-50%) scaleX(1.5); }
+                20% { opacity: 1; transform: translateY(-50%) scaleX(1); }
+                100% { opacity: 0; transform: translateY(-50%) scaleX(2); }
+            }
+
+            /* Горизонтальный разрыв картинки */
+            .scanline-tear {
+                position: absolute; top: 0; left: 0; width: 100%; height: 5px;
+                background: #fff;
+                opacity: 0.8;
+                box-shadow: 0 0 20px #fff;
+                animation: scanDrop 0.8s ease-out forwards;
+            }
+            @keyframes scanDrop {
+                0% { top: 0; opacity: 1; height: 20px; }
+                50% { top: 50%; opacity: 1; height: 2px; background: #ff0000; box-shadow: 0 0 50px #ff0000; }
+                100% { top: 100%; opacity: 0; height: 0px; }
             }
         `,
         init: () => {},
