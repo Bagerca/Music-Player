@@ -172,67 +172,92 @@
         </div>
     </div>
 
-    <!-- МОДАЛКА ЗАГРУЗКИ ТРЕКА (ОБНОВЛЕННАЯ) -->
+    <!-- МОДАЛКА ЗАГРУЗКИ (PRO VERSION) -->
     <div id="uploadModal" class="modal-overlay">
-        <div class="modal upload-modal">
-            <h3>Загрузка трека</h3>
-            
-            <div class="upload-layout">
-                <!-- ЛЕВАЯ КОЛОНКА: ОБЛОЖКА -->
-                <div class="upload-left">
-                    <div class="cover-preview-container" id="coverPreviewBox">
-                        <img id="coverPreviewImg" src="" alt="" style="display: none;">
-                        <div class="cover-placeholder">
-                            <svg viewBox="0 0 24 24"><path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5.04-6.71l-2.75 3.54-1.96-2.36L6.5 17h11l-3.54-4.71z"/></svg>
-                            <span>Обложка</span>
+        <div class="modal upload-modal-pro">
+            <div class="modal-header">
+                <h3>Добавить трек</h3>
+                <div class="modal-subtitle">Заполните метаданные и настройте визуал</div>
+            </div>
+
+            <div class="upload-grid">
+                <!-- ЛЕВАЯ КОЛОНКА: ЖИВОЙ ПРЕДПРОСМОТР -->
+                <div class="preview-column">
+                    <div class="preview-label">Предпросмотр в списке</div>
+                    
+                    <!-- Карточка-превью, которая меняется в реальном времени -->
+                    <div class="live-track-card" id="livePreviewCard">
+                        <div class="live-cover" id="livePreviewCover">
+                            <!-- Заглушка иконки -->
+                            <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+                        </div>
+                        <div class="live-info">
+                            <div class="live-title" id="livePreviewTitle">Название трека</div>
+                            <div class="live-artist" id="livePreviewArtist">Исполнитель</div>
+                        </div>
+                        <div class="live-anim">
+                            <span></span><span></span><span></span>
                         </div>
                     </div>
-                    <!-- Скрытый инпут, кликаем по превью чтобы открыть -->
-                    <input type="file" id="upCoverFile" accept="image/*" style="display: none;">
-                    <button class="upload-cover-btn" id="uploadCoverBtn">Выбрать изображение</button>
+
+                    <!-- Блок загрузки обложки -->
+                    <div class="cover-upload-area" id="coverUploadArea">
+                        <input type="file" id="upCoverFile" accept="image/*" hidden>
+                        <div class="upload-icon">
+                            <svg viewBox="0 0 24 24"><path fill="currentColor" d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+                        </div>
+                        <span>Загрузить обложку</span>
+                        <small>или перетащите сюда</small>
+                    </div>
                 </div>
 
-                <!-- ПРАВАЯ КОЛОНКА: ДАННЫЕ -->
-                <div class="upload-right">
-                    <div class="form-group">
-                        <label>Аудиофайл</label>
-                        <div class="file-name-display" id="uploadFileName">Файл не выбран</div>
+                <!-- ПРАВАЯ КОЛОНКА: ДАННЫЕ И НАСТРОЙКИ -->
+                <div class="inputs-column">
+                    
+                    <!-- Зона файла (отображение выбранного) -->
+                    <div class="audio-file-badge">
+                        <div class="file-icon">🎵</div>
+                        <div class="file-info-text">
+                            <span class="file-label">Аудиофайл</span>
+                            <span class="file-name" id="uploadFileName">song.mp3</span>
+                        </div>
+                        <button class="change-file-btn" onclick="document.getElementById('fileInput').click()">Change</button>
                     </div>
 
-                    <div class="form-group stylish-input">
-                        <input type="text" id="upTitle" placeholder=" " required>
-                        <label class="floating-label">Название трека</label>
+                    <div class="input-group">
+                        <label>Основная информация</label>
+                        <input type="text" id="upTitle" class="pro-input" placeholder="Название трека">
+                        <input type="text" id="upArtist" class="pro-input" placeholder="Исполнитель">
                     </div>
 
-                    <div class="form-group stylish-input">
-                        <input type="text" id="upArtist" placeholder=" " value="Unknown Artist">
-                        <label class="floating-label">Исполнитель</label>
+                    <div class="input-group">
+                        <div class="label-row">
+                            <label>Цветовая схема</label>
+                            <span class="auto-tag" id="autoColorBadge" style="display:none">✨ Auto-detected</span>
+                        </div>
+                        
+                        <div class="color-pickers-row">
+                            <div class="color-control">
+                                <input type="color" id="upColorBg" value="#1a1a2e">
+                                <div class="color-swatch" id="swatchBg" style="background: #1a1a2e"></div>
+                                <span>Фон</span>
+                            </div>
+                            <div class="color-control">
+                                <input type="color" id="upColorAccent" value="#00d1ff">
+                                <div class="color-swatch" id="swatchAccent" style="background: #00d1ff; box-shadow: 0 0 10px #00d1ff;"></div>
+                                <span>Акцент</span>
+                            </div>
+                            <button id="randomColorsBtn" class="dice-btn" title="Случайные цвета">🎲</button>
+                        </div>
                     </div>
                     
-                    <div class="form-group stylish-input small-margin">
-                        <input type="text" id="upCoverUrl" placeholder=" ">
-                        <label class="floating-label">Или ссылка на картинку (URL)</label>
-                    </div>
-
-                    <label style="margin-top: 10px; display:block; font-size:12px; opacity:0.7;">Оформление</label>
-                    <div class="color-settings">
-                        <div class="color-input-group">
-                            <span>Фон</span>
-                            <input type="color" id="upColorBg" value="#1a1a2e">
-                        </div>
-                        <div class="color-input-group">
-                            <span>Акцент</span>
-                            <input type="color" id="upColorAccent" value="#00d1ff">
-                        </div>
-                        <div class="auto-color-badge" id="autoColorBadge" style="display: none;">✨ Auto</div>
-                        <button id="randomColorsBtn" class="modal-btn small">🎲 Random</button>
-                    </div>
+                    <input type="text" id="upCoverUrl" class="pro-input small" placeholder="Или ссылка на обложку (URL)">
                 </div>
             </div>
 
-            <div class="modal-buttons">
-                <button id="cancelUploadBtn" class="modal-btn cancel">Отмена</button>
-                <button id="saveUploadBtn" class="modal-btn confirm">Сохранить</button>
+            <div class="modal-footer">
+                <button id="cancelUploadBtn" class="footer-btn secondary">Отмена</button>
+                <button id="saveUploadBtn" class="footer-btn primary">Добавить в библиотеку</button>
             </div>
         </div>
     </div>
