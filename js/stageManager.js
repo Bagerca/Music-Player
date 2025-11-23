@@ -1,16 +1,17 @@
 import { stageEffects } from './eventsLibrary.js';
 
 // Таймлайн: Когда что включать
-// Время в секундах (1:20 = 80с, 1:45 = 105с, 2:42 = 162с)
+// 1:21 = 81.0с
 export const trackTimeline = {
     "Alastor's Game": [
-        // Первое появление (Радио соло)
+        // Радио часть 1
         { start: 47.0, end: 66.0, effect: 'radioDial' },
         
-        // Вуду Скример (1 секунда)
-        { start: 80.0, end: 81.0, effect: 'voodooFlash' },
-
-        // Второе появление (Финальная часть)
+        // === REALITY BREAK (УДАР НА 1:21) ===
+        // Длится всего 0.8 секунды
+        { start: 81.0, end: 81.8, effect: 'realityBreak' },
+        
+        // Радио часть 2
         { start: 105.0, end: 162.0, effect: 'radioDial' }
     ]
 };
@@ -87,8 +88,8 @@ function unmountEvent(id) {
     const instance = activeEvents.get(id);
     if (!instance) return;
 
-    // === ИСПРАВЛЕНИЕ МЕРЦАНИЯ ===
-    // Если уже исчезаем, выходим и даем таймеру завершить работу
+    // === ЛОГИКА ПЛАВНОГО ВЫХОДА ===
+    // Если мы уже запустили процесс исчезновения (isFadingOut = true), выходим.
     if (instance.isFadingOut) return;
 
     // Если элемент существует и еще не начал исчезать
@@ -97,8 +98,8 @@ function unmountEvent(id) {
         const alastorContainer = instance.wrapper.querySelector('.alastor-overlay-container');
         
         if (alastorContainer) {
-            instance.isFadingOut = true; // Блокируем повторный вызов
-            alastorContainer.classList.add('fade-out-event'); // CSS анимация
+            instance.isFadingOut = true; // Блокируем
+            alastorContainer.classList.add('fade-out-event'); // Запускаем анимацию CSS
             
             // Ждем окончания анимации (1.4 сек), потом удаляем физически
             setTimeout(() => {
@@ -109,7 +110,7 @@ function unmountEvent(id) {
         }
     }
 
-    // Для остальных эффектов (скример и т.д.) - удаляем сразу
+    // Для эффектов без плавного выхода (например, glitch) - удаляем сразу
     removeInstanceComplete(id, instance);
 }
 
@@ -122,7 +123,7 @@ function removeInstanceComplete(id, instance) {
 
 export function cleanupAllEvents() {
     if (activeEvents.size > 0) {
-        // При полной очистке удаляем всё мгновенно
+        // При полной очистке (смена трека, стоп) удаляем всё мгновенно
         Array.from(activeEvents.keys()).forEach(id => {
             const instance = activeEvents.get(id);
             if (instance) removeInstanceComplete(id, instance);
