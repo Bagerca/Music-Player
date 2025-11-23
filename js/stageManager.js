@@ -19,6 +19,9 @@ export const trackTimeline = {
         // Зубы (0:43.8 - 0:53.1)
         { start: 43.8, end: 53.1, effect: 'overlayTeeth' },
         
+        // Walking (0:53.1 - 1:14.7)
+        { start: 53.1, end: 74.7, effect: 'overlayWalking' },
+        
         // Глаза (1:55.6 - 2:05.2)
         { start: 115.6, end: 125.2, effect: 'overlayEyes' },
         
