@@ -177,6 +177,7 @@ export const library = [
         path: 'audio/The_Living_Tombstone_Alastors_Game.mp3', 
         colors: { primary: '#1c0000', secondary: '#4a0000', accent: '#ff1f1f' }, 
         cover: 'picture/Alastors_Game.jpg', 
+        effect: 'radio', 
         visualizer: ['#ff1f1f', '#ff4d4d', '#cc0000', '#990000', '#6b0000'], 
         neonColor: '#ff1f1f' 
     },
