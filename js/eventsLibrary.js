@@ -247,7 +247,6 @@ export const stageEffects = {
         `,
         update: (instance, features) => {
             if(instance.img) {
-                // Если удар бита - чуть увеличиваем яркость
                 const opacity = 0.6 + (features.bassEnergy * 0.4);
                 instance.img.style.opacity = opacity;
             }
@@ -257,7 +256,54 @@ export const stageEffects = {
         }
     },
 
-    // === ЭФФЕКТ 4: УЖАС (EYES) ===
+    // === ЭФФЕКТ 4: WALKING (NEW) ===
+    overlayWalking: {
+        html: `
+            <div class="horror-img-container">
+                <img src="picture/walking_no i'm not a human (1).gif" class="horror-img walking-anim" alt="walking">
+                <div class="vignette-overlay"></div>
+            </div>
+        `,
+        css: `
+            .horror-img-container {
+                position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+                display: flex; justify-content: center; align-items: center;
+                pointer-events: none;
+                z-index: 5;
+                animation: fadeInHorror 1s ease-out forwards;
+            }
+            .horror-img {
+                width: 100%; height: 100%;
+                object-fit: cover;
+            }
+            .walking-anim {
+                opacity: 0.6;
+                filter: sepia(0.5) contrast(1.1); /* Эффект старой записи */
+                animation: panLeft 20s linear forwards;
+            }
+            .vignette-overlay {
+                position: absolute; inset: 0;
+                background: radial-gradient(circle, transparent 40%, #000 95%);
+            }
+            @keyframes fadeInHorror { from { opacity: 0; } to { opacity: 1; } }
+            @keyframes panLeft { 
+                from { transform: scale(1.1) translateX(10px); } 
+                to { transform: scale(1.2) translateX(-10px); } 
+            }
+        `,
+        update: (instance, features) => {
+            if(instance.img) {
+                // Мерцание на битах
+                const flicker = 0.6 + (features.bassEnergy * 0.2);
+                instance.img.style.opacity = flicker;
+            }
+        },
+        init: (instance) => {
+            instance.img = document.querySelector('.walking-anim');
+        }
+    },
+
+    // === ЭФФЕКТ 5: УЖАС (EYES) ===
     overlayEyes: {
         html: `
             <div class="horror-img-container">
@@ -284,7 +330,6 @@ export const stageEffects = {
         `,
         update: (instance, features) => {
             if(instance.img) {
-                // Глаза дрожат от высоких частот
                 const shake = (features.highEnergy * 10) - 2;
                 if (shake > 0) {
                      instance.img.style.transform = `scale(1.1) translate(${Math.random()*5}px, ${Math.random()*5}px)`;
@@ -294,7 +339,7 @@ export const stageEffects = {
         init: (instance) => { instance.img = document.querySelector('.horror-img'); }
     },
 
-    // === ЭФФЕКТ 5: СОЛЯНКА (FINAL CHECK) ===
+    // === ЭФФЕКТ 6: СОЛЯНКА (FINAL CHECK) ===
     overlayCheck: {
         html: `
             <div class="horror-img-container">
@@ -318,7 +363,6 @@ export const stageEffects = {
             @keyframes fadeInHorror { from { opacity: 0; } to { opacity: 1; } }
         `,
         update: (instance, features) => {
-            // Сильная пульсация в конце
             if(instance.img) {
                 const scale = 1 + (features.bassEnergy * 0.1);
                 instance.img.style.transform = `scale(${scale})`;
