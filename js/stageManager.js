@@ -1,9 +1,14 @@
 import { stageEffects } from './eventsLibrary.js';
 
 // Таймлайн: Когда что включать
+// Время в секундах (1:45 = 105с, 2:42 = 162с)
 export const trackTimeline = {
     "Alastor's Game": [
-        { start: 47.0, end: 66.0, effect: 'radioDial' }
+        // Первое появление (Радио соло)
+        { start: 47.0, end: 66.0, effect: 'radioDial' },
+        
+        // Второе появление (Финальная часть)
+        { start: 105.0, end: 162.0, effect: 'radioDial' }
     ]
 };
 
@@ -20,6 +25,7 @@ export function checkStageEvents(trackName, currentTime, features) {
     }
 
     trackEvents.forEach((event, index) => {
+        // Уникальный ID для каждого отрезка времени
         const eventId = `${trackName}-${index}`;
         const effectDef = stageEffects[event.effect];
 
@@ -31,10 +37,12 @@ export function checkStageEvents(trackName, currentTime, features) {
                 mountEvent(eventId, effectDef);
             }
             const instance = activeEvents.get(eventId);
-            if (effectDef.update && instance) {
+            // Если событие уже в процессе исчезновения, не обновляем его
+            if (effectDef.update && instance && !instance.isFadingOut) {
                 effectDef.update(instance.data, features);
             }
         } else {
+            // Время вышло, пора удалять
             if (activeEvents.has(eventId)) {
                 unmountEvent(eventId);
             }
@@ -61,26 +69,60 @@ function mountEvent(id, def) {
 
     const instanceData = {};
     if (def.init) {
+        // requestAnimationFrame гарантирует, что DOM уже отрисован перед init
         requestAnimationFrame(() => def.init(instanceData));
     }
 
-    activeEvents.set(id, { wrapper, styleEl, data: instanceData });
+    activeEvents.set(id, { 
+        wrapper, 
+        styleEl, 
+        data: instanceData,
+        isFadingOut: false // Флаг для контроля анимации выхода
+    });
 }
 
 function unmountEvent(id) {
     const instance = activeEvents.get(id);
     if (!instance) return;
 
+    // Плавное удаление:
+    // Если элемент существует и еще не начал исчезать
+    if (instance.wrapper && !instance.isFadingOut) {
+        // Проверяем, поддерживает ли эффект плавный выход
+        // (Ищем контейнер специфичного эффекта Радио)
+        const alastorContainer = instance.wrapper.querySelector('.alastor-overlay-container');
+        
+        if (alastorContainer) {
+            instance.isFadingOut = true; // Блокируем обновления
+            alastorContainer.classList.add('fade-out-event'); // Запускаем CSS анимацию
+            
+            // Ждем окончания анимации (1.4 сек), потом удаляем физически
+            setTimeout(() => {
+                removeInstanceComplete(id, instance);
+            }, 1400);
+            
+            return; // Прерываем немедленное удаление
+        }
+    }
+
+    // Если плавный выход не нужен или не поддерживается — удаляем сразу
+    removeInstanceComplete(id, instance);
+}
+
+// Вспомогательная функция окончательного удаления
+function removeInstanceComplete(id, instance) {
     if (instance.wrapper) instance.wrapper.remove();
     if (instance.styleEl) instance.styleEl.remove();
-
     activeEvents.delete(id);
 }
 
 export function cleanupAllEvents() {
     if (activeEvents.size > 0) {
-        // Создаем копию ключей, чтобы безопасно удалять во время перебора
-        Array.from(activeEvents.keys()).forEach(id => unmountEvent(id));
+        // При полной очистке (смена трека, стоп) удаляем всё мгновенно без анимаций
+        Array.from(activeEvents.keys()).forEach(id => {
+            const instance = activeEvents.get(id);
+            if (instance) removeInstanceComplete(id, instance);
+        });
         activeEvents.clear();
     }
 }
