@@ -1,10 +1,8 @@
-// --- js/eventsLibrary.js ---
-
 export const stageEffects = {
     
     // === ЭФФЕКТ 1: ALASTOR RADIO ===
     radioDial: {
-        // 1. HTML ШАБЛОН (Вставляется автоматически)
+        // 1. HTML ШАБЛОН
         html: `
             <div class="alastor-overlay"></div>
             <div class="radio-meter-container active">
@@ -25,7 +23,7 @@ export const stageEffects = {
             </div>
         `,
 
-        // 2. CSS СТИЛИ (Применяются только во время ивента)
+        // 2. CSS СТИЛИ
         css: `
             .alastor-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle, transparent 40%, #000 100%); animation: fadeIn 1s ease; }
             .radio-meter-container { position: absolute; bottom: -50px; left: 50%; transform: translateX(-50%); width: 120%; max-width: 1400px; height: 600px; perspective: 1000px; animation: slideUp 1s cubic-bezier(0.2, 1, 0.3, 1); }
@@ -44,14 +42,14 @@ export const stageEffects = {
             @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         `,
 
-        // 3. ИНИЦИАЛИЗАЦИЯ (Вызывается 1 раз при старте)
+        // 3. ИНИЦИАЛИЗАЦИЯ
         init: (instance) => {
             instance.needle = document.getElementById('eventNeedle');
             instance.light = document.getElementById('eventLight');
             instance.angle = -60;
         },
 
-        // 4. ОБНОВЛЕНИЕ (Каждый кадр)
+        // 4. ОБНОВЛЕНИЕ
         update: (instance, features) => {
             if (!instance.needle) return;
 
@@ -69,14 +67,9 @@ export const stageEffects = {
             const jitter = (Math.random() - 0.5) * 1.5;
             instance.needle.style.transform = `rotate(${instance.angle + jitter}deg)`;
 
-            // Свет
             if (instance.light) {
                 instance.light.style.opacity = instance.angle > 40 ? (instance.angle - 40) / 25 : 0;
             }
         }
     }
-
-    // Сюда можно добавлять новые объекты:
-    // matrixRain: { ... },
-    // thunderStorm: { ... }
 };
