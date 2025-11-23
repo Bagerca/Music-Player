@@ -1,7 +1,7 @@
 export const stageEffects = {
     
     // === ЭФФЕКТ 1: ALASTOR RADIO (FINAL BLURRED VERSION) ===
-    // Используется для основной части трека
+    // Используется для основной части трека (атмосферный фон)
     radioDial: {
         // 1. HTML
         html: `
@@ -258,104 +258,102 @@ export const stageEffects = {
         }
     },
 
-    // === ЭФФЕКТ 2: DEMONIC SIGNAL HIJACK (ПЕРЕГРУЗКА ЛАМП - 1 СЕКУНДА) ===
+    // === ЭФФЕКТ 2: DEMONIC GLARE (ГЛАЗ-РАДИО - 1 СЕКУНДА) ===
     // Используется для момента 1:21
-    analogBurn: {
+    demonicGlare: {
         html: `
-            <div class="signal-hijack-overlay">
-                <!-- Красная заливка (Перегрузка) -->
-                <div class="flood-red"></div>
+            <div class="glare-overlay">
+                <!-- Тьма -->
+                <div class="blackout-bg"></div>
                 
-                <!-- Осциллограмма (Звуковая волна) -->
-                <div class="freq-line"></div>
-                <div class="freq-line-shadow"></div>
+                <!-- Центральный Глаз-Радио -->
+                <div class="radio-eye-container">
+                    <svg viewBox="0 0 100 100" class="eye-svg">
+                        <!-- Внешнее свечение -->
+                        <defs>
+                            <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+                                <feGaussianBlur stdDeviation="5" result="coloredBlur"/>
+                                <feMerge>
+                                    <feMergeNode in="coloredBlur"/>
+                                    <feMergeNode in="SourceGraphic"/>
+                                </feMerge>
+                            </filter>
+                        </defs>
+                        
+                        <!-- Белок глаза (форма радио) -->
+                        <path d="M10,50 Q50,10 90,50 Q50,90 10,50" fill="#200" stroke="#ff0000" stroke-width="2" filter="url(#glow)" />
+                        
+                        <!-- Радужка (Красная) -->
+                        <circle cx="50" cy="50" r="20" fill="#ff0000" opacity="0.8" />
+                        
+                        <!-- Зрачок (Стрелка радио!) -->
+                        <path d="M50,70 L48,30 L52,30 Z" fill="#000" />
+                        
+                        <!-- Деления шкалы внутри глаза -->
+                        <path d="M30,50 L35,50 M70,50 L65,50 M50,30 L50,35" stroke="#000" stroke-width="2" />
+                    </svg>
+                </div>
                 
-                <!-- Горизонтальные помехи -->
-                <div class="scanline-tear"></div>
+                <!-- Вуду символы по бокам -->
+                <div class="voodoo-rune left">†</div>
+                <div class="voodoo-rune right">†</div>
             </div>
         `,
         css: `
-            .signal-hijack-overlay {
+            .glare-overlay {
                 position: absolute; inset: 0;
                 z-index: 9999;
                 pointer-events: none;
+                display: flex; justify-content: center; align-items: center;
                 overflow: hidden;
-                /* Превращаем всё в черно-белое с жестким контрастом */
-                backdrop-filter: grayscale(100%) contrast(200%) brightness(0.8);
-                /* Анимация схлопывания экрана (CRT OFF/ON) */
-                animation: crtCollapse 0.8s cubic-bezier(0.1, 0.9, 0.2, 1) forwards;
             }
 
-            /* Анимация выключения и включения старого ТВ */
-            @keyframes crtCollapse {
-                0% { transform: scaleY(1) scaleX(1); filter: blur(0px); }
-                10% { transform: scaleY(0.02) scaleX(1.1); filter: blur(2px); background: #000; } /* Схлопнулось */
-                20% { transform: scaleY(0.02) scaleX(0); background: #fff; } /* Исчезло в точку */
-                30% { transform: scaleY(0.02) scaleX(1.2); background: #500; } /* Растянулось линией */
-                50% { transform: scaleY(1.1) scaleX(1); background: transparent; } /* Раскрылось с перехлестом */
-                100% { transform: scaleY(1) scaleX(1); }
-            }
-
-            /* Кровавая заливка */
-            .flood-red {
+            .blackout-bg {
                 position: absolute; inset: 0;
-                background: #ff0000;
+                background: #000;
                 opacity: 0;
-                mix-blend-mode: hard-light; /* Жесткое смешивание */
-                animation: redPulse 0.8s forwards;
+                animation: hardFlash 0.9s forwards;
             }
 
-            @keyframes redPulse {
-                0% { opacity: 0; }
-                30% { opacity: 0.8; } /* Пик красного на раскрытии */
+            @keyframes hardFlash {
+                0% { opacity: 1; }
+                80% { opacity: 1; }
                 100% { opacity: 0; }
             }
 
-            /* Линия осциллографа (Голос демона) */
-            .freq-line {
-                position: absolute; top: 50%; left: 0; width: 100%; height: 100px;
-                transform: translateY(-50%);
-                background: repeating-linear-gradient(90deg, 
-                    transparent 0%, 
-                    transparent 49%, 
-                    #fff 50%, 
-                    transparent 51%
-                );
-                background-size: 10px 100%; /* Частота полос */
-                clip-path: polygon(0% 40%, 10% 60%, 20% 10%, 30% 90%, 40% 40%, 50% 60%, 60% 20%, 70% 80%, 80% 40%, 90% 60%, 100% 50%, 100% 100%, 0% 100%);
+            .radio-eye-container {
+                position: relative;
+                width: 400px; height: 400px;
+                transform: scale(0);
+                animation: eyePop 0.8s cubic-bezier(0.1, 0.9, 0.2, 1) forwards;
+                filter: drop-shadow(0 0 30px #ff0000);
+            }
+
+            /* Анимация: Глаз резко открывается и приближается */
+            @keyframes eyePop {
+                0% { transform: scale(0) rotate(-10deg); opacity: 0; }
+                10% { transform: scale(1.2) rotate(0deg); opacity: 1; } /* Удар */
+                20% { transform: scale(1) rotate(0deg); opacity: 1; }
+                100% { transform: scale(1.5); opacity: 0; filter: blur(10px); }
+            }
+
+            .voodoo-rune {
+                position: absolute;
+                font-family: serif; font-weight: bold; font-size: 150px;
+                color: #ff0000;
                 opacity: 0;
-                animation: waveFlash 0.4s 0.2s linear forwards; /* Задержка 0.2с */
-                mix-blend-mode: difference;
+                animation: runeFlicker 0.6s forwards;
+                text-shadow: 0 0 20px #ff0000;
             }
+            .voodoo-rune.left { left: 10%; transform: rotate(-15deg); }
+            .voodoo-rune.right { right: 10%; transform: rotate(15deg); }
 
-            .freq-line-shadow {
-                position: absolute; top: 50%; left: 2px; width: 100%; height: 100px;
-                transform: translateY(-50%);
-                background: #00ffff; /* Глич-тень (циан) */
-                clip-path: polygon(0% 40%, 10% 60%, 20% 10%, 30% 90%, 40% 40%, 50% 60%, 60% 20%, 70% 80%, 80% 40%, 90% 60%, 100% 50%, 100% 100%, 0% 100%);
-                opacity: 0;
-                animation: waveFlash 0.4s 0.25s linear forwards;
-                mix-blend-mode: exclusion;
-            }
-
-            @keyframes waveFlash {
-                0% { opacity: 0; transform: translateY(-50%) scaleX(1.5); }
-                20% { opacity: 1; transform: translateY(-50%) scaleX(1); }
-                100% { opacity: 0; transform: translateY(-50%) scaleX(2); }
-            }
-
-            /* Горизонтальный разрыв картинки */
-            .scanline-tear {
-                position: absolute; top: 0; left: 0; width: 100%; height: 5px;
-                background: #fff;
-                opacity: 0.8;
-                box-shadow: 0 0 20px #fff;
-                animation: scanDrop 0.8s ease-out forwards;
-            }
-            @keyframes scanDrop {
-                0% { top: 0; opacity: 1; height: 20px; }
-                50% { top: 50%; opacity: 1; height: 2px; background: #ff0000; box-shadow: 0 0 50px #ff0000; }
-                100% { top: 100%; opacity: 0; height: 0px; }
+            @keyframes runeFlicker {
+                0% { opacity: 0; transform: scale(2); }
+                20% { opacity: 1; transform: scale(1); }
+                40% { opacity: 0; }
+                60% { opacity: 1; }
+                100% { opacity: 0; }
             }
         `,
         init: () => {},
