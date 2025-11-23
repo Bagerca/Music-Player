@@ -211,6 +211,72 @@ export const transitions = {
         `
     },
 
+    // 6. SHATTERED GLASS (Для "Шкатулки")
+    shatteredGlass: {
+        uniforms: { intensity: 0.15 }, // Сила разлета осколков
+        config: { duration: 1.5, ease: "power2.inOut" }, // Медленный, "тяжелый" переход
+        shader: `
+            varying vec2 vUv;
+            uniform sampler2D texture1;
+            uniform sampler2D texture2;
+            uniform sampler2D disp; // Текстура шума
+            uniform float dispFactor;
+            uniform float intensity;
+
+            void main() {
+                vec2 uv = vUv;
+                
+                // 1. Создаем "осколки" (кристаллизация шума)
+                // floor делает плавный шум ступенчатым -> получаются острые грани
+                float noise = texture2D(disp, uv * 0.5).r;
+                float shards = floor(noise * 15.0) / 15.0; 
+
+                // 2. Расчет смещения
+                // Осколки двигаются в разные стороны в зависимости от яркости "осколка"
+                float progress = sin(dispFactor * 3.14);
+                vec2 direction = vec2(cos(shards * 10.0), sin(shards * 10.0));
+                vec2 displacement = direction * intensity * progress;
+                
+                // 3. Хроматическая аберрация (Эффект толстого стекла/призмы)
+                // Сдвигаем R, G и B каналы отдельно друг от друга
+                float rgbSplit = 0.02 * progress;
+
+                vec2 uv1 = uv + displacement;
+                vec2 uv2 = uv - displacement; // Вторая текстура едет навстречу
+
+                // Сэмплим первую текстуру (RGB сплит)
+                vec4 t1;
+                t1.r = texture2D(texture1, uv1 + vec2(rgbSplit, 0.0)).r;
+                t1.g = texture2D(texture1, uv1).g;
+                t1.b = texture2D(texture1, uv1 - vec2(rgbSplit, 0.0)).b;
+                t1.a = 1.0;
+
+                // Сэмплим вторую текстуру (RGB сплит)
+                vec4 t2;
+                t2.r = texture2D(texture2, uv2 + vec2(rgbSplit, 0.0)).r;
+                t2.g = texture2D(texture2, uv2).g;
+                t2.b = texture2D(texture2, uv2 - vec2(rgbSplit, 0.0)).b;
+                t2.a = 1.0;
+
+                // 4. Резкая граница перехода (как трещина)
+                // mixVal определяет, какую текстуру показывать в конкретном пикселе
+                // Используем "shards" для неровной границы смены кадров
+                float mixThreshold = smoothstep(dispFactor - 0.2, dispFactor + 0.2, shards);
+                
+                vec4 color = mix(t1, t2, 1.0 - mixThreshold);
+
+                // 5. Блик на гранях (Glitter)
+                // Добавляем яркости на краях осколков в пике перехода
+                float edge = abs(shards - noise) * 5.0; // Выделяем края
+                float shine = step(0.9, edge) * progress * 0.3; // Только самые острые края блестят
+                
+                color.rgb += vec3(shine);
+
+                gl_FragColor = color;
+            }
+        `
+    },
+    
     // 2. GLITCH
     glitch: {
         uniforms: { intensity: 0.05 },
