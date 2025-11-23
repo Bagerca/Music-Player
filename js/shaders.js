@@ -144,63 +144,66 @@ export const transitions = {
         `
     },
 
-    // 5. BENDY INK (Viscous Fluid & Sepia)
-    bendyInk: {
-        uniforms: { intensity: 0.4 },
-        config: { duration: 1.4, ease: "power2.inOut" }, // Вязкий, плавный переход
+    // 5. INK BRUSH (Мазки кистью / Рисованный стиль)
+    inkBrush: {
+        uniforms: { intensity: 0.5 }, // Сила размазывания
+        config: { duration: 1.5, ease: "power2.inOut" },
         shader: `
             varying vec2 vUv;
             uniform sampler2D texture1;
             uniform sampler2D texture2;
-            uniform sampler2D disp; // Карта шума для неравномерности стекания
+            uniform sampler2D disp; // Текстура шума для "ворсинок" кисти
             uniform float dispFactor;
             uniform float intensity;
 
             void main() {
                 vec2 uv = vUv;
                 
-                // 1. Эффект стекания чернил (Melt)
-                // Используем карту дисплейсмента (шум), чтобы чернила текли неравномерно
-                float noiseVal = texture2D(disp, uv).r;
+                // Получаем значение шума для текстуры мазка
+                float noise = texture2D(disp, uv * 0.5).r; 
+
+                // 1. Имитация движения кисти (Smear)
+                // Смещаем пиксели по диагонали в зависимости от прогресса и шума
+                // Это создает эффект, будто краску тянут по холсту
+                float swipe = dispFactor;
                 
-                // Рассчитываем сдвиг по Y (вниз)
-                // Чернила текут вниз, поэтому искажаем координаты Y
-                float flow = sin(dispFactor * 3.14) * (intensity * 1.5);
-                float drip = flow * noiseVal; 
+                // Направление мазка (диагональ) + рваные края от шума
+                vec2 brushDir = vec2(1.0, -1.0); 
+                float distortion = sin(swipe * 3.14) * intensity * (noise * 2.0 - 1.0);
                 
-                vec2 uv1 = vec2(uv.x, uv.y + drip); // Старая картинка стекает
-                vec2 uv2 = vec2(uv.x, uv.y - drip); // Новая стекает сверху
+                vec2 uv1 = uv + brushDir * distortion;
+                vec2 uv2 = uv - brushDir * distortion;
 
                 vec4 t1 = texture2D(texture1, uv1);
                 vec4 t2 = texture2D(texture2, uv2);
 
-                // 2. Смешивание (через "порог" чернил)
-                // Создаем эффект, будто чернила разъедают изображение
-                vec4 color = mix(t1, t2, dispFactor);
+                // 2. Рваный переход (Brush Reveal)
+                // Вместо плавного mix, используем noise для создания "пятен" проявления
+                // Картинка появляется кусками, как будто закрашивают холст
+                float mask = smoothstep(dispFactor - 0.3, dispFactor + 0.3, noise);
                 
-                // 3. Фильтр "Старый мультфильм" (Sepia + High Contrast)
-                // Работает максимально сильно в середине перехода
-                float effectStrength = sin(dispFactor * 3.14);
-                
-                // Перевод в ЧБ
-                float gray = dot(color.rgb, vec3(0.299, 0.587, 0.114));
-                
-                // Применяем сепию (желтоватый оттенок)
-                vec3 sepia = vec3(gray * 1.2, gray * 1.0, gray * 0.8);
-                
-                // Усиливаем контраст черного (чернильные пятна)
-                if (gray < 0.3) {
-                    sepia *= 0.5; // Делаем тени глубокими и черными
-                }
+                // Инвертируем маску, чтобы transition шел правильно
+                vec4 color = mix(t2, t1, mask);
 
-                // Смешиваем оригинальный цвет с сепией
-                color.rgb = mix(color.rgb, sepia, effectStrength * 0.9);
+                // 3. Эффект "Рисунка" (Ink Style)
+                // В середине перехода делаем цвета более контрастными и "грязными"
+                float midCycle = sin(dispFactor * 3.14);
                 
-                // 4. Дрожание пленки (Old Film Shake)
-                // Слегка сдвигаем кадр в момент перехода
-                if (effectStrength > 0.1) {
-                    float shake = (fract(sin(dot(uv, vec2(12.9898,78.233))) * 43758.5453) - 0.5) * 0.005;
-                    color.rgb += shake;
+                if (midCycle > 0.1) {
+                    // Перевод в ЧБ (Gayscale)
+                    float gray = dot(color.rgb, vec3(0.299, 0.587, 0.114));
+                    
+                    // Подкрашиваем в сепию/чернила (желтовато-черный)
+                    vec3 inkColor = vec3(gray * 1.1, gray * 0.9, gray * 0.6);
+                    
+                    // Постеризация (упрощение цветов до нескольких уровней), как в мультике
+                    inkColor = floor(inkColor * 4.0) / 4.0;
+                    
+                    // Усиливаем черный (чернильные пятна)
+                    inkColor *= 1.0 - (midCycle * 0.4); 
+
+                    // Смешиваем оригинальный цвет с "рисованным"
+                    color.rgb = mix(color.rgb, inkColor, midCycle);
                 }
 
                 gl_FragColor = color;
