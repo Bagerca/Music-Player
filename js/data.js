@@ -489,11 +489,11 @@ const getTrack = (namePart) => {
 const defaultPlaylists = {
     "Все треки": library,
     "Для Ксю": [
+        getTrack("Rest in Ink"),
         getTrack("Шкатулка 8D Remix"), 
-        getTrack("Spend The Night Alone"), 
-        getTrack("Rest in Ink"), 
         getTrack("Katana"), 
-        getTrack("Alastor's Game")
+        getTrack("Alastor's Game"),
+        getTrack("Spend The Night Alone")
     ].filter(Boolean),
     "От Кирика": [
     ].filter(Boolean),
