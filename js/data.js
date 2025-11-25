@@ -17,7 +17,7 @@ export const library = [
         artist: 'MAXIMUM THE HORMONE', 
         path: 'audio/HAWATARI NIOKU CENT.m4a', 
         cover: 'picture/HAWATARI NIOKU CENT.jpg', 
-        effect: 'glitch',
+        effect: 'chainsaw',
         colors: { primary: '#080000', secondary: '#3d0000',accent: '#ff3838' }, 
         visualizer: ['#ff0000', '#ffffff', '#ffbc00', '#2a0000'], 
         neonColor: '#ff0000' 
