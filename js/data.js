@@ -502,6 +502,7 @@ const defaultPlaylists = {
         getTrack("Rest in Ink"),
         getTrack("Шкатулка 8D Remix"), 
         getTrack("Katana"), 
+        getTrack("HAWATARI NIOKU CENT"),
         getTrack("Alastor's Game"),
         getTrack("Spend The Night Alone")
     ].filter(Boolean),
