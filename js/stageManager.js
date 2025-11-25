@@ -15,7 +15,7 @@ export const trackTimeline = {
     ],
 
     "HAWATARI NIOKU CENT": [
-        { start: 28.9, end: 31.6, effect: 'chainsawTransformation' }
+        { start: 28.9, end: 51.0, effect: 'chainsawTransformation' }
     ],
 
     // НОВЫЙ ТРЕК
