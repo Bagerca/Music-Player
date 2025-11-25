@@ -1,6 +1,6 @@
 export const stageEffects = {
     
-    // === ЭФФЕКТ 1: ALASTOR RADIO (FINAL BLURRED VERSION) ===
+    // === ЭФФЕКТ 1: ALASTOR RADIO ===
     radioDial: {
         html: `
             <div class="alastor-overlay-container">
@@ -155,7 +155,7 @@ export const stageEffects = {
         }
     },
 
-    // === ЭФФЕКТ 2: DEMONIC GLARE (ГЛАЗ-РАДИО) ===
+    // === ЭФФЕКТ 2: DEMONIC GLARE ===
     demonicGlare: {
         html: `
             <div class="glare-overlay">
@@ -212,7 +212,7 @@ export const stageEffects = {
         update: () => {}
     },
 
-    // === ЭФФЕКТ 3: УЖАС (TEETH) ===
+    // === ЭФФЕКТ 3: TEETH ===
     overlayTeeth: {
         html: `
             <div class="horror-img-container">
@@ -256,7 +256,7 @@ export const stageEffects = {
         }
     },
 
-    // === ЭФФЕКТ 4: WALKING (NEW) ===
+    // === ЭФФЕКТ 4: WALKING 1 ===
     overlayWalking: {
         html: `
             <div class="horror-img-container">
@@ -278,7 +278,7 @@ export const stageEffects = {
             }
             .walking-anim {
                 opacity: 0.6;
-                filter: sepia(0.5) contrast(1.1); /* Эффект старой записи */
+                filter: sepia(0.5) contrast(1.1);
                 animation: panLeft 20s linear forwards;
             }
             .vignette-overlay {
@@ -293,7 +293,6 @@ export const stageEffects = {
         `,
         update: (instance, features) => {
             if(instance.img) {
-                // Мерцание на битах
                 const flicker = 0.6 + (features.bassEnergy * 0.2);
                 instance.img.style.opacity = flicker;
             }
@@ -303,7 +302,7 @@ export const stageEffects = {
         }
     },
 
-    // === ЭФФЕКТ 5: WALKING (NEW) ===
+    // === ЭФФЕКТ 5: WALKING 2 ===
     overlayWalking2: {
         html: `
             <div class="horror-img-container">
@@ -325,7 +324,7 @@ export const stageEffects = {
             }
             .walking-anim {
                 opacity: 0.6;
-                filter: sepia(0.5) contrast(1.1); /* Эффект старой записи */
+                filter: sepia(0.5) contrast(1.1);
                 animation: panLeft 20s linear forwards;
             }
             .vignette-overlay {
@@ -340,7 +339,6 @@ export const stageEffects = {
         `,
         update: (instance, features) => {
             if(instance.img) {
-                // Мерцание на битах
                 const flicker = 0.6 + (features.bassEnergy * 0.2);
                 instance.img.style.opacity = flicker;
             }
@@ -350,7 +348,7 @@ export const stageEffects = {
         }
     },
 
-        // === ЭФФЕКТ 5: WALKING (NEW) ===
+    // === ЭФФЕКТ 6: WALKING 3 ===
     overlayWalking3: {
         html: `
             <div class="horror-img-container">
@@ -372,7 +370,7 @@ export const stageEffects = {
             }
             .walking-anim {
                 opacity: 0.6;
-                filter: sepia(0.5) contrast(1.1); /* Эффект старой записи */
+                filter: sepia(0.5) contrast(1.1);
                 animation: panLeft 20s linear forwards;
             }
             .vignette-overlay {
@@ -387,7 +385,6 @@ export const stageEffects = {
         `,
         update: (instance, features) => {
             if(instance.img) {
-                // Мерцание на битах
                 const flicker = 0.6 + (features.bassEnergy * 0.2);
                 instance.img.style.opacity = flicker;
             }
@@ -397,7 +394,7 @@ export const stageEffects = {
         }
     },
     
-    // === ЭФФЕКТ 5: УЖАС (EYES) ===
+    // === ЭФФЕКТ 7: EYES ===
     overlayEyes: {
         html: `
             <div class="horror-img-container">
@@ -433,7 +430,7 @@ export const stageEffects = {
         init: (instance) => { instance.img = document.querySelector('.horror-img'); }
     },
 
-    // === ЭФФЕКТ 6: СОЛЯНКА (FINAL CHECK) ===
+    // === ЭФФЕКТ 8: CHECK ===
     overlayCheck: {
         html: `
             <div class="horror-img-container">
@@ -465,7 +462,7 @@ export const stageEffects = {
         init: (instance) => { instance.img = document.querySelector('.horror-img'); }
     },
 
-    // === ЭФФЕКТ 7: CHAINSAW TRANSFORMATION (NEW) ===
+    // === ЭФФЕКТ 9: CHAINSAW TRANSFORMATION (NEW) ===
     chainsawTransformation: {
         html: `
             <div class="cs-event-wrapper">
@@ -492,24 +489,56 @@ export const stageEffects = {
             .cs-event-wrapper {
                 position: absolute; top: 0; left: 0; width: 100%; height: 100%;
                 overflow: hidden; background: #000;
+                z-index: 10; 
+            }
+
+            /* --- АНИМАЦИЯ ИСЧЕЗНОВЕНИЯ (CRT TV OFF) --- */
+            .cs-event-wrapper.dying {
+                animation: csDeath 0.6s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+            }
+
+            @keyframes csDeath {
+                0% { 
+                    transform: scale(1, 1); 
+                    filter: brightness(1) contrast(1);
+                    opacity: 1;
+                }
+                20% {
+                    /* Вспышка и искажение */
+                    transform: scale(1.02, 1.02) skewX(5deg);
+                    filter: brightness(3) contrast(2) hue-rotate(90deg);
+                    opacity: 1;
+                }
+                40% {
+                    /* Сплющивание в линию */
+                    transform: scale(1.1, 0.005);
+                    filter: brightness(5);
+                    opacity: 1;
+                }
+                60% {
+                    /* Линия еще видна */
+                    transform: scale(0.8, 0.002);
+                    opacity: 1;
+                }
+                100% {
+                    /* Исчезновение в точку */
+                    transform: scale(0, 0);
+                    opacity: 0;
+                }
             }
 
             /* --- ГИФКА ПЕРЕХОДА --- */
             .cs-transition-gif-container {
                 position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-                z-index: 50; /* Поверх всего */
+                z-index: 50; 
                 display: flex; justify-content: center; align-items: center;
-                background: #000; /* Черный фон, чтобы закрыть предыдущий экран */
+                background: #000;
                 animation: gifFadeOut 0.5s ease-in forwards;
-                animation-delay: 2.8s; /* Гифка висит 2.8 сек, потом исчезает */
+                animation-delay: 2.3s; /* Синхронизация с длиной гифки */
                 pointer-events: none;
             }
-            .cs-gif-content {
-                width: 100%; height: 100%; object-fit: cover;
-            }
-            @keyframes gifFadeOut { 
-                to { opacity: 0; visibility: hidden; } 
-            }
+            .cs-gif-content { width: 100%; height: 100%; object-fit: cover; }
+            @keyframes gifFadeOut { to { opacity: 0; visibility: hidden; } }
 
             /* --- ФОН И ЭФФЕКТЫ --- */
             .cs-stage-bg {
@@ -521,7 +550,6 @@ export const stageEffects = {
                 animation: shakeHard 0.1s cubic-bezier(.36,.07,.19,.97) both;
             }
 
-            /* ШУМ И СКАНЛАЙНЫ */
             .cs-overlay-grain {
                 position: absolute; inset: -50%; width: 200%; height: 200%;
                 background: url('data:image/svg+xml;utf8,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="n"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23n)" opacity="0.15"/%3E%3C/svg%3E');
@@ -540,13 +568,11 @@ export const stageEffects = {
             }
             @keyframes grainMove { 0% { transform: translate(0,0); } 100% { transform: translate(-10px, -10px); } }
 
-            /* CANVAS */
             #cs-canvas-realtime {
                 position: absolute; top: 0; left: 0; width: 100%; height: 100%;
                 z-index: 5; opacity: 0.8; filter: drop-shadow(0 0 10px #ff0000);
             }
 
-            /* LOGO */
             .cs-logo-wrapper {
                 position: absolute; top: 50%; left: 50%; 
                 transform: translate(-50%, -50%) skewX(-10deg) rotate(-2deg);
