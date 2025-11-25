@@ -263,6 +263,74 @@ export const transitions = {
             }
         `
     },
+
+    // 9. CHAINSAW (Зубья пилы + Вибрация + Кровь)
+    chainsaw: {
+        uniforms: { intensity: 0.8 }, // Сила искажения
+        config: { duration: 0.8, ease: "power4.inOut" }, // Резкий, быстрый переход
+        shader: `
+            varying vec2 vUv;
+            uniform sampler2D texture1;
+            uniform sampler2D texture2;
+            uniform float dispFactor;
+            uniform float intensity;
+
+            // Генератор случайного шума
+            float random(vec2 st) {
+                return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
+            }
+
+            void main() {
+                vec2 uv = vUv;
+
+                // --- 1. ВИБРАЦИЯ МОТОРА (High freq shake) ---
+                // Создаем мелкую дрожь, зависящую от прогресса
+                float shake = (random(uv + dispFactor) - 0.5) * 0.05 * sin(dispFactor * 3.14);
+                
+                // --- 2. ЭФФЕКТ ЗУБЬЕВ ПИЛЫ (Sawtooth) ---
+                // Делим экран на горизонтальные полосы (50 полос)
+                float teethCount = 50.0;
+                float strip = floor(uv.y * teethCount);
+                
+                // Четные полосы едут влево, нечетные вправо
+                float dir = mod(strip, 2.0) * 2.0 - 1.0; 
+                
+                // Сдвиг зависит от прогресса (dispFactor)
+                float shift = dispFactor * intensity * dir;
+                
+                // Добавляем "рывки", чтобы движение было механическим, а не плавным
+                // Используем sin, чтобы в середине перехода сдвиг был максимальным
+                float mechanicalShift = shift * sin(dispFactor * 3.14);
+
+                // Искажаем координаты X
+                vec2 distortedUV = vec2(uv.x + mechanicalShift + shake, uv.y);
+
+                // --- 3. СЭМПЛИНГ ТЕКСТУР ---
+                vec4 t1 = texture2D(texture1, distortedUV);
+                vec4 t2 = texture2D(texture2, distortedUV);
+
+                // Резкий микс (Hard Cut) имитирует грубость
+                float mixVal = step(0.5, dispFactor);
+                vec4 color = mix(t1, t2, mixVal);
+
+                // --- 4. КРОВАВАЯ ВСПЫШКА (Blood Flash) ---
+                // В пике перехода (dispFactor ~ 0.5) заливаем красным
+                float bloodIntensity = sin(dispFactor * 3.14); // 0 -> 1 -> 0
+                
+                // Усиливаем красный канал
+                color.r += bloodIntensity * 0.6;
+                // Затемняем остальные, чтобы получить глубокий красный
+                color.g -= bloodIntensity * 0.3;
+                color.b -= bloodIntensity * 0.3;
+
+                // Добавляем шум (зернистость) в момент вспышки
+                float grain = random(uv * dispFactor * 10.0);
+                color.rgb -= grain * 0.2 * bloodIntensity;
+
+                gl_FragColor = color;
+            }
+        `
+    },
     
     // 2. GLITCH
     glitch: {
