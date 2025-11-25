@@ -463,5 +463,183 @@ export const stageEffects = {
             }
         },
         init: (instance) => { instance.img = document.querySelector('.horror-img'); }
+    },
+
+    // === ЭФФЕКТ 7: CHAINSAW TRANSFORMATION (NEW) ===
+    chainsawTransformation: {
+        html: `
+            <div class="cs-event-wrapper">
+                <!-- ГИФКА-ПЕРЕХОД (Появляется, играет, исчезает) -->
+                <div class="cs-transition-gif-container">
+                    <img src="picture/Chainsaw_conversion.gif" class="cs-gif-content" alt="transformation">
+                </div>
+
+                <!-- ВИЗУАЛИЗАТОР И ЭФФЕКТЫ (На фоне) -->
+                <div class="cs-stage-bg">
+                    <div class="cs-overlay-grain"></div>
+                    <div class="cs-scanlines"></div>
+                    <div class="cs-overlay-vignette"></div>
+                    
+                    <canvas id="cs-canvas-realtime"></canvas>
+
+                    <div class="cs-logo-wrapper">
+                        <div class="cs-logo-text">CHAINSAW<br>MAN</div>
+                    </div>
+                </div>
+            </div>
+        `,
+        css: `
+            .cs-event-wrapper {
+                position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+                overflow: hidden; background: #000;
+            }
+
+            /* --- ГИФКА ПЕРЕХОДА --- */
+            .cs-transition-gif-container {
+                position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+                z-index: 50; /* Поверх всего */
+                display: flex; justify-content: center; align-items: center;
+                background: #000; /* Черный фон, чтобы закрыть предыдущий экран */
+                animation: gifFadeOut 0.5s ease-in forwards;
+                animation-delay: 2.8s; /* Гифка висит 2.8 сек, потом исчезает */
+                pointer-events: none;
+            }
+            .cs-gif-content {
+                width: 100%; height: 100%; object-fit: cover;
+            }
+            @keyframes gifFadeOut { 
+                to { opacity: 0; visibility: hidden; } 
+            }
+
+            /* --- ФОН И ЭФФЕКТЫ --- */
+            .cs-stage-bg {
+                position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+                background: radial-gradient(circle at center, #4a0000 0%, #000000 90%);
+                transition: transform 0.1s;
+            }
+            .cs-stage-bg.shake-hard {
+                animation: shakeHard 0.1s cubic-bezier(.36,.07,.19,.97) both;
+            }
+
+            /* ШУМ И СКАНЛАЙНЫ */
+            .cs-overlay-grain {
+                position: absolute; inset: -50%; width: 200%; height: 200%;
+                background: url('data:image/svg+xml;utf8,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="n"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23n)" opacity="0.15"/%3E%3C/svg%3E');
+                animation: grainMove 0.2s steps(4) infinite;
+                pointer-events: none; z-index: 10; mix-blend-mode: overlay;
+            }
+            .cs-scanlines {
+                position: absolute; inset: 0;
+                background: repeating-linear-gradient(to bottom, transparent 0px, transparent 2px, rgba(0, 0, 0, 0.3) 3px);
+                z-index: 12; pointer-events: none;
+            }
+            .cs-overlay-vignette {
+                position: absolute; inset: 0;
+                background: radial-gradient(circle, transparent 40%, #000000 95%);
+                z-index: 11;
+            }
+            @keyframes grainMove { 0% { transform: translate(0,0); } 100% { transform: translate(-10px, -10px); } }
+
+            /* CANVAS */
+            #cs-canvas-realtime {
+                position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+                z-index: 5; opacity: 0.8; filter: drop-shadow(0 0 10px #ff0000);
+            }
+
+            /* LOGO */
+            .cs-logo-wrapper {
+                position: absolute; top: 50%; left: 50%; 
+                transform: translate(-50%, -50%) skewX(-10deg) rotate(-2deg);
+                z-index: 4; margin-top: -20px;
+            }
+            .cs-logo-text {
+                font-family: 'Anton', 'Impact', sans-serif;
+                font-size: 80px; text-transform: uppercase; color: #ffbc00;
+                letter-spacing: -2px; line-height: 0.9;
+                text-shadow: 4px 4px 0px #000, -2px -2px 0px #ff0000;
+                white-space: nowrap; text-align: center;
+            }
+            @keyframes shakeHard {
+                10%, 90% { transform: translate3d(-5px, 0, 0); filter: hue-rotate(-10deg); }
+                20%, 80% { transform: translate3d(5px, 0, 0); filter: hue-rotate(10deg); }
+                30%, 50%, 70% { transform: translate3d(-5px, 0, 0); }
+                40%, 60% { transform: translate3d(5px, 0, 0); }
+            }
+        `,
+        init: (instance) => {
+            instance.canvas = document.getElementById('cs-canvas-realtime');
+            instance.bg = document.querySelector('.cs-stage-bg');
+            if (instance.canvas) {
+                instance.ctx = instance.canvas.getContext('2d');
+                const resize = () => {
+                    instance.width = instance.canvas.width = window.innerWidth;
+                    instance.height = instance.canvas.height = window.innerHeight;
+                };
+                window.addEventListener('resize', resize);
+                resize();
+            }
+        },
+        update: (instance, features) => {
+            if (!instance.ctx) return;
+            const { width, height, ctx } = instance;
+            const time = Date.now();
+
+            // Очистка
+            ctx.clearRect(0, 0, width, height);
+
+            // Функция рисования волны
+            const drawWave = (color, amplitude, frequency, speed, yOffset, thickness) => {
+                ctx.beginPath();
+                ctx.strokeStyle = color;
+                ctx.lineWidth = thickness;
+                ctx.lineJoin = 'round';
+                ctx.moveTo(0, height / 2 + yOffset);
+
+                for (let x = 0; x < width; x += 10) {
+                    const y = Math.sin(x * frequency + time * speed) * amplitude 
+                            + Math.cos(x * (frequency * 2.5) - time * speed) * (amplitude * 0.5)
+                            + (Math.random() - 0.5) * (amplitude * 0.2); // Шум
+                    ctx.lineTo(x, height / 2 + yOffset + y);
+                }
+                ctx.stroke();
+            };
+
+            // 1. Высокие (Белая, тонкая, нервная)
+            drawWave(
+                'rgba(255, 255, 255, 0.5)', 
+                10 + features.highEnergy * 150, 
+                0.01, 0.005, -80, 2
+            );
+
+            // 2. Средние (Пунктирная)
+            ctx.setLineDash([5, 5]); 
+            drawWave(
+                'rgba(255, 188, 0, 0.8)', // Желтый оттенок
+                20 + features.midEnergy * 200, 
+                0.02, 0.003, 0, 4
+            );
+            ctx.setLineDash([]);
+
+            // 3. Бас (Красная/Белая, жирная)
+            drawWave(
+                'rgba(255, 255, 255, 0.7)', 
+                30 + features.bassEnergy * 300, 
+                0.005, 0.002, 80, 8
+            );
+
+            // Реакция на удар (Beat)
+            if (features.isBeat) {
+                instance.bg.classList.remove('shake-hard');
+                void instance.bg.offsetWidth; // Trigger reflow
+                instance.bg.classList.add('shake-hard');
+                
+                // Вспышка логотипа
+                const logo = document.querySelector('.cs-logo-text');
+                if(logo) logo.style.textShadow = `0 0 30px #ff0000, 4px 4px 0 #000`;
+                setTimeout(() => {
+                   if(logo) logo.style.textShadow = `4px 4px 0px #000, -2px -2px 0px #ff0000`;
+                }, 100);
+            }
+        }
     }
 };
