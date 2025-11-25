@@ -14,11 +14,7 @@ export const trackTimeline = {
         { start: 105.0, end: 162.0, effect: 'radioDial' }
     ],
 
-    "HAWATARI NIOKU CENT": [
-        { start: 28.9, end: 51.0, effect: 'chainsawTransformation' }
-    ],
-
-    // НОВЫЙ ТРЕК
+    // ТРЕК
     "Spend The Night Alone": [
         // Зубы (0:43.8 - 0:53.1)
         { start: 43.8, end: 53.1, effect: 'overlayTeeth' },
@@ -37,6 +33,13 @@ export const trackTimeline = {
         
         // Солянка (3:17 - до конца)
         { start: 197.0, end: 300.0, effect: 'overlayCheck' }
+    ],
+
+    // НОВЫЙ ТРЕК
+    "HAWATARI NIOKU CENT": [
+        // Событие трансформации Chainsaw Man
+        // Гифка появится на 28.8, закроет экран, потом исчезнет, оставив эффекты до 51.0
+        { start: 28.8, end: 51.0, effect: 'chainsawTransformation' }
     ]
 };
 
@@ -118,9 +121,9 @@ function unmountEvent(id) {
 
     // Если элемент существует и еще не начал исчезать
     if (instance.wrapper) {
-        // Проверяем, поддерживает ли эффект плавный выход (ищем класс радио)
-        const alastorContainer = instance.wrapper.querySelector('.alastor-overlay-container');
         
+        // 1. ПРОВЕРКА ДЛЯ ALASTOR RADIO
+        const alastorContainer = instance.wrapper.querySelector('.alastor-overlay-container');
         if (alastorContainer) {
             instance.isFadingOut = true; // Блокируем
             alastorContainer.classList.add('fade-out-event'); // Запускаем анимацию CSS
@@ -129,8 +132,20 @@ function unmountEvent(id) {
             setTimeout(() => {
                 removeInstanceComplete(id, instance);
             }, 1400);
-            
-            return; // Прерываем немедленное удаление
+            return;
+        }
+
+        // 2. ПРОВЕРКА ДЛЯ CHAINSAW MAN (НОВОЕ)
+        const csContainer = instance.wrapper.querySelector('.cs-event-wrapper');
+        if (csContainer) {
+            instance.isFadingOut = true;
+            // Добавляем класс, который запускает анимацию @keyframes csDeath
+            csContainer.classList.add('dying');
+            // Ждем 0.6s (длительность анимации) + небольшой запас
+            setTimeout(() => {
+                removeInstanceComplete(id, instance);
+            }, 600);
+            return;
         }
     }
 
