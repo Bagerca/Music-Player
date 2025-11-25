@@ -14,6 +14,10 @@ export const trackTimeline = {
         { start: 105.0, end: 162.0, effect: 'radioDial' }
     ],
 
+    "HAWATARI NIOKU CENT": [
+        { start: 28.9, end: 51.0, effect: 'chainsawTransformation' }
+    ],
+
     // НОВЫЙ ТРЕК
     "Spend The Night Alone": [
         // Зубы (0:43.8 - 0:53.1)
