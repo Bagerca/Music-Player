@@ -13,6 +13,16 @@ export const library = [
         lyricsSource: 'lyrics/katana.json' 
     },
     { 
+    name: 'HAWATARI NIOKU CENT', 
+    artist: 'MAXIMUM THE HORMONE', 
+    path: 'audio/HAWATARI NIOKU CENT.m4a', 
+    cover: 'picture/HAWATARI NIOKU CENT.jpg', 
+    effect: 'glitch',
+    colors: { primary: '#000000', secondary: '#2a0000', accent: '#ffbc00' }, 
+    visualizer: ['#ffbc00', '#ff0000', '#ffffff', '#000000', '#2a0000'], 
+    neonColor: '#ff0000' 
+    },
+    { 
         name: 'Tangled Up', 
         artist: 'Caro Emerald', 
         path: 'audio/Caro_Emerald_Tangled_Up.mp3', 
