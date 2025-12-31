@@ -487,17 +487,189 @@ export const library = [
         colors: { primary: '#2b1d1a', secondary: '#5a3d34', accent: '#d4af37' }, 
         visualizer: ['#d4af37', '#b89a30', '#9c8529', '#807022', '#645b1b'], 
         neonColor: '#d4af37' 
+    },
+    { 
+        name: 'Мандаринка', 
+        artist: 'Ольга Бузова & DAVA', 
+        path: 'audio/Buzova_Dava_Mandarinka.mp3', 
+        cover: 'picture/Buzova_Dava_Mandarinka.jpg', 
+        effect: 'liquid',
+        // Цвета с обложки: Темный шоколад, Красная шапка, Яркий мандарин
+        colors: { primary: '#2e0a0a', secondary: '#d92b2b', accent: '#ffcc00' }, 
+        visualizer: ['#ffcc00', '#ff3333', '#ffffff', '#ffa500'], 
+        neonColor: '#ffcc00' 
+    },
+    { 
+        name: 'Novogodnyaya', 
+        artist: 'VERKA SERDUCHKA', 
+        path: 'audio/Verka_Serduchka_Novogodnyaya.mp3', 
+        cover: 'picture/Verka_Serduchka_Novogodnyaya.jpg', 
+        effect: 'glitch', // Эффект глитча отлично подходит под хаотичный ритм Сердючки
+        // Цвета: Глубокий синий фон, Красный акцент от текста, Голубой неон от снежинок
+        colors: { primary: '#151e3d', secondary: '#d92b2b', accent: '#00e5ff' }, 
+        visualizer: ['#00e5ff', '#ffffff', '#ffd700', '#d92b2b'], 
+        neonColor: '#00e5ff' 
+    },
+    { 
+        name: 'Новогодние игрушки', 
+        artist: 'Инна Маликова & Новые Самоцветы', 
+        path: 'audio/Malikova_Samotsvety_Novogodnie_igrushki.mp3', 
+        cover: 'picture/Novogodnie_igrushki.jpg', 
+        effect: 'liquid',
+        // Цвета: Темный фон кожи/лофта, Кирпичный вторичный, Ярко-красный акцент одежды
+        colors: { primary: '#261b1b', secondary: '#8f4f4f', accent: '#ff2424' }, 
+        visualizer: ['#ff2424', '#ffffff', '#8f4f4f', '#2a2a2a'], 
+        neonColor: '#ff2424' 
+    },
+    { 
+        name: 'Давай запоём', 
+        artist: 'Dabro', 
+        path: 'audio/Dabro_Davai_zapoem.mp3', 
+        cover: 'picture/Dabro_Davai_zapoem.jpg', 
+        effect: 'liquid', // Плавный, душевный трек
+        // Цвета: Темная лесная чаща, Землистый вторичный, Свежий зеленый акцент
+        colors: { primary: '#1a2118', secondary: '#594d42', accent: '#4dbf6e' }, 
+        visualizer: ['#4dbf6e', '#ffffff', '#a8a8a8', '#594d42'], 
+        neonColor: '#4dbf6e' 
+    },
+    { 
+        name: 'С Новым Годом', 
+        artist: 'Dabro', 
+        path: 'audio/Dabro_S_Novym_Godom.mp3', 
+        cover: 'picture/Dabro_S_Novym_Godom.jpg', 
+        effect: 'liquid', // Уютный, плавный эффект
+        // Цвета: Глубокий хвойный фон, Красный вторичный, Золотой акцент логотипа
+        colors: { primary: '#051f0a', secondary: '#c42e2e', accent: '#ffb700' }, 
+        visualizer: ['#ffb700', '#ff3333', '#ffffff', '#2e8b57'], 
+        neonColor: '#ffb700' 
+    },
+    { 
+        name: 'Куплиновый Год 2', 
+        artist: 'Dr.Mixxer feat. Куплинов', 
+        path: 'audio/DrMixxer_Kuplinov_Year_2.mp3', 
+        cover: 'picture/DrMixxer_Kuplinov_Year_2.jpg', 
+        effect: 'glitch', // Энергичный ремикс
+        // Цвета: Темно-синий пиджак, Красная шапка, Белая опушка
+        colors: { primary: '#0d1b2a', secondary: '#d62828', accent: '#ffffff' }, 
+        visualizer: ['#ffffff', '#d62828', '#3e5c76', '#0d1b2a'], 
+        neonColor: '#ffffff' 
+    },
+    { 
+        name: 'Новогодняя', 
+        artist: 'Дилижанс', 
+        path: 'audio/Dilizhans_Novogodnyaya.mp3', 
+        cover: 'picture/Dilizhans_Novogodnyaya.jpg', 
+        effect: 'liquid', // Веселый поп-стиль
+        // Цвета: Глубокий бирюзовый (рубашка), Красный текст, Желтый логотип
+        colors: { primary: '#052b36', secondary: '#d62222', accent: '#ffee00' }, 
+        visualizer: ['#ffee00', '#00ccff', '#ffffff', '#d62222'], 
+        neonColor: '#ffee00' 
+    },
+    { 
+        name: 'Звенит январская вьюга', 
+        artist: 'Братство Атома, BassnPanda, Квашеная, Atomic Heart', 
+        path: 'audio/Atomic_Heart_Jan_Blizzard.mp3', 
+        cover: 'picture/Atomic_Heart_Jan_Blizzard.jpg', 
+        effect: 'glitch', // Идеально для саундтрека Atomic Heart
+        // Цвета: Холодный черный фон, Розовый вторичный, Кибер-голубой акцент
+        colors: { primary: '#0b1016', secondary: '#e03e68', accent: '#00ccff' }, 
+        visualizer: ['#00ccff', '#e03e68', '#ffffff', '#1f252b'], 
+        neonColor: '#00ccff' 
+    },
+    { 
+        name: 'Christmas Tree Farm', 
+        artist: 'Taylor Swift', 
+        path: 'audio/Taylor_Swift_Christmas_Tree_Farm.mp3', 
+        cover: 'picture/Taylor_Swift_Christmas_Tree_Farm.jpg', 
+        effect: 'wind', // Эффект ветра для зимней атмосферы
+        // Цвета: Темно-фиолетовый (куртка), Зеленый (елки), Красный акцент (заголовок)
+        colors: { primary: '#22152b', secondary: '#2e5e38', accent: '#d42828' }, 
+        visualizer: ['#d42828', '#ffffff', '#2e5e38', '#e6c8a0'], 
+        neonColor: '#d42828' 
+    },
+    { 
+        name: 'Новогодняя', 
+        artist: 'Дискотека Авария', 
+        path: 'audio/Diskoteka_Avariya_Novogodnyaya.mp3', 
+        cover: 'picture/Diskoteka_Avariya_Novogodnyaya.jpg', 
+        effect: 'glitch', // Хаотичный и быстрый трек, глитч идеально подходит
+        // Цвета: Насыщенный синий фон неба, Малиновая шуба, Белый снежный акцент
+        colors: { primary: '#003366', secondary: '#d11569', accent: '#ffffff' }, 
+        visualizer: ['#ffffff', '#d11569', '#00ccff', '#228b22'], 
+        neonColor: '#ffffff' 
+    },
+    { 
+        name: 'Jingle Bell Rock', 
+        artist: 'Bobby Helms', 
+        path: 'audio/Bobby_Helms_Jingle_Bell_Rock.mp3', 
+        cover: 'picture/Jingle_Bell_Rock.jpg', 
+        effect: 'liquid', // Классический плавный эффект для ретро
+        // Цвета: Темно-тиловый фон (контраст), Красный акцент, Белый снег
+        colors: { primary: '#0a252b', secondary: '#1f7a8c', accent: '#ff3333' }, 
+        visualizer: ['#ff3333', '#1f7a8c', '#ffffff', '#0a252b'], 
+        neonColor: '#ff3333' 
     }
 ];
 
 /* --- ВНУТРЕННИЕ ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ --- */
-const getTrack = (namePart) => {
-    return library.find(t => t.name.toLowerCase().includes(namePart.toLowerCase()));
+const getTrack = (searchPart) => {
+    // Улучшенный поиск: ищем совпадение в имени или артисте
+    return library.find(t => 
+        t.name.toLowerCase().includes(searchPart.toLowerCase()) || 
+        t.artist.toLowerCase().includes(searchPart.toLowerCase())
+    );
 };
 
 /* --- ОПРЕДЕЛЕНИЕ СТАНДАРТНЫХ ПЛЕЙЛИСТОВ --- */
 const defaultPlaylists = {
     "Все треки": library,
+    
+    "Новогодний": [
+        // === 1. АТМОСФЕРНОЕ НАЧАЛО ===
+        getTrack("Feeling Good"),           
+        getTrack("Puttin On The Ritz"),     
+        getTrack("Tangled Up"),             
+        getTrack("A Man Without Love"),     
+        getTrack("Ma Meilleure Ennemie"),   
+        getTrack("Jingle Bell Rock"),       
+        getTrack("God Rest Ye Merry Gentlemen"), 
+
+        // === 2. УЮТ И ТЕПЛО ===
+        getTrack("Christmas Tree Farm"),    
+        getTrack("Давай запоём"),           
+        getTrack("С Новым Годом"),          
+        getTrack("Новогодние игрушки"),     
+        getTrack("Cigarette Duet"),    
+
+        // === 3. РАЗГАР ВЕСЕЛЬЯ ===
+        getTrack("Мандаринка"),             
+        getTrack("VERKA SERDUCHKA"),        
+        getTrack("Дискотека Авария"),       
+        getTrack("Дилижанс"),               
+        getTrack("Куплиновый Год"),         
+        getTrack("Hai Yorokonde"),          
+
+        // === 4. РЕТРО ВАЙБ ===
+        getTrack("Ghostbusters"),           
+        getTrack("Somebody's Watching Me"), 
+        getTrack("Goo Goo Muck"),           
+        getTrack("The Existential Threat"), 
+
+        // === 5. AFTERPARTY ===
+        getTrack("Atomic Heart"),           
+        getTrack("Enemy"),                  
+        getTrack("My Ordinary Life"),       
+        getTrack("Discord"),                
+        getTrack("Rapture Rising"),         
+        getTrack("You Will Believe"),       
+        getTrack("To Ashes and Blood"),     
+        
+        // ИСПРАВЛЕНИЕ ЗДЕСЬ: ищем по артисту, чтобы не попал Spend The Night Alone
+        getTrack("Voltaire"),               
+        
+        getTrack("IRIS OUT (Epic Orchestra Cover)") 
+    ].filter(Boolean),
+
     "Для Ксю": [
         getTrack("Rest in Ink"),
         getTrack("Шкатулка 8D Remix"), 
@@ -506,6 +678,7 @@ const defaultPlaylists = {
         getTrack("Alastor's Game"),
         getTrack("Spend The Night Alone")
     ].filter(Boolean),
+    
     "От Кирика": [
     ].filter(Boolean),
 };
@@ -513,40 +686,30 @@ const defaultPlaylists = {
 /* --- ГЛАВНАЯ ФУНКЦИЯ ЭКСПОРТА --- */
 export function getAllPlaylists(userPlaylists = {}, uploadedTracks = []) {
     // 1. "Лечим" пользовательские плейлисты (Гидратация)
-    // Это исправляет баг, когда старые сохраненные треки не имеют новых свойств (effect и т.д.)
     const hydratedUserPlaylists = {};
     
     Object.keys(userPlaylists).forEach(playlistName => {
         hydratedUserPlaylists[playlistName] = userPlaylists[playlistName].map(savedTrack => {
-            // Ищем этот трек в главной библиотеке по пути к файлу
             const originalTrack = library.find(t => t.path === savedTrack.path);
-            
-            // Если нашли оригинал в базе, берем свежие данные (эффекты, цвета) из базы,
-            // но сохраняем локальные свойства, если они есть.
             if (originalTrack) {
                 return { ...savedTrack, ...originalTrack };
             }
-            
-            // Если это загруженный трек (которого нет в library), оставляем как есть
             return savedTrack;
         });
     });
 
-    // 2. Объединяем стандарные и обновленные пользовательские
+    // 2. Объединяем
     const combined = { ...defaultPlaylists, ...hydratedUserPlaylists };
     
-    // 3. Добавляем "Мои загрузки", если есть
+    // 3. Добавляем "Мои загрузки"
     if (uploadedTracks && uploadedTracks.length > 0) {
         combined["Мои загрузки"] = uploadedTracks;
     }
 
-    // 4. Автоматически добавляем новые загруженные треки в плейлист "Все треки",
-    // чтобы они отображались в главном списке без переключения плейлиста
+    // 4. Обновляем "Все треки"
     if (uploadedTracks.length > 0) {
-        // Создаем копию массива треков
         const allTracks = [...combined["Все треки"]]; 
         uploadedTracks.forEach(t => {
-             // Простая проверка на дубликаты по пути
              if(!allTracks.find(x => x.path === t.path)) {
                  allTracks.push(t);
              }
